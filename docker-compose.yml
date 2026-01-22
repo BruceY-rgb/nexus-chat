@@ -1,0 +1,77 @@
+# =====================================================
+# Docker Compose for Slack-like Chat Tool
+# PostgreSQL + Redis
+# =====================================================
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: slack_chat_db
+    environment:
+      POSTGRES_USER: slack_user
+      POSTGRES_PASSWORD: slack_password
+      POSTGRES_DB: slack_chat
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U slack_user -d slack_chat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - slack_chat_network
+    restart: unless-stopped
+
+  # Redis for caching and sessions (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: slack_chat_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - slack_chat_network
+    restart: unless-stopped
+
+  # pgAdmin for database management (optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: slack_chat_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@slack-chat.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - slack_chat_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  slack_chat_network:
+    driver: bridge

@@ -1,0 +1,174 @@
+'use client';
+
+import { useState } from 'react';
+import { Channel } from '../types/channel';
+import CreateChannelModal from './CreateChannelModal';
+
+interface ChannelsProps {
+  channels?: Channel[];
+  selectedChannelId?: string;
+  joinedChannels?: string[];
+  onSelectChannel?: (channelId: string) => void;
+  onCreateChannel?: (channel: Channel) => void;
+  onBrowseChannels?: () => void;
+}
+
+export default function Channels({
+  channels = [],
+  selectedChannelId,
+  joinedChannels = [],
+  onSelectChannel,
+  onCreateChannel,
+  onBrowseChannels
+}: ChannelsProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleCreateChannel = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleCreateChannelSubmit = (channelName: string, description?: string) => {
+    // 创建新频道对象
+    const newChannel: Channel = {
+      id: `channel-${Date.now()}`, // 简单的 ID 生成
+      name: channelName,
+      description,
+      type: 'public',
+      createdAt: new Date(),
+      ownerId: '1' // 默认当前用户创建
+    };
+
+    // 通知父组件
+    onCreateChannel?.(newChannel);
+
+    // 关闭模态框
+    setIsModalOpen(false);
+
+    // 自动选中新建的频道
+    onSelectChannel?.(newChannel.id);
+
+    console.log('创建新频道:', newChannel);
+  };
+
+  // 只显示已加入的频道
+  const joinedChannelsList = channels.filter(channel => joinedChannels.includes(channel.id));
+
+  return (
+    <div className="mb-4">
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-3 py-2 hover:bg-white/10 cursor-pointer"
+        onClick={handleCreateChannel}
+      >
+        <h3 className="text-white/80 text-sm font-medium tracking-wide uppercase">
+          Channels
+        </h3>
+        <div className="flex items-center gap-1">
+          <button
+            className="text-white/60 hover:text-white transition-colors p-1"
+            aria-label="Browse channels"
+            title="Browse channels"
+            onClick={(e) => {
+              e.stopPropagation();
+              onBrowseChannels?.();
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-4 h-4"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5"
+              />
+            </svg>
+          </button>
+          <button
+            className="text-white/60 hover:text-white transition-colors"
+            aria-label="Create new channel"
+            title="Create new channel"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCreateChannel();
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2.5}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4.5v15m7.5-7.5h-15"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Channels List */}
+      <div className="space-y-0.5">
+        {joinedChannelsList.map((channel) => (
+          <div
+            key={channel.id}
+            className={`flex items-center px-3 py-1.5 mx-2 rounded cursor-pointer transition-colors group ${
+              selectedChannelId === channel.id
+                ? 'bg-slack-blue text-white'
+                : 'hover:bg-white/10'
+            }`}
+            onClick={() => onSelectChannel?.(channel.id)}
+          >
+            {/* Channel Icon */}
+            <span
+              className={`text-base font-medium ${
+                selectedChannelId === channel.id
+                  ? 'text-white'
+                  : 'text-white/70 group-hover:text-white'
+              } transition-colors`}
+            >
+              #
+            </span>
+
+            {/* Channel Name */}
+            <span
+              className={`ml-3 text-sm font-medium truncate ${
+                selectedChannelId === channel.id
+                  ? 'text-white'
+                  : 'text-white/70 group-hover:text-white'
+              } transition-colors`}
+            >
+              {channel.name}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Empty state */}
+      {joinedChannelsList.length === 0 && (
+        <div className="px-3 py-2 text-white/50 text-sm">
+          No joined channels
+        </div>
+      )}
+
+      {/* 创建频道模态框 */}
+      <CreateChannelModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onCreate={handleCreateChannelSubmit}
+      />
+    </div>
+  );
+}

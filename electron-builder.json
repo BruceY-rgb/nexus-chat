@@ -1,0 +1,82 @@
+{
+  "appId": "com.slackchat.app",
+  "productName": "Slack Chat Tool",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "electron/**/*",
+    ".next/**/*",
+    "node_modules/**/*",
+    "package.json"
+  ],
+  "mac": {
+    "category": "public.app-category.productivity",
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      },
+      {
+        "target": "zip",
+        "arch": ["x64", "arm64"]
+      }
+    ],
+    "icon": "assets/icon.icns"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "assets/icon.ico"
+  },
+  "linux": {
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": ["x64"]
+      },
+      {
+        "target": "deb",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "assets/icon.png",
+    "category": "Network"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Slack Chat Tool"
+  },
+  "dmg": {
+    "title": "Slack Chat Tool",
+    "icon": "assets/icon.icns",
+    "window": {
+      "width": "540",
+      "height": "620"
+    },
+    "contents": [
+      {
+        "x": "410",
+        "y": "150",
+        "type": "link",
+        "path": "/Applications"
+      },
+      {
+        "x": "130",
+        "y": "150",
+        "type": "file"
+      }
+    ]
+  }
+}

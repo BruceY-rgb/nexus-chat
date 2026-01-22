@@ -1,0 +1,601 @@
+/**
+ * Slack-like Chat Tool - Design System
+ * 根据前端设计准则实现的核心CSS变量和样式
+ */
+
+/* ===== CSS 变量定义 - 设计系统核心 ===== */
+:root {
+  /* === 核心配色 (Theme) === */
+  --sidebar-bg-primary: #3F0E40;          /* 经典紫色侧边栏背景 */
+  --sidebar-bg-secondary: #19171D;          /* 深色侧边栏背景（备用） */
+
+  --sidebar-selected: #1164A3;              /* 侧边栏选中态深蓝色 */
+  --active-status: #2BAC76;                 /* 活跃状态绿点 */
+
+  /* === 文本配色 === */
+  --text-primary: #FFFFFF;                  /* 主文本白色 */
+  --text-secondary: #B8B8B8;               /* 次要文本灰色 */
+  --text-muted: #6B7280;                   /* 时间戳等弱化文本 */
+  --text-bold: #FFFFFF;                    /* 用户名称加粗文本 */
+
+  /* === 消息区域配色 === */
+  --message-bg: #FFFFFF;                    /* 消息区域背景 */
+  --message-hover: #F8F8F8;               /* 消息悬停背景 */
+  --message-border: #E5E7EB;                /* 消息边框 */
+
+  /* === 顶部栏配色 === */
+  --header-bg: #FFFFFF;                     /* 顶部栏背景 */
+  --header-border: #E5E7EB;                 /* 顶部栏边框 */
+
+  /* === 输入框配色 === */
+  --input-bg: #FFFFFF;                      /* 输入框背景 */
+  --input-border: #E5E7EB;                  /* 输入框边框 */
+  --input-focus: #1164A3;                   /* 输入框聚焦边框 */
+
+  /* === 未读/通知配色 === */
+  --unread-badge: #E01E5A;                 /* 未读消息红点 */
+  --mention-bg: #FFF4E5;                    /* @提及背景 */
+  --mention-border: #FFA500;                /* @提及边框 */
+
+  /* === 布局尺寸 === */
+  --sidebar-width: 260px;                  /* 侧边栏固定宽度 */
+  --sidebar-collapsed-width: 76px;         /* 折叠状态宽度 */
+  --header-height: 60px;                   /* 顶部栏高度 */
+  --message-item-padding: 16px;             /* 消息项内边距 */
+  --channel-item-height: 36px;              /* 频道列表项高度 */
+
+  /* === 间距规范 === */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* === 圆角规范 === */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* === 字体族 === */
+  --font-family-primary: 'Slack-Lato', 'appleLogo', sans-serif;
+  --font-family-mono: 'SF Mono', 'Monaco', 'Consolas', monospace;
+
+  /* === 字体大小 === */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+
+  /* === 行高规范 === */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;                /* 消息行高必须为 1.5 */
+  --line-height-relaxed: 1.75;
+
+  /* === 字重规范 === */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;                  /* 用户名称加粗 */
+
+  /* === 响应式断点 === */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+}
+
+/* ===== 基础重置 ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-family-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== 滚动条样式 ===== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ===== 选择文本样式 ===== */
+::selection {
+  background-color: rgba(17, 100, 163, 0.3);
+}
+
+/* ===== 焦点样式 ===== */
+:focus-visible {
+  outline: 2px solid var(--sidebar-selected);
+  outline-offset: 2px;
+}
+
+/* ===== 侧边栏容器 ===== */
+.slack-sidebar {
+  width: var(--sidebar-width);              /* 必须固定 260px */
+  background: var(--sidebar-bg-primary);    /* 必须为 #3F0E40 */
+  height: 100vh;
+  overflow-y: auto;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .slack-sidebar {
+    width: 100%;                            /* 移动端全宽 */
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .slack-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+}
+
+/* ===== 侧边栏内容区域 ===== */
+.sidebar-header {
+  height: var(--header-height);
+  padding: var(--space-md);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-content {
+  flex: 1;
+  padding: var(--space-sm) 0;
+  overflow-y: auto;
+}
+
+.sidebar-footer {
+  padding: var(--space-md);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ===== 频道列表项样式 ===== */
+.channel-section {
+  margin-bottom: var(--space-lg);
+}
+
+.section-title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0 var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.channel-list {
+  list-style: none;
+}
+
+.channel-item {
+  height: var(--channel-item-height);
+  padding: 0 var(--space-sm);
+  margin: 2px var(--space-sm);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.channel-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.channel-item.selected {
+  background-color: var(--sidebar-selected); /* 选中态必须为 #1164A3 */
+  color: var(--text-primary);
+}
+
+.channel-item.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background-color: var(--active-status);   /* 活跃状态必须为 #2BAC76 */
+  border-radius: 0 4px 4px 0;
+}
+
+.channel-name {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-weight-medium);
+  color: inherit;
+  font-size: var(--font-size-sm);
+  flex: 1;
+  margin-left: var(--space-sm);
+}
+
+.channel-item.selected .channel-name {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.channel-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-lg);
+}
+
+.channel-unread {
+  background: var(--unread-badge);
+  color: white;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+  margin-left: auto;
+}
+
+/* ===== 消息区域 ===== */
+.slack-main {
+  margin-left: var(--sidebar-width);        /* 适配侧边栏宽度 */
+  min-height: 100vh;
+  background: var(--message-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .slack-main {
+    margin-left: 0;                          /* 移动端全宽 */
+  }
+}
+
+/* ===== 顶部栏 ===== */
+.slack-header {
+  height: var(--header-height);
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--header-border);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-lg);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.channel-header-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* ===== 消息列表区域 ===== */
+.message-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.message-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md) 0;
+  background: var(--message-bg);
+}
+
+.message-item {
+  padding: var(--message-item-padding) var(--space-lg);
+  line-height: var(--line-height-normal);   /* 必须锁定 1.5 */
+  transition: background-color 0.2s ease;
+}
+
+.message-item:hover {
+  background: var(--message-hover);
+}
+
+.message-content-wrapper {
+  display: flex;
+  gap: var(--space-sm);
+  max-width: 100%;
+}
+
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--sidebar-bg-primary);
+}
+
+.message-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin-bottom: 4px;
+}
+
+.message-username {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-weight-bold);      /* 必须加粗 */
+  color: var(--text-bold);
+  font-size: var(--font-size-md);
+}
+
+.message-timestamp {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-weight-normal);    /* 必须细体 */
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.message-content {
+  font-family: var(--font-family-primary);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);   /* 必须锁定 1.5 */
+  color: var(--text-primary);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* ===== 消息输入区域 ===== */
+.message-input-area {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--message-bg);
+  border-top: 1px solid var(--message-border);
+}
+
+.message-input-container {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-end;
+}
+
+.message-input {
+  flex: 1;
+  min-height: 44px;
+  max-height: 200px;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  color: var(--text-primary);
+  resize: none;
+  overflow-y: auto;
+}
+
+.message-input:focus {
+  outline: none;
+  border-color: var(--input-focus);
+}
+
+.message-input::placeholder {
+  color: var(--text-muted);
+}
+
+.send-button {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--sidebar-selected);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.send-button:hover {
+  background: #0d5288;
+}
+
+.send-button:disabled {
+  background: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ===== 状态指示器 ===== */
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--active-status);         /* 必须为 #2BAC76 */
+  display: inline-block;
+  margin-right: var(--space-sm);
+  position: relative;
+}
+
+.status-indicator::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: inherit;
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.status-indicator.offline {
+  background: #9CA3AF;                      /* 离线状态 */
+}
+
+.status-indicator.away {
+  background: #F59E0B;                      /* 离开状态 */
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* ===== 未读徽章 ===== */
+.unread-badge {
+  background: var(--unread-badge);           /* 必须为 #E01E5A */
+  color: white;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+  display: inline-block;
+}
+
+/* ===== @提及样式 ===== */
+.mention {
+  background: var(--mention-bg);
+  border: 1px solid var(--mention-border);
+  border-radius: var(--radius-sm);
+  padding: 0 4px;
+  font-weight: var(--font-weight-medium);
+}
+
+/* ===== 附件消息样式 ===== */
+.attachment-card {
+  background: var(--message-hover);
+  border: 1px solid var(--message-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-top: var(--space-sm);
+  max-width: 400px;
+}
+
+.attachment-preview {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-sm);
+}
+
+.attachment-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.attachment-info {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* ===== 动画效果 ===== */
+.fade-in {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ===== 移动端响应式 ===== */
+@media (max-width: 768px) {
+  :root {
+    --header-height: 56px;
+  }
+
+  .message-item {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .message-input-area {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .slack-header {
+    padding: 0 var(--space-md);
+  }
+}
+
+/* ===== 深色主题备用方案 ===== */
+:root.dark {
+  --sidebar-bg-primary: #19171D;           /* 深色备用方案 */
+  --message-bg: #1A1A1B;
+  --message-hover: #2D2D2E;
+  --header-bg: #1A1A1B;
+  --input-bg: #2D2D2E;
+  --text-primary: #FFFFFF;
+  --text-secondary: #B8B8B8;
+}

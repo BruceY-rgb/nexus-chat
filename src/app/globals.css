@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Slack Design System - Global Styles */
+
+/* 1. 全局基础样式调整 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  /* Slack 使用更加系统化的无衬线字体 */
+  font-family: "Slack-Lato", "appleLogo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  /* 修改：将背景从纯黑改为 Slack 登录页的标准浅灰/白色 */
+  background-color: #FFFFFF;
+  color: #1D1C1D; /* Slack 标准主文字色 */
+  line-height: 1.4;
+}
+
+/* 2. 滚动条美化 - Slack 风格 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.5);
+  background-clip: padding-box;
+}
+
+/* 侧边栏滚动条 - 更明显的样式 */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* 消息区域滚动条 - 细线风格 */
+.message-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.message-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.message-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.message-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Firefox 滚动条样式 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
+}
+
+.message-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+/* 3. 组件层级重写 */
+@layer components {
+  /* 验证码/密码切换按钮组 */
+  .auth-tabs {
+    @apply flex border border-[#E2E2E2] rounded-md p-1 bg-[#F8F8F8] mb-6;
+  }
+
+  .auth-tab-btn {
+    @apply flex-1 flex items-center justify-center py-1.5 px-4 rounded text-sm font-bold transition-all;
+    color: #616061;
+  }
+
+  .auth-tab-btn.active {
+    @apply bg-white shadow-sm;
+    color: #1D1C1D;
+  }
+
+  /* 输入框：修复你提到的"被白色覆盖"问题 */
+  .input {
+    @apply w-full px-3 py-2.5 bg-white border border-[#868686] rounded text-[#1D1C1D] placeholder-[#616061] transition-all duration-200;
+    font-size: 16px; /* 移动端防止自动放大 */
+  }
+
+  .input:focus {
+    @apply outline-none ring-4 ring-[#1264A3]/20 border-[#1264A3];
+  }
+
+  /* 标签文字 */
+  .input-label {
+    @apply block text-sm font-bold mb-2 text-[#1D1C1D];
+  }
+
+  /* 登录卡片容器 */
+  .auth-card {
+    @apply w-full max-w-[480px] p-10 bg-white;
+    /* Slack 官网登录页通常不带阴影和重边框，靠间距撑起高级感 */
+  }
+
+  .auth-container {
+    @apply min-h-screen flex flex-col items-center justify-center p-6 bg-white;
+  }
+
+  /* 按钮：Slack 标准蓝 */
+  .btn-primary {
+    @apply w-full bg-[#4A154B] text-white py-3 rounded font-bold text-lg hover:bg-[#5D1B5E] active:scale-[0.98] transition-all;
+    /* 注意：Slack 内部按钮有时用紫色 #4A154B，有时用蓝色 #1264A3，此处建议用紫色更具辨识度 */
+  }
+
+  .btn-outline {
+    @apply w-full border-2 border-[#1D1C1D] text-[#1D1C1D] py-2.5 rounded font-bold mt-4 hover:bg-gray-50 transition-all;
+  }
+
+  /* 底部声明 */
+  .auth-footer-text {
+    @apply text-xs text-[#616061] mt-8 text-center max-w-xs leading-relaxed;
+  }
+}
+
+/* 4. 实用类微调 */
+@layer utilities {
+  .text-slack-gray {
+    color: #616061;
+  }
+  .text-slack-black {
+    color: #1D1C1D;
+  }
+}

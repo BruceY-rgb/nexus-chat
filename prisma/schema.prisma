@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String                 @id @default(uuid())
+  email                String                 @unique
+  passwordHash         String?                @map("password_hash")
+  displayName          String                 @map("display_name")
+  realName             String?                @map("real_name")
+  avatarUrl            String?                @map("avatar_url")
+  status               String                 @default("active") @map("status")
+  timezone             String                 @default("UTC") @map("timezone")
+  lastSeenAt           DateTime?              @map("last_seen_at")
+  isOnline             Boolean                @default(false) @map("is_online")
+  emailVerifiedAt      DateTime?              @map("email_verified_at")
+  // 邮箱验证码相关字段（临时）
+  emailVerificationCode String?               @map("email_verification_code")
+  emailCodeExpiresAt   DateTime?              @map("email_code_expires_at")
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+  deletedAt            DateTime?              @map("deleted_at")
+  channelMembers       ChannelMember[]
+  createdChannels      Channel[]              @relation("ChannelCreatedBy")
+  dmMembers            DMConversationMember[]
+  dmConversations      DMConversation[]       @relation("DMConversationCreatedBy")
+  mentions             MessageMention[]
+  messageReads         MessageRead[]
+  messages             Message[]
+  notificationSettings NotificationSettings?
+  notifications        Notification[]
+  invitedTeamMembers   TeamMember[]           @relation("TeamMemberInvitedBy")
+  teamMemberships      TeamMember?
+  sessions             UserSession[]
+
+  @@map("users")
+}
+
+model UserSession {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  tokenHash      String   @map("token_hash")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  expiresAt      DateTime @map("expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  lastAccessedAt DateTime @default(now()) @map("last_accessed_at")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+model TeamMember {
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  role        String   @default("member") @map("role")
+  status      String   @default("active") @map("status")
+  invitedById String?  @map("invited_by")
+  joinedAt    DateTime @default(now()) @map("joined_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  invitedBy   User?    @relation("TeamMemberInvitedBy", fields: [invitedById], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("team_members")
+}
+
+model Channel {
+  id          String          @id @default(uuid())
+  name        String          @unique @map("name")
+  description String?         @map("description")
+  isPrivate   Boolean         @default(false) @map("is_private")
+  isArchived  Boolean         @default(false) @map("is_archived")
+  createdById String          @map("created_by")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  deletedAt   DateTime?       @map("deleted_at")
+  members     ChannelMember[]
+  createdBy   User            @relation("ChannelCreatedBy", fields: [createdById], references: [id])
+  messages    Message[]
+
+  @@map("channels")
+}
+
+model ChannelMember {
+  id          String   @id @default(uuid())
+  channelId   String   @map("channel_id")
+  userId      String   @map("user_id")
+  role        String   @default("member") @map("role")
+  lastReadAt  DateTime @default(dbgenerated("'1970-01-01 00:00:00'::timestamp without time zone")) @map("last_read_at")
+  unreadCount Int      @default(0) @map("unread_count")
+  joinedAt    DateTime @default(now()) @map("joined_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@map("channel_members")
+}
+
+model DMConversation {
+  id            String                 @id @default(uuid())
+  createdById   String                 @map("created_by")
+  lastMessageAt DateTime               @default(now()) @map("last_message_at")
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @updatedAt @map("updated_at")
+  deletedAt     DateTime?              @map("deleted_at")
+  members       DMConversationMember[]
+  createdBy     User                   @relation("DMConversationCreatedBy", fields: [createdById], references: [id])
+  messages      Message[]
+
+  @@map("dm_conversations")
+}
+
+model DMConversationMember {
+  id             String         @id @default(uuid())
+  conversationId String         @map("conversation_id")
+  userId         String         @map("user_id")
+  lastReadAt     DateTime       @default(dbgenerated("'1970-01-01 00:00:00'::timestamp without time zone")) @map("last_read_at")
+  unreadCount    Int            @default(0) @map("unread_count")
+  joinedAt       DateTime       @default(now()) @map("joined_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  conversation   DMConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("dm_conversation_members")
+}
+
+model Message {
+  id               String           @id @default(uuid())
+  content          String           @map("content")
+  messageType      String           @default("text") @map("message_type")
+  channelId        String?          @map("channel_id")
+  dmConversationId String?          @map("dm_conversation_id")
+  parentMessageId  String?          @map("parent_message_id")
+  userId           String           @map("user_id")
+  isEdited         Boolean          @default(false) @map("is_edited")
+  isDeleted        Boolean          @default(false) @map("is_deleted")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  deletedAt        DateTime?        @map("deleted_at")
+  attachments      Attachment[]
+  mentions         MessageMention[]
+  reads            MessageRead[]
+  channel          Channel?         @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  dmConversation   DMConversation?  @relation(fields: [dmConversationId], references: [id], onDelete: Cascade)
+  parentMessage    Message?         @relation("MessageReplies", fields: [parentMessageId], references: [id])
+  replies          Message[]        @relation("MessageReplies")
+  user             User             @relation(fields: [userId], references: [id])
+
+  @@map("messages")
+}
+
+model MessageMention {
+  id              String   @id @default(uuid())
+  messageId       String   @map("message_id")
+  mentionedUserId String   @map("mentioned_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  mentionedUser   User     @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade)
+  message         Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, mentionedUserId])
+  @@map("message_mentions")
+}
+
+model MessageRead {
+  id        String   @id @default(uuid())
+  messageId String   @map("message_id")
+  userId    String   @map("user_id")
+  readAt    DateTime @default(now()) @map("read_at")
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@map("message_reads")
+}
+
+model Attachment {
+  id           String   @id @default(uuid())
+  messageId    String   @map("message_id")
+  fileName     String   @map("file_name")
+  filePath     String   @map("file_path")
+  fileSize     BigInt   @map("file_size")
+  mimeType     String   @map("mime_type")
+  fileType     String?  @map("file_type")
+  s3Key        String   @map("s3_key")
+  s3Bucket     String   @map("s3_bucket")
+  thumbnailUrl String?  @map("thumbnail_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  message      Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+model Notification {
+  id                      String    @id @default(uuid())
+  userId                  String    @map("user_id")
+  type                    String    @map("type")
+  title                   String    @map("title")
+  content                 String?   @map("content")
+  relatedMessageId        String?   @map("related_message_id")
+  relatedChannelId        String?   @map("related_channel_id")
+  relatedDmConversationId String?   @map("related_dm_conversation_id")
+  isRead                  Boolean   @default(false) @map("is_read")
+  readAt                  DateTime? @map("read_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model NotificationSettings {
+  id               String   @id @default(uuid())
+  userId           String   @unique @map("user_id")
+  mentionInChannel Boolean  @default(true) @map("mention_in_channel")
+  mentionInDm      Boolean  @default(true) @map("mention_in_dm")
+  channelInvite    Boolean  @default(true) @map("channel_invite")
+  browserPush      Boolean  @default(true) @map("browser_push")
+  emailEnabled     Boolean  @default(false) @map("email_enabled")
+  quietHoursStart  String?  @map("quiet_hours_start")
+  quietHoursEnd    String?  @map("quiet_hours_end")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_settings")
+}
