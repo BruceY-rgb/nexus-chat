@@ -294,7 +294,7 @@ export default function DashboardPage() {
           )}
 
           {/* 主内容区 */}
-          <div className="flex-1 bg-background">
+          <div className="flex-1 h-full bg-background">
             {selectedChannel ? (
               <ChannelView
                 channel={convertedChannels.find(c => c.id === selectedChannel)!}

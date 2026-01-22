@@ -9,12 +9,14 @@ interface MessageListProps {
   messages: Message[];
   currentUserId: string;
   isLoading?: boolean;
+  className?: string;
 }
 
 export default function MessageList({
   messages,
   currentUserId,
-  isLoading = false
+  isLoading = false,
+  className = ''
 }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -74,7 +76,7 @@ export default function MessageList({
 
   if (isLoading) {
     return (
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className={`flex-1 min-h-0 overflow-y-auto message-scroll max-h-[calc(100vh-120px)] p-6 ${className}`} style={{ scrollbarGutter: 'stable' }}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
             <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -87,7 +89,7 @@ export default function MessageList({
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className={`flex-1 min-h-0 overflow-y-auto message-scroll max-h-[calc(100vh-120px)] p-6 ${className}`} style={{ scrollbarGutter: 'stable' }}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -121,7 +123,7 @@ export default function MessageList({
   const messageGroups = groupMessagesByDate(messages);
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className={`flex-1 min-h-0 overflow-y-auto message-scroll max-h-[calc(100vh-120px)] p-6`} style={{ scrollbarGutter: 'stable' }}>
       <div className="max-w-4xl mx-auto">
         {Object.entries(messageGroups).map(([dateKey, dayMessages]) => (
           <div key={dateKey}>
@@ -198,7 +200,8 @@ export default function MessageList({
             </div>
           </div>
         ))}
-        <div ref={messagesEndRef} />
+        {/* 自动滚动锚点 - 确保新消息到达时能滚动到底部 */}
+        <div ref={messagesEndRef} className="h-1" />
       </div>
     </div>
   );

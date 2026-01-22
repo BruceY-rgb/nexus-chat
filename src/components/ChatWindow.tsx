@@ -44,11 +44,15 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
 
   // 自动滚动到底部
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
+    // 延迟执行以确保DOM已渲染
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+    return () => clearTimeout(timer);
   }, [messages, scrollToBottom]);
 
   // 加载历史消息
@@ -239,7 +243,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
   return (
     <div className={`flex flex-col h-full ${className}`}>
       {/* 头部 - 固定不滚动 */}
-      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b">
+      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b bg-white">
         <h2 className="text-lg font-semibold">
           {channelId ? '频道聊天' : '私聊'}
         </h2>
@@ -247,7 +251,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
       </div>
 
       {/* 消息列表 - 独立滚动 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 message-scroll">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 message-scroll">
         {isLoading ? (
           <div className="text-center text-gray-500">加载中...</div>
         ) : messages.length === 0 ? (
@@ -290,7 +294,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
       </div>
 
       {/* 输入框 - 固定不滚动 */}
-      <div className="flex-shrink-0 p-4 border-t">
+      <div className="flex-shrink-0 p-4 border-t bg-white">
         <div className="flex space-x-2">
           <input
             type="text"

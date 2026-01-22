@@ -84,40 +84,51 @@ export default function DirectMessageView({
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* 顶部 Header */}
-      <DMHeader
-        member={member}
-        currentUserId={currentUserId}
-      />
+      {/* 顶部 Header - 固定不滚动 */}
+      <div className="flex-shrink-0">
+        <DMHeader
+          member={member}
+          currentUserId={currentUserId}
+        />
+      </div>
 
-      {/* Tab 导航 */}
-      <DMTabs isOwnSpace={isOwnSpace} />
+      {/* Tab 导航 - 固定不滚动 */}
+      <div className="flex-shrink-0">
+        <DMTabs isOwnSpace={isOwnSpace} />
+      </div>
 
-      {/* 主内容区域 */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      {/* 主内容区域 - 占据剩余空间，支持内部滚动 */}
+      <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* 消息流区域 */}
-        {isOwnSpace ? (
-          // 个人空间视图
-          <MySpaceView member={member} />
-        ) : (
-          // 正常私聊视图
-          <>
-            <MessageList
-              messages={messages}
-              currentUserId={currentUserId}
-              isLoading={isLoading}
-            />
-            {error && (
-              <div className="p-4 bg-red-500/10 text-red-500 text-center">
-                {error}
+        <div className="relative flex-1 overflow-hidden min-h-0">
+          {isOwnSpace ? (
+            // 个人空间视图
+            <div className="h-full">
+              <MySpaceView member={member} />
+            </div>
+          ) : (
+            // 正常私聊视图
+            <div className="h-full flex flex-col">
+              <div className="relative flex-1 min-h-0">
+                <MessageList
+                  messages={messages}
+                  currentUserId={currentUserId}
+                  isLoading={isLoading}
+                  className="h-full"
+                />
               </div>
-            )}
-          </>
-        )}
+              {error && (
+                <div className="p-4 bg-red-500/10 text-red-500 text-center">
+                  {error}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-        {/* 消息输入框 - 仅在非个人空间时显示 */}
+        {/* 消息输入框 - 仅在非个人空间时显示，固定在底部 */}
         {!isOwnSpace && (
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 mt-auto">
             <DMMessageInput
               placeholder={`Message ${member.displayName}`}
               disabled={isLoading || !conversation || conversation.id.startsWith('self-')}

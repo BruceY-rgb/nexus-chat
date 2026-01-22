@@ -71,7 +71,7 @@ export default function DashboardLayout({
           </div>
 
           {/* 频道和私聊列表 - 独立滚动 */}
-          <div className="flex-1 overflow-y-auto py-4 sidebar-scroll">
+          <div className="flex-1 min-h-0 overflow-y-auto py-4 sidebar-scroll">
             <Channels
               channels={channels}
               selectedChannelId={selectedChannelId}
@@ -103,7 +103,7 @@ export default function DashboardLayout({
         </div>
 
         {/* 右侧主内容区 */}
-        <div className="flex-1 h-full flex flex-col overflow-hidden">
+        <div className="flex-1 min-h-0 h-full flex flex-col overflow-hidden">
           {children}
         </div>
       </div>

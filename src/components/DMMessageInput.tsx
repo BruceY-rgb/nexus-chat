@@ -84,7 +84,7 @@ export default function DMMessageInput({
   };
 
   return (
-    <div className="flex-shrink-0 bg-[#313235] border-t border-[#3A3A3D]">
+    <div className="flex-shrink-0 bg-[#313235] border-t border-[#3A3A3D] sticky bottom-0">
       <div className="rounded-lg overflow-hidden">
         {/* 顶部格式化工具栏 */}
         <div className="flex items-center gap-1 px-3 py-2.5 border-b border-[#3A3A3D] bg-[#313235]">

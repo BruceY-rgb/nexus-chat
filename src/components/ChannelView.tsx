@@ -76,20 +76,21 @@ export default function ChannelView({
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="relative flex-1 flex flex-col overflow-hidden">
       {isJoined ? (
         <>
           {/* 消息列表 - 独立滚动 */}
-          <div className="flex-1 overflow-y-auto message-scroll">
+          <div className="relative flex-1 min-h-0">
             <MessageList
               messages={messages}
               currentUserId={user?.id || ''}
               isLoading={isLoading}
+              className="h-full"
             />
           </div>
 
           {/* 消息输入框 - 固定不滚动 */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 mt-auto">
             <DMMessageInput
               placeholder={`Message #${channel.name}`}
               disabled={false}
@@ -100,7 +101,7 @@ export default function ChannelView({
         </>
       ) : (
         /* 未加入频道时的提示 - 独立滚动 */
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6">
           <div className="max-w-4xl mx-auto">
             {/* 频道介绍卡片 */}
             <div className="bg-background-elevated rounded-lg p-6 mb-6">
