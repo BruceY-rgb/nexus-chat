@@ -184,10 +184,13 @@ export async function POST(request: NextRequest) {
           });
 
           channelMembers.forEach(member => {
-            ioInstance.to(`user:${member.userId}`).emit('unread-count-update', {
-              channelId,
-              unreadCount: member.unreadCount
-            });
+            // 排除发送者本人
+            if (member.userId !== currentUserId) {
+              ioInstance.to(`user:${member.userId}`).emit('unread-count-update', {
+                channelId,
+                unreadCount: member.unreadCount
+              });
+            }
           });
         } else if (dmConversationId) {
           ioInstance.to(`dm:${dmConversationId}`).emit('new-message', message);
@@ -199,16 +202,19 @@ export async function POST(request: NextRequest) {
           });
 
           dmMembers.forEach(member => {
-            ioInstance.to(`user:${member.userId}`).emit('unread-count-update', {
-              dmConversationId,
-              unreadCount: member.unreadCount
-            });
+            // 排除发送者本人
+            if (member.userId !== currentUserId) {
+              ioInstance.to(`user:${member.userId}`).emit('unread-count-update', {
+                dmConversationId,
+                unreadCount: member.unreadCount
+              });
 
-            // 通知活跃对话列表更新（新消息可能使对话出现在列表中）
-            ioInstance.to(`user:${member.userId}`).emit('active-conversations-update', {
-              dmConversationId,
-              lastMessageAt: new Date()
-            });
+              // 通知活跃对话列表更新（新消息可能使对话出现在列表中）
+              ioInstance.to(`user:${member.userId}`).emit('active-conversations-update', {
+                dmConversationId,
+                lastMessageAt: new Date()
+              });
+            }
           });
         }
 

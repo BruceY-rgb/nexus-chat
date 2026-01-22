@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
+import { Server as SocketIOServer } from 'socket.io';
+
+// 全局变量存储 Socket.IO 实例
+let io: SocketIOServer | null = null;
 
 // 创建或获取私聊会话 API
 export async function POST(request: NextRequest) {
@@ -127,6 +131,25 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // 通知WebSocket客户端有新对话创建
+    try {
+      if (typeof (global as any).io !== 'undefined') {
+        const ioInstance = (global as any).io as SocketIOServer;
+
+        // 通知对话双方的用户
+        conversation.members.forEach(member => {
+          ioInstance.to(`user:${member.userId}`).emit('active-conversations-update', {
+            dmConversationId: conversation.id,
+            lastMessageAt: conversation.createdAt
+          });
+        });
+
+        console.log(`📡 Broadcasted new conversation via WebSocket: ${conversation.id}`);
+      }
+    } catch (wsError) {
+      console.error('WebSocket broadcast error:', wsError);
+    }
 
     return NextResponse.json(conversation, { status: 201 });
   } catch (error) {

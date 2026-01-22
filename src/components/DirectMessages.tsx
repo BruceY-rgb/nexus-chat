@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { TeamMember } from '../types';
 import { Badge } from './ui';
 import { useUnreadStore } from '../store/unreadStore';
-import { useSocket } from '@/hooks/useSocket';
+import { useSocket } from '../hooks/useSocket';
 
 interface DirectMessagesProps {
   members?: TeamMember[];
@@ -43,11 +43,11 @@ interface ActiveDMConversation {
 }
 
 export default function DirectMessages({
-  members = [],
+  members = [], // 未使用，但保留以保持接口兼容
   currentUserId,
   selectedDirectMessageId,
   onStartChat,
-  onNewChat
+  onNewChat // 未使用，但保留以保持接口兼容
 }: DirectMessagesProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<TeamMember[]>([]);
@@ -98,6 +98,84 @@ export default function DirectMessages({
     };
   }, [socket]);
 
+  // 处理开始聊天（立即将对话添加到列表中）
+  const handleStartChat = useCallback(async (userId: string, dmConversationId?: string) => {
+    // === 步骤1: 立即清空搜索查询，切换到活跃会话列表 ===
+    if (searchQuery.trim()) {
+      setSearchQuery('');
+      console.log('🔍 [DEBUG] 清空搜索查询，切换到活跃会话列表');
+    }
+
+    // 如果已经有 dmConversationId，直接使用
+    if (dmConversationId) {
+      onStartChat?.(userId, dmConversationId);
+      return;
+    }
+
+    // 否则，创建或获取对话
+    try {
+      const response = await fetch('/api/conversations/dm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ userId })
+      });
+
+      if (response.ok) {
+        const conversation = await response.json();
+        const otherMember = conversation.members.find((m: any) => m.userId !== currentUserId);
+
+        // 确保otherMember存在
+        if (!otherMember?.user?.id) {
+          throw new Error('Failed to find other user');
+        }
+
+        const newConversation: ActiveDMConversation = {
+          conversationId: conversation.id,
+          lastMessageAt: '',
+          createdAt: conversation.createdAt,
+          otherUser: {
+            id: otherMember.user.id,
+            email: otherMember.user.email,
+            displayName: otherMember.user.displayName,
+            realName: otherMember.user.realName,
+            avatarUrl: otherMember.user.avatarUrl,
+            isOnline: otherMember.user.isOnline,
+            lastSeenAt: otherMember.user.lastSeenAt
+          },
+          unreadCount: 0,
+          lastReadAt: undefined,
+          lastMessage: undefined,
+          messageCount: 0
+        };
+
+        // 乐观更新：将新对话添加到列表顶部
+        setActiveConversations(prev => {
+          // 检查是否已存在
+          if (prev.some(conv => conv.conversationId === conversation.id)) {
+            return prev;
+          }
+          return [newConversation, ...prev];
+        });
+
+        // 通知WebSocket更新
+        if (socket) {
+          socket.emit('active-conversations-update', { dmConversationId: conversation.id });
+        }
+
+        onStartChat?.(userId, conversation.id);
+      } else {
+        // 即使失败，也调用原始回调
+        onStartChat?.(userId);
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      onStartChat?.(userId);
+    }
+  }, [socket, onStartChat, currentUserId, searchQuery]);
+
   // 搜索团队成员（搜索所有用户，不仅仅是活跃的）
   useEffect(() => {
     const searchMembers = async () => {
@@ -130,7 +208,7 @@ export default function DirectMessages({
 
   // 显示搜索结果或活跃对话
   const displayConversations = searchQuery.trim() ? searchResults.map(user => ({
-    conversationId: user.dmConversationId || user.id,
+    conversationId: user.dmConversationId || '', // 搜索结果没有conversationId，留空让handleStartChat创建
     lastMessageAt: '',
     createdAt: '',
     otherUser: {
@@ -214,6 +292,10 @@ export default function DirectMessages({
           const unreadCount = conversation.unreadCount || getUnreadCount(conversationId);
           const hasUnread = unreadCount > 0;
 
+          // 防御性检查：只有当未读数大于0且最后一条消息不是当前用户发送的，才显示未读标记
+          // 这确保了用户发送的消息不会触发自身的红点
+          const shouldShowUnreadBadge = hasUnread && (!conversation.lastMessage || conversation.lastMessage.user.id !== currentUserId);
+
           return (
             <div
               key={conversationId}
@@ -222,7 +304,7 @@ export default function DirectMessages({
                   ? 'bg-[#1164A3] text-white'
                   : 'hover:bg-white/10'
               }`}
-              onClick={() => onStartChat?.(otherUser.id, conversationId)}
+              onClick={() => handleStartChat(otherUser.id, conversationId)}
             >
               {/* Avatar with status indicator */}
               <div className="relative flex-shrink-0">
@@ -245,7 +327,7 @@ export default function DirectMessages({
               <span className={`ml-3 text-sm truncate transition-colors ${
                 isSelected
                   ? 'text-white'
-                  : hasUnread
+                  : shouldShowUnreadBadge
                   ? 'text-white font-semibold'
                   : 'text-white/80 group-hover:text-white'
               }`}>
@@ -253,7 +335,7 @@ export default function DirectMessages({
               </span>
 
               {/* Unread Count Badge */}
-              {hasUnread && (
+              {shouldShowUnreadBadge && (
                 <Badge
                   count={unreadCount}
                   size="sm"

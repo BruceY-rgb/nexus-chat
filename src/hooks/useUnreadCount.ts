@@ -87,6 +87,7 @@ export function useUnreadCount() {
     }) => {
       const { channelId, dmConversationId, unreadCount } = data;
 
+      // 设置未读计数（后端已经排除了发送者，这里直接设置即可）
       if (channelId) {
         setUnread(channelId, unreadCount);
       } else if (dmConversationId) {

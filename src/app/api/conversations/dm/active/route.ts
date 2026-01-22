@@ -28,16 +28,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
 
-    // 获取当前用户的活跃DM会话（只包含有消息的会话）
+    // 获取当前用户的所有DM会话（包括刚创建的、没有消息的会话）
     const dmConversations = await prisma.dMConversation.findMany({
       where: {
         members: {
           some: {
             userId: currentUserId
           }
-        },
-        messages: {
-          some: {} // 只要有消息就符合条件
         }
       },
       include: {
