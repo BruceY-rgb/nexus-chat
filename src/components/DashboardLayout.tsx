@@ -1,13 +1,15 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Button, Avatar } from '@/components/ui';
 import DirectMessages from '@/components/DirectMessages';
 import Channels from '@/components/Channels';
-import { mockTeamMembers } from '@/types';
+import { TeamMember } from '@/types';
 import { mockChannels, Channel } from '@/types/channel';
+import { useUnreadCount } from '@/hooks/useUnreadCount';
+import { useUnreadStore } from '@/store/unreadStore';
 import { LogOut, Settings } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -19,7 +21,7 @@ interface DashboardLayoutProps {
   onSelectChannel?: (channelId: string) => void;
   onCreateChannel?: (channel: Channel) => void;
   onBrowseChannels?: () => void;
-  onStartChat?: (memberId: string) => void;
+  onStartChat?: (memberId: string, dmConversationId?: string) => void;
   onNewChat?: () => void;
   onLogout?: () => void;
 }
@@ -39,6 +41,57 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const { user } = useAuth();
   const router = useRouter();
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(true);
+
+  // 初始化未读计数系统
+  const { markAsRead } = useUnreadCount();
+  const { totalUnreadCount } = useUnreadStore();
+
+  // 调试：打印未读计数状态
+  useEffect(() => {
+    console.log('📊 DashboardLayout - Total unread count:', totalUnreadCount);
+  }, [totalUnreadCount]);
+
+  // 当选择频道时，清除未读计数
+  const handleSelectChannel = (channelId: string) => {
+    console.log('📖 Marking channel as read:', channelId);
+    markAsRead(channelId);
+    onSelectChannel?.(channelId);
+  };
+
+  // 开始聊天时，清除未读计数
+  const handleStartChat = (memberId: string, dmConversationId?: string) => {
+    // 使用传入的 dmConversationId，或回退到 memberId
+    const conversationId = dmConversationId || memberId;
+
+    console.log('📖 Marking DM as read:', { memberId, conversationId });
+    markAsRead(undefined, conversationId);
+    onStartChat?.(memberId, dmConversationId);
+  };
+
+  // 获取团队成员列表
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      try {
+        setIsLoadingMembers(true);
+        const response = await fetch('/api/users', {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setTeamMembers(data.users || []);
+        }
+      } catch (error) {
+        console.error('Error fetching team members:', error);
+      } finally {
+        setIsLoadingMembers(false);
+      }
+    };
+
+    fetchTeamMembers();
+  }, []);
 
   return (
     <div className="h-screen overflow-hidden bg-background">
@@ -76,15 +129,15 @@ export default function DashboardLayout({
               channels={channels}
               selectedChannelId={selectedChannelId}
               joinedChannels={joinedChannels}
-              onSelectChannel={onSelectChannel}
+              onSelectChannel={handleSelectChannel}
               onCreateChannel={onCreateChannel}
               onBrowseChannels={onBrowseChannels}
             />
             <DirectMessages
-              members={mockTeamMembers}
+              members={teamMembers}
               currentUserId={user?.id || ''}
               selectedDirectMessageId={selectedDirectMessageId}
-              onStartChat={onStartChat}
+              onStartChat={handleStartChat}
               onNewChat={onNewChat}
             />
           </div>

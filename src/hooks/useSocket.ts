@@ -26,12 +26,26 @@ export function useSocket(): UseSocketReturn {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   const reconnectInterval = useRef<NodeJS.Timeout | null>(null);
 
+  // 获取 token 从 cookie
+  const getToken = useCallback(() => {
+    if (typeof document === 'undefined') return null;
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'auth_token') {
+        return value;
+      }
+    }
+    return null;
+  }, []);
+
   const connect = useCallback(() => {
+    const token = getToken();
     if (!token || !user) {
       console.log('Cannot connect: missing token or user');
       return;
@@ -101,7 +115,7 @@ export function useSocket(): UseSocketReturn {
     });
 
     setSocket(socketInstance);
-  }, [token, user]);
+  }, [user, getToken]);
 
   const disconnect = useCallback(() => {
     if (socket) {
@@ -115,6 +129,7 @@ export function useSocket(): UseSocketReturn {
 
   // 自动连接
   useEffect(() => {
+    const token = getToken();
     if (token && user && !socket) {
       connect();
     }
@@ -124,7 +139,7 @@ export function useSocket(): UseSocketReturn {
         clearInterval(reconnectInterval.current);
       }
     };
-  }, [token, user, socket, connect]);
+  }, [user, socket, connect, getToken]);
 
   // 清理
   useEffect(() => {

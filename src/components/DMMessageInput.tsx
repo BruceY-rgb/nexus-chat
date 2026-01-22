@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Bold,
   Italic,
@@ -38,6 +38,7 @@ export default function DMMessageInput({
 }: DMMessageInputProps) {
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = async () => {
     if (!message.trim() || disabled || isSending) {
@@ -68,6 +69,11 @@ export default function DMMessageInput({
 
       setMessage('');
       onMessageSent?.();
+
+      // 重新聚焦到输入框
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 0);
     } catch (error) {
       console.error('Error sending message:', error);
       alert('Failed to send message. Please try again.');
@@ -233,6 +239,7 @@ export default function DMMessageInput({
           {/* 主输入框 */}
           <div className="flex-1 relative">
             <textarea
+              ref={textareaRef}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}

@@ -16,7 +16,7 @@ export default function DMHeader({
   const displayName = isOwnSpace ? 'My Space' : member.displayName;
   const subtitle = isOwnSpace
     ? 'Direct message'
-    : `${member.name} • ${member.email}`;
+    : `${member.displayName} • ${member.email}`;
 
   return (
     <div className="flex-shrink-0 bg-background-secondary border-b border-border">
@@ -26,10 +26,16 @@ export default function DMHeader({
         <div className="flex items-center gap-3">
           <div className="relative">
             <img
-              src={member.avatarUrl}
+              src={member.avatarUrl || '/default-avatar.png'}
               alt={displayName}
               className="w-9 h-9 rounded-sm"
               style={{ borderRadius: '4px' }}
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                if (img.src !== '/default-avatar.png') {
+                  img.src = '/default-avatar.png';
+                }
+              }}
             />
             {/* 在线状态指示器 */}
             {!isOwnSpace && (

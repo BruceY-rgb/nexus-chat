@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // 获取用户列表
+    // 获取用户列表（包含 DMConversationMember 信息）
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
@@ -67,7 +67,24 @@ export async function GET(request: NextRequest) {
           realName: true,
           avatarUrl: true,
           isOnline: true,
-          lastSeenAt: true
+          lastSeenAt: true,
+          // 获取与当前用户的 DMConversationMember 信息
+          dmMembers: {
+            where: {
+              conversation: {
+                members: {
+                  some: {
+                    userId: currentUserId
+                  }
+                }
+              }
+            },
+            select: {
+              conversationId: true,
+              unreadCount: true,
+              lastReadAt: true
+            }
+          }
         },
         orderBy: [
           { isOnline: 'desc' }, // 在线用户排在前面
@@ -91,8 +108,25 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    // 处理用户数据，将 DMConversationMember 信息展平
+    const processedUsers = users.map((user: any) => {
+      const dmMember = user.dmMembers?.[0]; // 每个用户与当前用户最多有一个 DM 会话
+      return {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        realName: user.realName,
+        avatarUrl: user.avatarUrl,
+        isOnline: user.isOnline,
+        lastSeenAt: user.lastSeenAt,
+        dmConversationId: dmMember?.conversationId || null,
+        unreadCount: dmMember?.unreadCount || 0,
+        lastReadAt: dmMember?.lastReadAt || null
+      };
+    });
+
     return NextResponse.json({
-      users,
+      users: processedUsers,
       currentUser,
       pagination: {
         page,

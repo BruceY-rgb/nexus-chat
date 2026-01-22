@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Channel } from '../types/channel';
+import { Badge } from './ui';
+import { useUnreadStore } from '../store/unreadStore';
 import CreateChannelModal from './CreateChannelModal';
 
 interface ChannelsProps {
@@ -22,6 +24,7 @@ export default function Channels({
   onBrowseChannels
 }: ChannelsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { getUnreadCount } = useUnreadStore();
 
   const handleCreateChannel = () => {
     setIsModalOpen(true);
@@ -121,39 +124,56 @@ export default function Channels({
 
       {/* Channels List */}
       <div className="space-y-0.5">
-        {joinedChannelsList.map((channel) => (
-          <div
-            key={channel.id}
-            className={`flex items-center px-3 py-1.5 mx-2 rounded cursor-pointer transition-colors group ${
-              selectedChannelId === channel.id
-                ? 'bg-slack-blue text-white'
-                : 'hover:bg-white/10'
-            }`}
-            onClick={() => onSelectChannel?.(channel.id)}
-          >
-            {/* Channel Icon */}
-            <span
-              className={`text-base font-medium ${
-                selectedChannelId === channel.id
-                  ? 'text-white'
-                  : 'text-white/70 group-hover:text-white'
-              } transition-colors`}
-            >
-              #
-            </span>
+        {joinedChannelsList.map((channel) => {
+          const unreadCount = getUnreadCount(channel.id);
+          const hasUnread = unreadCount > 0;
+          const isSelected = selectedChannelId === channel.id;
 
-            {/* Channel Name */}
-            <span
-              className={`ml-3 text-sm font-medium truncate ${
-                selectedChannelId === channel.id
-                  ? 'text-white'
-                  : 'text-white/70 group-hover:text-white'
-              } transition-colors`}
+          return (
+            <div
+              key={channel.id}
+              className={`flex items-center px-3 py-1.5 mx-2 rounded cursor-pointer transition-colors group ${
+                isSelected
+                  ? 'bg-slack-blue text-white'
+                  : 'hover:bg-white/10'
+              }`}
+              onClick={() => onSelectChannel?.(channel.id)}
             >
-              {channel.name}
-            </span>
-          </div>
-        ))}
+              {/* Channel Icon */}
+              <span
+                className={`text-base font-medium ${
+                  isSelected
+                    ? 'text-white'
+                    : 'text-white/70 group-hover:text-white'
+                } transition-colors`}
+              >
+                #
+              </span>
+
+              {/* Channel Name */}
+              <span
+                className={`ml-3 text-sm truncate transition-colors ${
+                  isSelected
+                    ? 'text-white'
+                    : hasUnread
+                    ? 'text-white font-semibold'
+                    : 'text-white/70 group-hover:text-white'
+                }`}
+              >
+                {channel.name}
+              </span>
+
+              {/* Unread Count Badge */}
+              {hasUnread && (
+                <Badge
+                  count={unreadCount}
+                  size="sm"
+                  className="ml-auto"
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Empty state */}

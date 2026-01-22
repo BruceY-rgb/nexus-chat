@@ -123,8 +123,40 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // 如果是私聊，更新会话的最后消息时间
+    // 如果是频道消息，为所有成员（除发送者外）增加未读计数
+    if (channelId) {
+      await prisma.channelMember.updateMany({
+        where: {
+          channelId,
+          userId: {
+            not: currentUserId
+          }
+        },
+        data: {
+          unreadCount: {
+            increment: 1
+          }
+        }
+      });
+    }
+
+    // 如果是私聊消息，为其他成员增加未读计数
     if (dmConversationId && !dmConversationId.startsWith('self-')) {
+      await prisma.dMConversationMember.updateMany({
+        where: {
+          conversationId: dmConversationId,
+          userId: {
+            not: currentUserId
+          }
+        },
+        data: {
+          unreadCount: {
+            increment: 1
+          }
+        }
+      });
+
+      // 更新会话的最后消息时间
       await prisma.dMConversation.update({
         where: {
           id: dmConversationId
@@ -144,8 +176,34 @@ export async function POST(request: NextRequest) {
 
         if (channelId) {
           ioInstance.to(`channel:${channelId}`).emit('new-message', message);
+
+          // 广播未读计数更新
+          const channelMembers = await prisma.channelMember.findMany({
+            where: { channelId },
+            select: { userId: true, unreadCount: true }
+          });
+
+          channelMembers.forEach(member => {
+            ioInstance.to(`user:${member.userId}`).emit('unread-count-update', {
+              channelId,
+              unreadCount: member.unreadCount
+            });
+          });
         } else if (dmConversationId) {
           ioInstance.to(`dm:${dmConversationId}`).emit('new-message', message);
+
+          // 广播未读计数更新
+          const dmMembers = await prisma.dMConversationMember.findMany({
+            where: { conversationId: dmConversationId },
+            select: { userId: true, unreadCount: true }
+          });
+
+          dmMembers.forEach(member => {
+            ioInstance.to(`user:${member.userId}`).emit('unread-count-update', {
+              dmConversationId,
+              unreadCount: member.unreadCount
+            });
+          });
         }
 
         console.log(`📡 Broadcasted new message via WebSocket: ${message.id}`);
@@ -226,6 +284,7 @@ export async function GET(request: NextRequest) {
       const messages = await prisma.message.findMany({
         where: {
           channelId,
+          dmConversationId: null,
           deletedAt: null
         },
         include: {
@@ -262,6 +321,7 @@ export async function GET(request: NextRequest) {
         const messages = await prisma.message.findMany({
           where: {
             dmConversationId,
+            channelId: null,
             deletedAt: null
           },
           include: {
@@ -302,6 +362,7 @@ export async function GET(request: NextRequest) {
       const messages = await prisma.message.findMany({
         where: {
           dmConversationId,
+          channelId: null,
           deletedAt: null
         },
         include: {

@@ -50,17 +50,11 @@ export default function DashboardPage() {
   const [currentView, setCurrentView] = useState<'channel' | 'browse'>('channel');
   const [isNewDMModalOpen, setIsNewDMModalOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
-  const [isLoadingChannels, setIsLoadingChannels] = useState(true);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
-
-  // 可以添加加载状态的UI显示
-  const isLoading = isLoadingChannels || isLoadingUsers;
 
   // 获取频道数据
   useEffect(() => {
     const fetchChannels = async () => {
       try {
-        setIsLoadingChannels(true);
         const response = await fetch('/api/channels', {
           credentials: 'include'
         });
@@ -82,8 +76,6 @@ export default function DashboardPage() {
         }
       } catch (error) {
         console.error('Error fetching channels:', error);
-      } finally {
-        setIsLoadingChannels(false);
       }
     };
 
@@ -96,7 +88,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        setIsLoadingUsers(true);
         const response = await fetch('/api/users', {
           credentials: 'include'
         });
@@ -107,8 +98,6 @@ export default function DashboardPage() {
         }
       } catch (error) {
         console.error('Error fetching users:', error);
-      } finally {
-        setIsLoadingUsers(false);
       }
     };
 
@@ -119,15 +108,48 @@ export default function DashboardPage() {
 
   // 监听路由变化，同步状态
   useEffect(() => {
-    if (userId) {
+    if (userId && users.length > 0) {
       const member = users.find(u => u.id === userId);
       if (member) {
         setSelectedChat(userId);
         setSelectedChannel(undefined);
         setCurrentView('channel');
+        console.log('🔄 [DEBUG] 路由状态同步 - 切换到私聊:', userId);
+      }
+    } else if (!userId) {
+      // 如果没有 userId 参数，且当前处于私聊模式，则切换回频道模式
+      if (selectedChat) {
+        setSelectedChat(undefined);
+        console.log('🔄 [DEBUG] 路由状态同步 - 切换到频道模式');
       }
     }
-  }, [userId, users]);
+  }, [userId, users, selectedChat]);
+
+  // 监听 URL 参数中的 channel 值
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const channelParam = searchParams.get('channel');
+    const viewParam = searchParams.get('view');
+
+    if (channelParam) {
+      console.log('🎯 [DEBUG] 检测到频道参数:', channelParam);
+      // 检查频道是否已加入
+      if (joinedChannels.includes(channelParam)) {
+        setSelectedChannel(channelParam);
+        setSelectedChat(undefined);
+        setCurrentView('channel');
+        console.log('✅ [DEBUG] 频道已选中:', channelParam);
+      } else {
+        console.log('⚠️ [DEBUG] 频道未加入或不存在:', channelParam);
+      }
+    }
+
+    if (viewParam === 'browse') {
+      setCurrentView('browse');
+      setSelectedChat(undefined);
+      console.log('🔍 [DEBUG] 切换到浏览频道视图');
+    }
+  }, [joinedChannels]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -173,6 +195,13 @@ export default function DashboardPage() {
     setSelectedChannel(channelId);
     setSelectedChat(undefined); // 清除选中的私聊
     setCurrentView('channel');
+
+    // 清理 URL 参数，避免干扰后续的频道切换
+    const url = new URL(window.location.href);
+    url.searchParams.delete('channel');
+    url.searchParams.delete('view');
+    router.replace(url.pathname + url.search);
+    console.log('🧹 [DEBUG] 清理 URL 参数');
   };
 
   const handleCreateChannel = (newChannel: ChannelType) => {
@@ -194,6 +223,13 @@ export default function DashboardPage() {
     setChannels(prevChannels => [...prevChannels, apiChannel]);
     setJoinedChannels(prev => [...prev, apiChannel.id]); // 自动加入新创建的频道
     setSelectedChannel(apiChannel.id);
+
+    // 清理 URL 参数
+    const url = new URL(window.location.href);
+    url.searchParams.delete('channel');
+    url.searchParams.delete('view');
+    router.replace(url.pathname + url.search);
+
     console.log('创建新频道:', apiChannel);
   };
 
@@ -201,6 +237,13 @@ export default function DashboardPage() {
     setJoinedChannels(prev => [...prev, channelId]);
     setCurrentView('channel');
     setSelectedChannel(channelId);
+
+    // 清理 URL 参数
+    const url = new URL(window.location.href);
+    url.searchParams.delete('channel');
+    url.searchParams.delete('view');
+    router.replace(url.pathname + url.search);
+
     console.log('加入频道:', channelId);
   };
 
@@ -252,12 +295,12 @@ export default function DashboardPage() {
     .filter(member => member.id !== user.id)
     .map(user => ({
       id: user.id,
-      name: user.realName || user.displayName,
+      email: user.email,
       displayName: user.displayName,
-      avatarUrl: user.avatarUrl || '',
-      status: user.isOnline ? 'online' as const : 'offline' as const,
-      role: 'member' as const,
-      email: user.email
+      realName: user.realName,
+      avatarUrl: user.avatarUrl,
+      isOnline: user.isOnline,
+      lastSeenAt: user.lastSeenAt
     }));
 
   // 转换ApiChannel为Channel类型以匹配组件期望

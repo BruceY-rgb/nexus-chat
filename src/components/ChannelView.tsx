@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Channel } from '../types/channel';
 import { Message } from '@/types/message';
 import { Button } from '@/components/ui';
-import { mockTeamMembers, TeamMember } from '@/types';
+import { TeamMember } from '@/types';
 import MessageList from './MessageList';
 import DMMessageInput from './DMMessageInput';
 
@@ -27,9 +27,26 @@ export default function ChannelView({
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [members, setMembers] = useState<TeamMember[]>([]);
 
-  // 模拟频道成员（从 mockTeamMembers 中获取）
-  const members = mockTeamMembers.slice(0, 5); // 显示前5个成员
+  // 获取频道成员
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const response = await fetch(`/api/channels/${channel.id}/members`);
+        if (response.ok) {
+          const data = await response.json();
+          setMembers(data.members || []);
+        }
+      } catch (error) {
+        console.error('Error fetching channel members:', error);
+      }
+    };
+
+    if (isJoined) {
+      fetchMembers();
+    }
+  }, [channel.id, isJoined]);
 
   const handleToggleMembership = () => {
     if (isJoined) {
@@ -206,20 +223,26 @@ export default function ChannelView({
                     onClick={() => onStartChat?.(member.id)}
                     title={`点击与 ${member.displayName} 私聊`}
                   >
-                    <img
-                      src={member.avatarUrl}
-                      alt={member.displayName}
-                      className="w-8 h-8 rounded-sm"
-                    />
+                    {member.avatarUrl ? (
+                      <img
+                        src={member.avatarUrl}
+                        alt={member.displayName}
+                        className="w-8 h-8 rounded-sm"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-sm bg-gray-400 flex items-center justify-center text-sm text-white">
+                        {member.displayName[0].toUpperCase()}
+                      </div>
+                    )}
                     <div className="flex-1">
                       <p className="text-sm font-medium text-text-primary">
-                        {member.name}
+                        {member.realName || member.displayName}
                       </p>
                       <p className="text-xs text-text-tertiary">
                         {member.displayName}
                       </p>
                     </div>
-                    {member.status === 'online' && (
+                    {member.isOnline && (
                       <span className="w-2 h-2 bg-green-500 rounded-full" />
                     )}
                   </div>

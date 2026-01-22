@@ -7,6 +7,9 @@ export interface Channel {
   createdAt: Date;
   ownerId: string;
   memberCount?: number;
+  unreadCount?: number;
+  lastReadAt?: Date;
+  isMuted?: boolean;
 }
 
 // 检查用户是否已加入频道

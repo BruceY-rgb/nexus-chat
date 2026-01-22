@@ -8,6 +8,7 @@ import DMTabs from './DMTabs';
 import MySpaceView from './MySpaceView';
 import MessageList from './MessageList';
 import DMMessageInput from './DMMessageInput';
+import { useUnreadCount } from '@/hooks/useUnreadCount';
 
 interface DirectMessageViewProps {
   member: TeamMember;
@@ -23,6 +24,7 @@ export default function DirectMessageView({
   const [conversation, setConversation] = useState<DMConversation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { markAsRead } = useUnreadCount();
 
   // 获取或创建 DM 会话
   const fetchConversation = async () => {
@@ -37,8 +39,10 @@ export default function DirectMessageView({
       const data = await response.json();
       setConversation(data);
 
-      // 如果不是自己的空间，获取消息
+      // 如果是真实会话（非 self-），清除未读计数
       if (!isOwnSpace && data.id && !data.id.startsWith('self-')) {
+        // 清除该会话的未读计数
+        markAsRead(undefined, data.id);
         fetchMessages(data.id);
       } else {
         setIsLoading(false);
@@ -83,59 +87,51 @@ export default function DirectMessageView({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      {/* 顶部 Header - 固定不滚动 */}
+    <div className="flex flex-col h-full bg-background overflow-hidden">
+      {/* 1. 顶部 Header - 固定 */}
       <div className="flex-shrink-0">
-        <DMHeader
-          member={member}
-          currentUserId={currentUserId}
-        />
+        <DMHeader member={member} currentUserId={currentUserId} />
       </div>
 
-      {/* Tab 导航 - 固定不滚动 */}
+      {/* 2. Tab 导航 - 固定 */}
       <div className="flex-shrink-0">
         <DMTabs isOwnSpace={isOwnSpace} />
       </div>
 
-      {/* 主内容区域 - 占据剩余空间，支持内部滚动 */}
-      <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
-        {/* 消息流区域 */}
-        <div className="relative flex-1 overflow-hidden min-h-0">
-          {isOwnSpace ? (
-            // 个人空间视图
-            <div className="h-full">
-              <MySpaceView member={member} />
-            </div>
-          ) : (
-            // 正常私聊视图
-            <div className="h-full flex flex-col">
-              <div className="relative flex-1 min-h-0">
-                <MessageList
-                  messages={messages}
-                  currentUserId={currentUserId}
-                  isLoading={isLoading}
-                  className="h-full"
-                />
-              </div>
-              {error && (
-                <div className="p-4 bg-red-500/10 text-red-500 text-center">
-                  {error}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* 消息输入框 - 仅在非个人空间时显示，固定在底部 */}
-        {!isOwnSpace && (
-          <div className="flex-shrink-0 mt-auto">
-            <DMMessageInput
-              placeholder={`Message ${member.displayName}`}
-              disabled={isLoading || !conversation || conversation.id.startsWith('self-')}
-              dmConversationId={conversation && !conversation.id.startsWith('self-') ? conversation.id : undefined}
-              onMessageSent={handleMessageSent}
-            />
+      {/* 3. 核心内容区：确保它占据所有剩余高度 */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {isOwnSpace ? (
+          <div className="flex-1 overflow-y-auto">
+            <MySpaceView member={member} />
           </div>
+        ) : (
+          <>
+            {/* 消息列表：必须设置 flex-1 和 min-h-0 以强制占满空间并支持内部滚动 */}
+            <div className="flex-1 min-h-0 relative">
+              <MessageList
+                messages={messages}
+                currentUserId={currentUserId}
+                isLoading={isLoading}
+                className="h-full w-full"
+              />
+            </div>
+
+            {error && (
+              <div className="flex-shrink-0 p-4 bg-red-500/10 text-red-500 text-center">
+                {error}
+              </div>
+            )}
+
+            {/* 4. 输入框：使用 flex-shrink-0 确保它被推到最底部，永不上移 */}
+            <div className="flex-shrink-0 p-4 bg-background">
+              <DMMessageInput
+                placeholder={`Message ${member.displayName}`}
+                disabled={isLoading || !conversation || conversation.id.startsWith('self-')}
+                dmConversationId={conversation?.id && !conversation.id.startsWith('self-') ? conversation.id : undefined}
+                onMessageSent={handleMessageSent}
+              />
+            </div>
+          </>
         )}
       </div>
     </div>
