@@ -203,6 +203,12 @@ export async function POST(request: NextRequest) {
               dmConversationId,
               unreadCount: member.unreadCount
             });
+
+            // 通知活跃对话列表更新（新消息可能使对话出现在列表中）
+            ioInstance.to(`user:${member.userId}`).emit('active-conversations-update', {
+              dmConversationId,
+              lastMessageAt: new Date()
+            });
           });
         }
 

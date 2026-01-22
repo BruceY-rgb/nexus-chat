@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { TeamMember } from '../types';
 import { Badge } from './ui';
 import { useUnreadStore } from '../store/unreadStore';
+import { useSocket } from '@/hooks/useSocket';
 
 interface DirectMessagesProps {
   members?: TeamMember[];
@@ -11,6 +12,34 @@ interface DirectMessagesProps {
   selectedDirectMessageId?: string;
   onStartChat?: (memberId: string, dmConversationId?: string) => void;
   onNewChat?: () => void;
+}
+
+interface ActiveDMConversation {
+  conversationId: string;
+  lastMessageAt: string;
+  createdAt: string;
+  otherUser: {
+    id: string;
+    email: string;
+    displayName: string;
+    realName?: string;
+    avatarUrl?: string;
+    isOnline: boolean;
+    lastSeenAt?: string;
+  };
+  unreadCount: number;
+  lastReadAt?: string;
+  lastMessage?: {
+    id: string;
+    content: string;
+    createdAt: string;
+    user: {
+      id: string;
+      displayName: string;
+      avatarUrl?: string;
+    };
+  };
+  messageCount: number;
 }
 
 export default function DirectMessages({
@@ -23,9 +52,53 @@ export default function DirectMessages({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<TeamMember[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [activeConversations, setActiveConversations] = useState<ActiveDMConversation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { getUnreadCount } = useUnreadStore();
+  const { socket } = useSocket();
 
-  // 搜索团队成员
+  // 加载活跃的DM会话
+  useEffect(() => {
+    const loadActiveConversations = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/conversations/dm/active', {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setActiveConversations(data.conversations || []);
+        }
+      } catch (error) {
+        console.error('Error loading active conversations:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadActiveConversations();
+
+    // 监听WebSocket事件以实时更新活跃对话列表
+    const handleActiveConversationsUpdate = () => {
+      // 刷新活跃对话列表
+      loadActiveConversations();
+    };
+
+    // 通过socket监听事件
+    if (socket) {
+      socket.on('active-conversations-update', handleActiveConversationsUpdate);
+    }
+
+    // 清理函数
+    return () => {
+      if (socket) {
+        socket.off('active-conversations-update', handleActiveConversationsUpdate);
+      }
+    };
+  }, [socket]);
+
+  // 搜索团队成员（搜索所有用户，不仅仅是活跃的）
   useEffect(() => {
     const searchMembers = async () => {
       if (!searchQuery.trim()) {
@@ -55,8 +128,25 @@ export default function DirectMessages({
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  // 显示搜索结果或所有成员
-  const displayMembers = searchQuery.trim() ? searchResults : members;
+  // 显示搜索结果或活跃对话
+  const displayConversations = searchQuery.trim() ? searchResults.map(user => ({
+    conversationId: user.dmConversationId || user.id,
+    lastMessageAt: '',
+    createdAt: '',
+    otherUser: {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      realName: user.realName,
+      avatarUrl: user.avatarUrl,
+      isOnline: user.isOnline,
+      lastSeenAt: user.lastSeenAt
+    },
+    unreadCount: user.unreadCount || 0,
+    lastReadAt: user.lastReadAt,
+    lastMessage: null,
+    messageCount: 0
+  })) : activeConversations;
 
   const getStatusIndicator = (isOnline: boolean) => {
     if (isOnline) {
@@ -116,29 +206,29 @@ export default function DirectMessages({
 
       {/* Members List */}
       <div className="space-y-0.5">
-        {displayMembers.map((member) => {
-          const isSelected = selectedDirectMessageId === member.id;
-          const isCurrentUser = member.id === currentUserId;
-          // Use dmConversationId if available, otherwise use member.id as conversation identifier
-          const conversationId = member.dmConversationId || member.id;
-          const unreadCount = getUnreadCount(conversationId);
+        {displayConversations.map((conversation) => {
+          const otherUser = conversation.otherUser;
+          const isSelected = selectedDirectMessageId === otherUser.id;
+          const isCurrentUser = otherUser.id === currentUserId;
+          const conversationId = conversation.conversationId;
+          const unreadCount = conversation.unreadCount || getUnreadCount(conversationId);
           const hasUnread = unreadCount > 0;
 
           return (
             <div
-              key={member.id}
+              key={conversationId}
               className={`flex items-center px-3 py-1.5 mx-2 rounded cursor-pointer transition-colors group ${
                 isSelected
                   ? 'bg-[#1164A3] text-white'
                   : 'hover:bg-white/10'
               }`}
-              onClick={() => onStartChat?.(member.id, conversationId)}
+              onClick={() => onStartChat?.(otherUser.id, conversationId)}
             >
               {/* Avatar with status indicator */}
               <div className="relative flex-shrink-0">
                 <img
-                  src={member.avatarUrl || '/default-avatar.png'}
-                  alt={member.displayName}
+                  src={otherUser.avatarUrl || '/default-avatar.png'}
+                  alt={otherUser.displayName}
                   className="w-5 h-5 rounded-sm"
                   style={{ borderRadius: '4px' }}
                   onError={(e) => {
@@ -148,7 +238,7 @@ export default function DirectMessages({
                     }
                   }}
                 />
-                {getStatusIndicator(member.isOnline)}
+                {getStatusIndicator(otherUser.isOnline)}
               </div>
 
               {/* Display Name */}
@@ -159,7 +249,7 @@ export default function DirectMessages({
                   ? 'text-white font-semibold'
                   : 'text-white/80 group-hover:text-white'
               }`}>
-                {member.displayName}{isCurrentUser ? ' (you)' : ''}
+                {otherUser.displayName}{isCurrentUser ? ' (you)' : ''}
               </span>
 
               {/* Unread Count Badge */}
@@ -176,23 +266,30 @@ export default function DirectMessages({
       </div>
 
       {/* Empty state */}
-      {displayMembers.length === 0 && !isSearching && !searchQuery && (
+      {displayConversations.length === 0 && !isSearching && !searchQuery && !isLoading && (
         <div className="px-3 py-2 text-white/50 text-sm">
-          No team members available
-        </div>
-      )}
-
-      {/* Search no results */}
-      {displayMembers.length === 0 && searchQuery && !isSearching && (
-        <div className="px-3 py-2 text-white/50 text-sm">
-          No members found for "{searchQuery}"
+          暂无私聊
         </div>
       )}
 
       {/* Loading state */}
+      {isLoading && (
+        <div className="px-3 py-2 text-white/50 text-sm">
+          加载中...
+        </div>
+      )}
+
+      {/* Search no results */}
+      {displayConversations.length === 0 && searchQuery && !isSearching && (
+        <div className="px-3 py-2 text-white/50 text-sm">
+          未找到用户 "{searchQuery}"
+        </div>
+      )}
+
+      {/* Searching state */}
       {isSearching && (
         <div className="px-3 py-2 text-white/50 text-sm">
-          Searching...
+          搜索中...
         </div>
       )}
     </div>

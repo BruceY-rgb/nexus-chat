@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = (page - 1) * limit;
+    const activeOnly = searchParams.get('activeOnly') === 'true'; // 新增：只获取有消息的用户
 
     // 构建查询条件
     const where: any = {
@@ -52,13 +53,130 @@ export async function GET(request: NextRequest) {
             contains: search,
             mode: 'insensitive'
           }
+        },
+        {
+          realName: {
+            contains: search,
+            mode: 'insensitive'
+          }
         }
       ];
     }
 
-    // 获取用户列表（包含 DMConversationMember 信息）
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
+    // 根据 activeOnly 参数决定查询方式
+    let users;
+    let total;
+
+    if (activeOnly) {
+      // 只获取有消息的用户（通过 DMConversationMember 关系）
+      const dmMembers = await prisma.dMConversationMember.findMany({
+        where: {
+          userId: {
+            not: currentUserId
+          },
+          conversation: {
+            messages: {
+              some: {} // 确保该会话有消息
+            }
+          }
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              displayName: true,
+              realName: true,
+              avatarUrl: true,
+              isOnline: true,
+              lastSeenAt: true
+            }
+          },
+          conversation: {
+            select: {
+              lastMessageAt: true
+            }
+          }
+        },
+        orderBy: [
+          { conversation: { lastMessageAt: 'desc' } }, // 按最后消息时间倒序
+          { user: { displayName: 'asc' } } // 然后按显示名排序
+        ],
+        skip: offset,
+        take: limit
+      });
+
+      users = dmMembers.map(member => ({
+        id: member.user.id,
+        email: member.user.email,
+        displayName: member.user.displayName,
+        realName: member.user.realName,
+        avatarUrl: member.user.avatarUrl,
+        isOnline: member.user.isOnline,
+        lastSeenAt: member.user.lastSeenAt,
+        dmConversationId: member.conversationId,
+        unreadCount: member.unreadCount,
+        lastReadAt: member.lastReadAt,
+        lastMessageAt: member.conversation.lastMessageAt
+      }));
+
+      // 获取总数（用于搜索时）
+      if (search) {
+        total = await prisma.dMConversationMember.count({
+          where: {
+            userId: {
+              not: currentUserId
+            },
+            conversation: {
+              messages: {
+                some: {}
+              }
+            },
+            OR: [
+              {
+                user: {
+                  email: {
+                    contains: search,
+                    mode: 'insensitive'
+                  }
+                }
+              },
+              {
+                user: {
+                  displayName: {
+                    contains: search,
+                    mode: 'insensitive'
+                  }
+                }
+              },
+              {
+                user: {
+                  realName: {
+                    contains: search,
+                    mode: 'insensitive'
+                  }
+                }
+              }
+            ]
+          }
+        });
+      } else {
+        total = await prisma.dMConversationMember.count({
+          where: {
+            userId: {
+              not: currentUserId
+            },
+            conversation: {
+              messages: {
+                some: {}
+              }
+            }
+          }
+        });
+      }
+    } else {
+      // 获取所有用户（原有逻辑）
+      const result = await prisma.user.findMany({
         where,
         select: {
           id: true,
@@ -92,9 +210,27 @@ export async function GET(request: NextRequest) {
         ],
         skip: offset,
         take: limit
-      }),
-      prisma.user.count({ where })
-    ]);
+      });
+
+      // 处理用户数据，将 DMConversationMember 信息展平
+      users = result.map((user: any) => {
+        const dmMember = user.dmMembers?.[0];
+        return {
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          realName: user.realName,
+          avatarUrl: user.avatarUrl,
+          isOnline: user.isOnline,
+          lastSeenAt: user.lastSeenAt,
+          dmConversationId: dmMember?.conversationId || null,
+          unreadCount: dmMember?.unreadCount || 0,
+          lastReadAt: dmMember?.lastReadAt || null
+        };
+      });
+
+      total = await prisma.user.count({ where });
+    }
 
     // 获取当前用户信息
     const currentUser = await prisma.user.findUnique({
@@ -108,25 +244,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // 处理用户数据，将 DMConversationMember 信息展平
-    const processedUsers = users.map((user: any) => {
-      const dmMember = user.dmMembers?.[0]; // 每个用户与当前用户最多有一个 DM 会话
-      return {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        realName: user.realName,
-        avatarUrl: user.avatarUrl,
-        isOnline: user.isOnline,
-        lastSeenAt: user.lastSeenAt,
-        dmConversationId: dmMember?.conversationId || null,
-        unreadCount: dmMember?.unreadCount || 0,
-        lastReadAt: dmMember?.lastReadAt || null
-      };
-    });
-
     return NextResponse.json({
-      users: processedUsers,
+      users,
       currentUser,
       pagination: {
         page,

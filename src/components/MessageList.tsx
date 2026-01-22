@@ -123,7 +123,7 @@ export default function MessageList({
   const messageGroups = groupMessagesByDate(messages);
 
   return (
-    <div className={`flex-1 min-h-0 overflow-y-auto message-scroll max-h-[calc(100vh-120px)] p-6`} style={{ scrollbarGutter: 'stable' }}>
+    <div className={`flex-1 min-h-0 overflow-y-auto message-scroll h-full p-6`} style={{ scrollbarGutter: 'stable' }}>
       <div className="max-w-4xl mx-auto">
         {Object.entries(messageGroups).map(([dateKey, dayMessages]) => (
           <div key={dateKey}>

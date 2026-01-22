@@ -28,6 +28,7 @@ export default function ChannelView({
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [showMembersList, setShowMembersList] = useState(false);
 
   // 获取频道成员
   useEffect(() => {
@@ -93,30 +94,166 @@ export default function ChannelView({
   };
 
   return (
-    <div className="relative flex-1 flex flex-col overflow-hidden">
-      {isJoined ? (
-        <>
-          {/* 消息列表 - 独立滚动 */}
-          <div className="relative flex-1 min-h-0">
-            <MessageList
-              messages={messages}
-              currentUserId={user?.id || ''}
-              isLoading={isLoading}
-              className="h-full"
-            />
+    <div className="flex flex-col h-full bg-background overflow-hidden">
+      {/* 1. 顶部 Header - 固定 */}
+      <div className="flex-shrink-0 bg-background-secondary border-b border-border">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-sm bg-[#1164A3] flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-semibold text-sm">
+                #{channel.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-text-primary">
+                #{channel.name}
+              </h1>
+              <p className="text-sm text-text-secondary">
+                {members.length} members
+              </p>
+            </div>
           </div>
 
-          {/* 消息输入框 - 固定不滚动 */}
-          <div className="flex-shrink-0 mt-auto">
-            <DMMessageInput
-              placeholder={`Message #${channel.name}`}
-              disabled={false}
-              channelId={channel.id}
-              onMessageSent={handleMessageSent}
-            />
+          <div className="flex items-center gap-2">
+            <button
+              className="p-2 hover:bg-background-tertiary rounded-full transition-colors"
+              title="Channel settings"
+              onClick={() => setShowMembersList(!showMembersList)}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-5 h-5 text-text-secondary"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
+                />
+              </svg>
+            </button>
+            <button
+              className="p-2 hover:bg-background-tertiary rounded-full transition-colors text-text-secondary hover:text-yellow-500"
+              title="Leave channel"
+              onClick={handleToggleMembership}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
+                />
+              </svg>
+            </button>
           </div>
-        </>
-      ) : (
+        </div>
+      </div>
+
+      {/* 2. 核心内容区：确保它占据所有剩余高度 */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {isJoined ? (
+          showMembersList ? (
+            /* 成员列表视图 */
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="max-w-4xl mx-auto">
+                {/* 返回按钮 */}
+                <div className="flex items-center gap-2 mb-6">
+                  <button
+                    onClick={() => setShowMembersList(false)}
+                    className="p-1 hover:bg-background-tertiary rounded transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                      className="w-5 h-5 text-text-secondary"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.75 19.5L8.25 12l7.5-7.5"
+                      />
+                    </svg>
+                  </button>
+                  <h2 className="text-xl font-semibold text-text-primary">
+                    #{channel.name} 成员
+                  </h2>
+                </div>
+
+                {/* 成员列表 */}
+                <div className="bg-background-elevated rounded-lg p-6">
+                  <div className="space-y-3">
+                    {members.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center gap-3 p-2 hover:bg-background-component rounded-md transition-colors cursor-pointer"
+                        onClick={() => onStartChat?.(member.id)}
+                        title={`点击与 ${member.displayName} 私聊`}
+                      >
+                        {member.avatarUrl ? (
+                          <img
+                            src={member.avatarUrl}
+                            alt={member.displayName}
+                            className="w-10 h-10 rounded-sm"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-sm bg-gray-400 flex items-center justify-center text-sm text-white">
+                            {member.displayName[0].toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-text-primary">
+                            {member.realName || member.displayName}
+                          </p>
+                          <p className="text-xs text-text-tertiary">
+                            {member.displayName}
+                          </p>
+                        </div>
+                        {member.isOnline && (
+                          <span className="w-2 h-2 bg-green-500 rounded-full" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* 消息列表：必须设置 flex-1 和 min-h-0 以强制占满空间并支持内部滚动 */}
+              <div className="flex-1 min-h-0 relative">
+                <MessageList
+                  messages={messages}
+                  currentUserId={user?.id || ''}
+                  isLoading={isLoading}
+                  className="h-full w-full"
+                />
+              </div>
+
+              {/* 3. 输入框：使用 flex-shrink-0 确保它被推到最底部，永不上移 */}
+              <div className="flex-shrink-0 p-4 bg-background border-t">
+                <DMMessageInput
+                  placeholder={`Message #${channel.name}`}
+                  disabled={false}
+                  channelId={channel.id}
+                  onMessageSent={handleMessageSent}
+                />
+              </div>
+            </>
+          )
+        ) : (
         /* 未加入频道时的提示 - 独立滚动 */
         <div className="flex-1 overflow-y-auto min-h-0 p-6">
           <div className="max-w-4xl mx-auto">
@@ -251,7 +388,8 @@ export default function ChannelView({
             </div>
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
