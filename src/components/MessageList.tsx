@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Message } from '@/types/message';
 import { format, formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import MessageRenderer from './MessageRenderer';
 
 interface MessageListProps {
   messages: Message[];
@@ -18,18 +20,53 @@ export default function MessageList({
   isLoading = false,
   className = ''
 }: MessageListProps) {
+  const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  const scrollToMessage = (messageId: string) => {
+    const messageElement = messageRefs.current[messageId];
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // 添加高亮效果
+      messageElement.classList.add('bg-yellow-100/20');
+      setTimeout(() => {
+        messageElement.classList.remove('bg-yellow-100/20');
+      }, 2000);
+    }
+  };
 
-  const formatMessageTime = (dateString: string) => {
+  useEffect(() => {
+    // 检查 URL 中的 messageId 参数
+    const messageId = searchParams.get('messageId');
+    if (messageId && messages.length > 0) {
+      // 延迟执行，确保消息已渲染
+      setTimeout(() => {
+        scrollToMessage(messageId);
+      }, 100);
+    } else {
+      // 没有指定消息时，滚动到底部
+      scrollToBottom();
+    }
+  }, [searchParams, messages]);
+
+  const formatMessageTime = (dateString: string | null | undefined) => {
+    // 容错处理：如果日期字符串无效，返回 '--'
+    if (!dateString || typeof dateString !== 'string') {
+      return '--';
+    }
+
     const date = new Date(dateString);
+
+    // 检查日期是否有效
+    if (isNaN(date.getTime())) {
+      return '--';
+    }
+
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
@@ -42,8 +79,19 @@ export default function MessageList({
     }
   };
 
-  const formatMessageDate = (dateString: string) => {
+  const formatMessageDate = (dateString: string | null | undefined) => {
+    // 容错处理：如果日期字符串无效，返回默认日期
+    if (!dateString || typeof dateString !== 'string') {
+      return '未知日期';
+    }
+
     const date = new Date(dateString);
+
+    // 检查日期是否有效
+    if (isNaN(date.getTime())) {
+      return '未知日期';
+    }
+
     const now = new Date();
     const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -61,8 +109,39 @@ export default function MessageList({
   const groupMessagesByDate = (messages: Message[]) => {
     const groups: { [key: string]: Message[] } = {};
 
+    // 使用 Set 来跟踪已经警告过的无效消息，避免重复日志
+    const warnedMessages = new Set<string>();
+
     messages.forEach(message => {
+      // 容错处理：跳过无效的消息
+      if (!message || !message.createdAt) {
+        if (!warnedMessages.has(message.id)) {
+          console.warn('Invalid message or missing createdAt:', message);
+          warnedMessages.add(message.id);
+        }
+        return;
+      }
+
+      // 检查 createdAt 是否是字符串类型
+      if (typeof message.createdAt !== 'string') {
+        if (!warnedMessages.has(message.id)) {
+          console.warn('Invalid createdAt type:', typeof message.createdAt, message.createdAt);
+          warnedMessages.add(message.id);
+        }
+        return;
+      }
+
       const date = new Date(message.createdAt);
+
+      // 检查日期是否有效
+      if (isNaN(date.getTime())) {
+        if (!warnedMessages.has(message.id)) {
+          console.warn('Invalid date value:', message.createdAt);
+          warnedMessages.add(message.id);
+        }
+        return;
+      }
+
       const dateKey = format(date, 'yyyy-MM-dd');
 
       if (!groups[dateKey]) {
@@ -143,6 +222,9 @@ export default function MessageList({
                 return (
                   <div
                     key={message.id}
+                    ref={(el) => {
+                      messageRefs.current[message.id] = el;
+                    }}
                     className={`flex items-start gap-3 ${
                       isOwnMessage ? 'flex-row-reverse' : ''
                     }`}
@@ -182,9 +264,12 @@ export default function MessageList({
                             : 'bg-background-component text-text-primary'
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap break-words">
-                          {message.content}
-                        </p>
+                        <div className={isOwnMessage ? 'text-white' : 'text-text-primary'}>
+                          <MessageRenderer
+                            message={message}
+                            currentUserId={currentUserId}
+                          />
+                        </div>
                       </div>
 
                       {/* 回复指示器 */}

@@ -3,10 +3,42 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 import { Server as SocketIOServer } from 'socket.io';
-import { setupWebSocket } from '@/lib/websocket-server';
+import { parseMentions, extractUsernames } from '@/lib/mention-parser';
 
 // 全局变量存储 Socket.IO 实例
 let io: SocketIOServer | null = null;
+
+/**
+ * 递归遍历对象，将所有 BigInt 和 Date 字段转换为 String
+ */
+function convertBigIntToString(obj: any): any {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (typeof obj === 'bigint') {
+    return obj.toString();
+  }
+
+  // 处理 Date 对象，转换为 ISO 字符串
+  if (obj instanceof Date) {
+    return obj.toISOString();
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertBigIntToString(item));
+  }
+
+  if (typeof obj === 'object') {
+    const converted: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      converted[key] = convertBigIntToString(value);
+    }
+    return converted;
+  }
+
+  return obj;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,11 +63,15 @@ export async function POST(request: NextRequest) {
     const currentUserId = decoded.userId;
 
     const body = await request.json();
-    const { content, channelId, dmConversationId } = body;
+    const { content, channelId, dmConversationId, attachments } = body;
 
-    if (!content || typeof content !== 'string' || content.trim() === '') {
+    // 验证：必须有文字内容或附件之一
+    const hasContent = content && typeof content === 'string' && content.trim() !== '';
+    const hasAttachments = attachments && Array.isArray(attachments) && attachments.length > 0;
+
+    if (!hasContent && !hasAttachments) {
       return NextResponse.json(
-        { error: 'Message content is required' },
+        { error: 'Message must have content or attachments' },
         { status: 400 }
       );
     }
@@ -91,14 +127,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 解析消息中的 @提及（只有当有内容时才解析）
+    const mentions = hasContent ? parseMentions(content) : [];
+
     // 创建消息
     const message = await prisma.message.create({
       data: {
-        content: content.trim(),
+        content: hasContent ? content.trim() : '', // 如果没有内容，设为空字符串
         userId: currentUserId,
         channelId: channelId || null,
         dmConversationId: dmConversationId || null,
-        messageType: 'text'
+        messageType: attachments && attachments.length > 0 ? 'image' : 'text'
       },
       include: {
         user: {
@@ -122,6 +161,55 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // 如果有附件，创建附件记录
+    if (attachments && attachments.length > 0) {
+      const attachmentData = attachments.map((attachment: any) => ({
+        messageId: message.id,
+        fileName: attachment.originalName || attachment.fileName,
+        filePath: attachment.fileUrl,
+        fileSize: attachment.fileSize.toString(),
+        mimeType: attachment.mimeType,
+        s3Key: attachment.s3Key,
+        s3Bucket: attachment.s3Bucket,
+        thumbnailUrl: attachment.thumbnailUrl || null
+      }));
+
+      await prisma.attachment.createMany({
+        data: attachmentData
+      });
+
+      console.log(`📎 Created ${attachments.length} attachments for message ${message.id}`);
+    }
+
+    // 如果有提及，创建提及记录
+    if (mentions.length > 0) {
+      const usernames = extractUsernames(mentions);
+
+      // 根据 displayName 查找用户
+      const mentionedUsers = await prisma.user.findMany({
+        where: {
+          displayName: { in: usernames }
+        },
+        select: {
+          id: true,
+          displayName: true
+        }
+      });
+
+      // 创建提及记录
+      if (mentionedUsers.length > 0) {
+        await prisma.messageMention.createMany({
+          data: mentionedUsers.map(user => ({
+            messageId: message.id,
+            mentionedUserId: user.id
+          })),
+          skipDuplicates: true
+        });
+
+        console.log(`📌 Created ${mentionedUsers.length} mentions for message ${message.id}`);
+      }
+    }
 
     // 如果是频道消息，为所有成员（除发送者外）增加未读计数
     if (channelId) {
@@ -225,7 +313,7 @@ export async function POST(request: NextRequest) {
       // 即使 WebSocket 广播失败，也不影响 HTTP 响应
     }
 
-    return NextResponse.json(message);
+    return NextResponse.json(convertBigIntToString(message));
   } catch (error) {
     console.error('Error creating message:', error);
     return NextResponse.json(
@@ -307,6 +395,17 @@ export async function GET(request: NextRequest) {
               avatarUrl: true,
               realName: true
             }
+          },
+          attachments: true,
+          mentions: {
+            include: {
+              mentionedUser: {
+                select: {
+                  id: true,
+                  displayName: true
+                }
+              }
+            }
           }
         },
         orderBy: {
@@ -316,7 +415,7 @@ export async function GET(request: NextRequest) {
         skip: offset
       });
 
-      return NextResponse.json(messages);
+      return NextResponse.json(convertBigIntToString(messages));
     }
 
     if (dmConversationId) {
@@ -344,6 +443,17 @@ export async function GET(request: NextRequest) {
                 avatarUrl: true,
                 realName: true
               }
+            },
+            attachments: true,
+            mentions: {
+              include: {
+                mentionedUser: {
+                  select: {
+                    id: true,
+                    displayName: true
+                  }
+                }
+              }
             }
           },
           orderBy: {
@@ -353,7 +463,7 @@ export async function GET(request: NextRequest) {
           skip: offset
         });
 
-        return NextResponse.json(messages);
+        return NextResponse.json(convertBigIntToString(messages));
       }
 
       // 普通 DM 会话
@@ -385,6 +495,17 @@ export async function GET(request: NextRequest) {
               avatarUrl: true,
               realName: true
             }
+          },
+          attachments: true,
+          mentions: {
+            include: {
+              mentionedUser: {
+                select: {
+                  id: true,
+                  displayName: true
+                }
+              }
+            }
           }
         },
         orderBy: {
@@ -394,7 +515,7 @@ export async function GET(request: NextRequest) {
         skip: offset
       });
 
-      return NextResponse.json(messages);
+      return NextResponse.json(convertBigIntToString(messages));
     }
 
     return NextResponse.json([]);

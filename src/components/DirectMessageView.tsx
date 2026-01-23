@@ -41,8 +41,13 @@ export default function DirectMessageView({
 
       // 如果是真实会话（非 self-），清除未读计数
       if (!isOwnSpace && data.id && !data.id.startsWith('self-')) {
-        // 清除该会话的未读计数
-        markAsRead(undefined, data.id);
+        try {
+          // 清除该会话的未读计数
+          markAsRead(undefined, data.id);
+        } catch (markAsReadError) {
+          console.error('Error marking as read:', markAsReadError);
+          // 即使 markAsRead 失败，也不影响消息加载
+        }
         fetchMessages(data.id);
       } else {
         setIsLoading(false);
@@ -102,7 +107,7 @@ export default function DirectMessageView({
       <div className="flex-1 flex flex-col min-h-0">
         {isOwnSpace ? (
           <div className="flex-1 overflow-y-auto">
-            <MySpaceView member={member} />
+            <MySpaceView member={member} currentUserId={currentUserId} />
           </div>
         ) : (
           <>
@@ -128,6 +133,8 @@ export default function DirectMessageView({
                 placeholder={`Message ${member.displayName}`}
                 disabled={isLoading || !conversation || conversation.id.startsWith('self-')}
                 dmConversationId={conversation?.id && !conversation.id.startsWith('self-') ? conversation.id : undefined}
+                currentUserId={currentUserId}
+                members={[member]}
                 onMessageSent={handleMessageSent}
               />
             </div>

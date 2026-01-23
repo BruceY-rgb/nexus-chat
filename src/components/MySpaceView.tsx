@@ -8,12 +8,13 @@ import DMMessageInput from './DMMessageInput';
 
 interface MySpaceViewProps {
   member: TeamMember;
+  currentUserId?: string; // 可选，如果未传递则使用 member.id
 }
 
-export default function MySpaceView({ member }: MySpaceViewProps) {
+export default function MySpaceView({ member, currentUserId }: MySpaceViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const currentUserId = member.id;
+  const currentUserIdValue = currentUserId || member.id;
 
   // 获取自己的消息列表
   const fetchMessages = async () => {
@@ -55,7 +56,7 @@ export default function MySpaceView({ member }: MySpaceViewProps) {
           <div className="text-center py-8 mb-8">
             <div className="relative inline-block mb-6">
               <img
-                src={member.avatarUrl}
+                src={member.avatarUrl || '/default-avatar.png'}
                 alt={member.displayName}
                 className="w-24 h-24 rounded-lg shadow-lg"
               />
@@ -228,6 +229,7 @@ export default function MySpaceView({ member }: MySpaceViewProps) {
           placeholder="Message yourself"
           disabled={false}
           dmConversationId={`self-${member.id}`}
+          currentUserId={currentUserIdValue}
           onMessageSent={handleMessageSent}
         />
       </div>

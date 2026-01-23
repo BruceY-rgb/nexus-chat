@@ -248,6 +248,8 @@ export default function ChannelView({
                   placeholder={`Message #${channel.name}`}
                   disabled={false}
                   channelId={channel.id}
+                  currentUserId={user?.id || ''}
+                  members={members}
                   onMessageSent={handleMessageSent}
                 />
               </div>
