@@ -172,79 +172,68 @@ export default function MessageRenderer({
 
   /**
    * 渲染消息内容，支持 Token 化提及
+   * 使用 matchAll 替代 split 避免重复渲染问题
    */
   const renderMessageContent = () => {
     if (!message.content) {
       return null;
     }
 
-    // 检查是否包含 Token
+    // Token 模式：/@\{([^:]+):([^}]+)\}/g
     const tokenPattern = /@\{([^:]+):([^}]+)\}/g;
-    const parts = message.content.split(tokenPattern);
+    const matches = [...message.content.matchAll(tokenPattern)];
+    const elements: React.ReactNode[] = [];
+    let lastIndex = 0;
 
-    return parts.map((part, index) => {
-      // 奇数索引是捕获组（ID 和显示名称）
-      if (index % 2 === 1) {
-        const userId = parts[index];
-        const displayName = parts[index + 1];
+    matches.forEach((match, matchIndex) => {
+      const matchStart = match.index!;
+      const matchEnd = matchStart + match[0].length;
 
-        // 只有当 displayName 存在且不是空白时才处理这个 token
-        if (!displayName) {
-          // 如果没有 displayName，返回原始文本
-          return part;
-        }
-
-        // 查找成员信息
-        const member = members.find(m => m.id === userId);
-        const actualDisplayName = member?.displayName || displayName;
-
-        return (
-          <MentionToken
-            key={`${userId}-${index}`}
-            userId={userId}
-            displayName={actualDisplayName}
-            isCurrentUserMentioned={userId === currentUserId}
-            onRemove={() => {}} // 消息中不可删除
-            isEditing={false}
-          />
+      // 添加匹配前的普通文本
+      if (matchStart > lastIndex) {
+        const beforeText = message.content.slice(lastIndex, matchStart);
+        elements.push(
+          <span key={`text-${matchIndex}`}>
+            {beforeText}
+          </span>
         );
       }
 
-      // 处理普通 @提及（传统格式，支持带空格的用户名）
-      if (part.includes('@')) {
-        // 匹配 @ 后面1-30个非@非换行符的字符（支持空格）
-        const mentionRegex = /@([^@\n]{1,30})/g;
-        const textParts = part.split(mentionRegex);
+      // 提取 Token 信息
+      const userId = match[1];
+      const displayName = match[2];
 
-        return textParts.map((textPart, textIndex) => {
-          if (textIndex % 2 === 1) {
-            // 这是一个 @提及
-            const isCurrentUserMentioned = mentionedUsers.some(
-              user => user.displayName === textPart
-            );
+      // 查找成员信息
+      const member = members.find(m => m.id === userId);
+      const actualDisplayName = member?.displayName || displayName;
 
-            return (
-              <span
-                key={`${part}-${textIndex}`}
-                className={`inline-block px-1.5 py-0.5 mx-0.5 rounded font-medium ${
-                  isCurrentUserMentioned
-                    ? 'bg-blue-500/20 text-blue-400 font-semibold border border-blue-500/30'
-                    : 'bg-blue-500/10 text-blue-300'
-                }`}
-              >
-                @{textPart}
-              </span>
-            );
-          }
+      // 添加 MentionToken 组件
+      elements.push(
+        <MentionToken
+          key={`mention-${matchIndex}`}
+          userId={userId}
+          displayName={actualDisplayName}
+          isCurrentUserMentioned={userId === currentUserId}
+          onRemove={() => {}} // 消息中不可删除
+          isEditing={false}
+        />
+      );
 
-          // 普通文本
-          return textPart;
-        });
-      }
-
-      // 普通文本
-      return part;
+      lastIndex = matchEnd;
     });
+
+    // 添加最后剩余的文本
+    if (lastIndex < message.content.length) {
+      const remainingText = message.content.slice(lastIndex);
+      elements.push(
+        <span key={`text-${matches.length}`}>
+          {remainingText}
+        </span>
+      );
+    }
+
+    // 返回所有元素
+    return elements;
   };
 
   /**
