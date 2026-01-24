@@ -1,28 +1,43 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Message } from '@/types/message';
 import { format, formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import MessageRenderer from './MessageRenderer';
+import { useReadProgress } from '@/hooks/useReadProgress';
 
 interface MessageListProps {
   messages: Message[];
   currentUserId: string;
   isLoading?: boolean;
   className?: string;
+  channelId?: string;
+  dmConversationId?: string;
 }
 
 export default function MessageList({
   messages,
   currentUserId,
   isLoading = false,
-  className = ''
+  className = '',
+  channelId,
+  dmConversationId
 }: MessageListProps) {
   const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const [showReadIndicator, setShowReadIndicator] = useState<string | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+
+  // 使用阅读进度 Hook - 移除onScrollToMessage回调，避免与组件内高亮逻辑冲突
+  const { readPosition, isLoading: isLoadingReadPosition, reportReadProgress } = useReadProgress({
+    channelId,
+    dmConversationId,
+    messages,
+    messageRefs
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -32,27 +47,83 @@ export default function MessageList({
     const messageElement = messageRefs.current[messageId];
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // 添加高亮效果
-      messageElement.classList.add('bg-yellow-100/20');
-      setTimeout(() => {
-        messageElement.classList.remove('bg-yellow-100/20');
-      }, 2000);
+      // 滚动定位通过 highlightedMessageId 状态控制视觉效果，无需直接操作 classList
     }
   };
+
+  // 监听滚动并自动上报阅读进度
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // 找到最后一条可见的消息
+        const visibleMessages = entries
+          .filter(entry => entry.isIntersecting)
+          .sort((a, b) => {
+            // 按位置排序，获取最底部的消息
+            const rectA = a.target.getBoundingClientRect();
+            const rectB = b.target.getBoundingClientRect();
+            return rectB.top - rectA.top;
+          });
+
+        if (visibleMessages.length > 0) {
+          const lastVisibleMessage = visibleMessages[0];
+          const messageId = lastVisibleMessage.target.getAttribute('data-message-id');
+          if (messageId) {
+            reportReadProgress(messageId);
+          }
+        }
+      },
+      {
+        threshold: 0.3, // 消息 30% 可见时触发
+        rootMargin: '100px' // 提前 100px 开始检测
+      }
+    );
+
+    // 观察所有消息元素
+    Object.entries(messageRefs.current).forEach(([messageId, element]) => {
+      if (element) {
+        element.setAttribute('data-message-id', messageId);
+        observer.observe(element);
+      }
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [messages, reportReadProgress]);
 
   useEffect(() => {
     // 检查 URL 中的 messageId 参数
     const messageId = searchParams.get('messageId');
     if (messageId && messages.length > 0) {
+      // 设置高亮状态
+      setHighlightedMessageId(messageId);
       // 延迟执行，确保消息已渲染
       setTimeout(() => {
         scrollToMessage(messageId);
       }, 100);
     } else {
-      // 没有指定消息时，滚动到底部
+      // 没有指定消息时，滚动到底部并清除高亮
+      setHighlightedMessageId(null);
       scrollToBottom();
     }
   }, [searchParams, messages]);
+
+  // 监听点击事件，用户点击页面任意位置时清除高亮
+  useEffect(() => {
+    const handleClick = () => {
+      const messageId = searchParams.get('messageId');
+      // 只有在有 messageId 参数时才需要手动清除高亮
+      if (messageId) {
+        setHighlightedMessageId(null);
+      }
+    };
+
+    document.addEventListener('click', handleClick);
+    return () => {
+      document.removeEventListener('click', handleClick);
+    };
+  }, [searchParams]);
 
   const formatMessageTime = (dateString: string | null | undefined) => {
     // 容错处理：如果日期字符串无效，返回 '--'
@@ -218,66 +289,79 @@ export default function MessageList({
               {dayMessages.map((message, index) => {
                 const isOwnMessage = message.userId === currentUserId;
                 const showAvatar = index === 0 || dayMessages[index - 1].userId !== message.userId;
+                const isHighlighted = message.id === highlightedMessageId;
 
                 return (
-                  <div
-                    key={message.id}
-                    ref={(el) => {
-                      messageRefs.current[message.id] = el;
-                    }}
-                    className={`flex items-start gap-3 ${
-                      isOwnMessage ? 'flex-row-reverse' : ''
-                    }`}
-                  >
-                    {/* 头像 */}
-                    {showAvatar ? (
-                      <img
-                        src={message.user.avatarUrl || '/default-avatar.png'}
-                        alt={message.user.displayName}
-                        className="w-10 h-10 rounded-sm flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-10 flex-shrink-0" />
-                    )}
-
-                    {/* 消息内容 */}
-                    <div className={`flex-1 ${isOwnMessage ? 'text-right' : ''}`}>
-                      {/* 用户名和时间（仅在需要时显示） */}
-                      {showAvatar && (
-                        <div className={`flex items-baseline gap-2 mb-1 ${
-                          isOwnMessage ? 'justify-end' : ''
-                        }`}>
-                          <span className="font-semibold text-text-primary text-sm">
-                            {message.user.displayName}
-                          </span>
-                          <span className="text-xs text-text-tertiary">
-                            {formatMessageTime(message.createdAt)}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* 消息气泡 */}
-                      <div
-                        className={`inline-block max-w-[85%] px-4 py-2 rounded-lg ${
-                          isOwnMessage
-                            ? 'bg-primary text-white'
-                            : 'bg-background-component text-text-primary'
-                        }`}
-                      >
-                        <div className={isOwnMessage ? 'text-white' : 'text-text-primary'}>
-                          <MessageRenderer
-                            message={message}
-                            currentUserId={currentUserId}
-                          />
+                  <div key={message.id}>
+                    {/* 阅读指示器 */}
+                    {showReadIndicator === message.id && (
+                      <div className="flex items-center justify-center my-4 animate-fade-in">
+                        <div className="bg-blue-500/90 text-white px-4 py-1 rounded-full text-xs font-medium shadow-lg">
+                          上次阅读到这里
                         </div>
                       </div>
+                    )}
 
-                      {/* 回复指示器 */}
-                      {message.parentMessageId && (
-                        <div className="mt-1 text-xs text-text-tertiary">
-                          已回复
-                        </div>
+                    <div
+                      ref={(el) => {
+                        messageRefs.current[message.id] = el;
+                      }}
+                      className={`flex items-start gap-3 transition-all duration-200 ${
+                        isHighlighted ? 'bg-yellow-200/70 rounded-lg shadow-md animate-pulse' : ''
+                      } ${
+                        isOwnMessage ? 'flex-row-reverse' : ''
+                      }`}
+                    >
+                      {/* 头像 */}
+                      {showAvatar ? (
+                        <img
+                          src={message.user.avatarUrl || '/default-avatar.png'}
+                          alt={message.user.displayName}
+                          className="w-10 h-10 rounded-sm flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 flex-shrink-0" />
                       )}
+
+                      {/* 消息内容 */}
+                      <div className={`flex-1 ${isOwnMessage ? 'text-right' : ''}`}>
+                        {/* 用户名和时间（仅在需要时显示） */}
+                        {showAvatar && (
+                          <div className={`flex items-baseline gap-2 mb-1 ${
+                            isOwnMessage ? 'justify-end' : ''
+                          }`}>
+                            <span className="font-semibold text-text-primary text-sm">
+                              {message.user.displayName}
+                            </span>
+                            <span className="text-xs text-text-tertiary">
+                              {formatMessageTime(message.createdAt)}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* 消息气泡 */}
+                        <div
+                          className={`inline-block max-w-[85%] px-4 py-2 rounded-lg ${
+                            isOwnMessage
+                              ? 'bg-primary text-white'
+                              : 'bg-background-component text-text-primary'
+                          }`}
+                        >
+                          <div className={isOwnMessage ? 'text-white' : 'text-text-primary'}>
+                            <MessageRenderer
+                              message={message}
+                              currentUserId={currentUserId}
+                            />
+                          </div>
+                        </div>
+
+                        {/* 回复指示器 */}
+                        {message.parentMessageId && (
+                          <div className="mt-1 text-xs text-text-tertiary">
+                            已回复
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

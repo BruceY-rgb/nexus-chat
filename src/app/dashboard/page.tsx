@@ -5,7 +5,6 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui';
 import DashboardLayout from '@/components/DashboardLayout';
-import ChannelHeader from '@/components/ChannelHeader';
 import ChannelView from '@/components/ChannelView';
 import BrowseChannels from '@/components/BrowseChannels';
 import NewDirectMessageModal from '@/components/NewDirectMessageModal';
@@ -316,6 +315,20 @@ export default function DashboardPage() {
     setSelectedChat(undefined);
   };
 
+  const handleShowMembers = (channelId: string) => {
+    // 设置选中的频道
+    setSelectedChannel(channelId);
+    setSelectedChat(undefined);
+    setCurrentView('channel');
+    console.log('显示频道成员:', channelId);
+  };
+
+  const handleClearMessages = (channelId: string) => {
+    console.log('清空频道消息:', channelId);
+    // 这里不需要额外的逻辑，因为API调用已经在ChannelView中处理
+    // 可能需要刷新消息列表或触发重新获取
+  };
+
   const handleBackToChannel = () => {
     setCurrentView('channel');
     // 返回到之前选中的频道，如果没有则默认选择第一个
@@ -371,15 +384,7 @@ export default function DashboardPage() {
         />
       ) : (
         <>
-          {/* 频道头部 */}
-          {selectedChannel && (
-            <ChannelHeader
-              channel={convertedChannels.find(c => c.id === selectedChannel)!}
-              onLeaveChannel={handleLeaveChannel}
-            />
-          )}
-
-          {/* 主内容区 */}
+          {/* 主内容区 - ChannelView 现在包含头部 */}
           <div className="flex-1 h-full bg-background">
             {selectedChannel ? (
               <ChannelView
@@ -388,6 +393,8 @@ export default function DashboardPage() {
                 onJoinChannel={handleJoinChannel}
                 onLeaveChannel={handleLeaveChannel}
                 onStartChat={handleStartChat}
+                onShowMembers={() => handleShowMembers(selectedChannel)}
+                onClearMessages={() => handleClearMessages(selectedChannel)}
               />
             ) : selectedChat ? (
               <div className="h-full flex items-center justify-center">

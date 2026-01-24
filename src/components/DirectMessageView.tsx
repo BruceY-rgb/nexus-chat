@@ -118,6 +118,7 @@ export default function DirectMessageView({
                 currentUserId={currentUserId}
                 isLoading={isLoading}
                 className="h-full w-full"
+                dmConversationId={conversation?.id && !conversation.id.startsWith('self-') ? conversation.id : undefined}
               />
             </div>
 

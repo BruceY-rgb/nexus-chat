@@ -15,6 +15,8 @@ interface ChannelViewProps {
   onJoinChannel: (channelId: string) => void;
   onLeaveChannel: (channelId: string) => void;
   onStartChat?: (memberId: string) => void;
+  onShowMembers?: () => void;
+  onClearMessages?: () => void;
 }
 
 export default function ChannelView({
@@ -22,13 +24,17 @@ export default function ChannelView({
   isJoined,
   onJoinChannel,
   onLeaveChannel,
-  onStartChat
+  onStartChat,
+  onShowMembers,
+  onClearMessages
 }: ChannelViewProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [showMembersList, setShowMembersList] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   // 获取频道成员
   useEffect(() => {
@@ -54,6 +60,35 @@ export default function ChannelView({
       onLeaveChannel(channel.id);
     } else {
       onJoinChannel(channel.id);
+    }
+  };
+
+  const handleClearMessages = async () => {
+    if (!window.confirm('确定要清空所有聊天记录吗？此操作不可撤销。')) {
+      return;
+    }
+
+    try {
+      setIsClearing(true);
+      const response = await fetch('/api/messages/clear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ channelId: channel.id })
+      });
+
+      if (response.ok) {
+        setMessages([]);
+        onClearMessages?.();
+      } else {
+        alert('清空消息失败，请重试');
+      }
+    } catch (error) {
+      console.error('清空消息错误:', error);
+      alert('清空消息失败，请重试');
+    } finally {
+      setIsClearing(false);
+      setIsDropdownOpen(false);
     }
   };
 
@@ -115,46 +150,120 @@ export default function ChannelView({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              className="p-2 hover:bg-background-tertiary rounded-full transition-colors"
-              title="Channel settings"
-              onClick={() => setShowMembersList(!showMembersList)}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5 text-text-secondary"
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="p-2 hover:bg-background-tertiary rounded-md transition-colors"
+                aria-label="Channel settings"
+                disabled={isClearing}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
-                />
-              </svg>
-            </button>
-            <button
-              className="p-2 hover:bg-background-tertiary rounded-full transition-colors text-text-secondary hover:text-yellow-500"
-              title="Leave channel"
-              onClick={handleToggleMembership}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
-                />
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-5 h-5 text-text-secondary"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z"
+                  />
+                </svg>
+              </button>
+
+              {/* 下拉菜单 */}
+              {isDropdownOpen && (
+                <>
+                  {/* 背景遮罩 */}
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setIsDropdownOpen(false)}
+                  />
+
+                  {/* 菜单内容 */}
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        Channel
+                      </p>
+                      <p className="text-sm text-gray-900 font-medium mt-1">
+                        #{channel.name}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setShowMembersList(true);
+                        setIsDropdownOpen(false);
+                        onShowMembers?.();
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
+                        />
+                      </svg>
+                      查看频道成员
+                    </button>
+
+                    <button
+                      onClick={handleClearMessages}
+                      disabled={isClearing}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                        />
+                      </svg>
+                      {isClearing ? '清空中...' : '清空聊天记录'}
+                    </button>
+
+                    <button
+                      onClick={handleToggleMembership}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
+                        />
+                      </svg>
+                      离开频道
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -239,6 +348,7 @@ export default function ChannelView({
                   currentUserId={user?.id || ''}
                   isLoading={isLoading}
                   className="h-full w-full"
+                  channelId={channel.id}
                 />
               </div>
 
