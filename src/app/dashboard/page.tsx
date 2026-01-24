@@ -166,20 +166,17 @@ export default function DashboardPage() {
   };
 
   const handleStartChat = async (memberId: string, dmConversationId?: string) => {
-    console.log('🟡 [DEBUG] 点击私聊成员:', memberId, 'dmConversationId:', dmConversationId);
-
     try {
       // === 步骤1: 立即进行乐观更新 ===
       // 更新当前选中的私聊状态，立即高亮
       setSelectedChat(memberId);
       // 清除选中的频道
       setSelectedChannel(undefined);
-      console.log('⚡ [DEBUG] 乐观更新: setSelectedChat(', memberId, ')');
 
       // === 步骤2: 立即进行页面跳转 ===
       // 使用 router.push 进行导航（仍然使用 memberId 路径以兼容现有路由）
-      router.push(`/dm/${memberId}`);
-      console.log('⚡ [DEBUG] 立即跳转: router.push(/dm/', memberId, ')');
+      const targetUrl = `/dm/${memberId}`;
+      router.push(targetUrl);
 
       // === 步骤3: 后台创建/获取会话（不阻塞UI） ===
       // 如果没有提供 conversationId，则创建或获取 DM 会话
@@ -199,7 +196,6 @@ export default function DashboardPage() {
               // 派发全局事件，通知 DirectMessages 乐观加入新会话
               try {
                 window.dispatchEvent(new CustomEvent('dm-created', { detail: conversation }));
-                console.log('📡 [DEBUG] 已派发 dm-created 事件');
               } catch (e) {
                 console.warn('无法派发 dm-created 事件', e);
               }
@@ -212,8 +208,6 @@ export default function DashboardPage() {
         // 不等待结果，立即返回
         createConversation();
       }
-
-      console.log('🟢 [DEBUG] handleStartChat 完成');
     } catch (err) {
       console.error('启动私聊时出错:', err);
       // 即使出错，也要确保状态更新和跳转

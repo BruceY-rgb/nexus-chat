@@ -10,4 +10,5 @@ export interface TeamMember {
   unreadCount?: number;
   lastReadAt?: Date;
   dmConversationId?: string;
+  isStarred?: boolean;
 }

@@ -1,10 +1,31 @@
 'use client';
 
+import { useState } from 'react';
 import DirectMessages from './DirectMessages';
-import { mockTeamMembers, getCurrentUser } from '../types';
+import { TeamMember } from '../types';
 
 export default function DirectMessagesExample() {
-  const currentUser = getCurrentUser();
+  // Mock current user
+  const [currentUser] = useState({
+    id: 'user-1',
+    email: 'user@example.com',
+    displayName: 'Current User'
+  });
+
+  const [members] = useState<TeamMember[]>([
+    {
+      id: 'user-2',
+      email: 'user2@example.com',
+      displayName: 'User Two',
+      isOnline: true
+    },
+    {
+      id: 'user-3',
+      email: 'user3@example.com',
+      displayName: 'User Three',
+      isOnline: false
+    }
+  ]);
 
   const handleStartChat = (memberId: string) => {
     console.log('Starting chat with member:', memberId);
@@ -33,7 +54,7 @@ export default function DirectMessagesExample() {
         </div>
 
         <DirectMessages
-          members={mockTeamMembers}
+          members={members}
           currentUserId={currentUser.id}
           onStartChat={handleStartChat}
           onNewChat={handleNewChat}

@@ -19,8 +19,8 @@ export default function DirectMessagesDebug({
 }: DirectMessagesProps) {
   // 显示所有成员，包括当前用户
 
-  const getStatusIndicator = (status: TeamMember['status']) => {
-    if (status === 'online') {
+  const getStatusIndicator = (isOnline: boolean) => {
+    if (isOnline) {
       return (
         <span className="absolute bottom-0 right-0 block h-2 w-2 rounded-full bg-green-500" />
       );
@@ -101,12 +101,12 @@ export default function DirectMessagesDebug({
               {/* Avatar with status indicator */}
               <div className="relative flex-shrink-0">
                 <img
-                  src={member.avatarUrl}
+                  src={member.avatarUrl || '/default-avatar.png'}
                   alt={member.displayName}
                   className="w-5 h-5 rounded-sm"
                   style={{ borderRadius: '4px' }}
                 />
-                {getStatusIndicator(member.status)}
+                {getStatusIndicator(member.isOnline)}
               </div>
 
               {/* Display Name */}

@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = (page - 1) * limit;
     const activeOnly = searchParams.get('activeOnly') === 'true'; // 新增：只获取有消息的用户
+    const targetUserId = searchParams.get('userId'); // 新增：获取特定用户ID
 
     // 构建查询条件
     const where: any = {
@@ -38,6 +39,11 @@ export async function GET(request: NextRequest) {
         not: currentUserId // 排除当前用户
       }
     };
+
+    // 如果指定了 targetUserId，则只查询该用户
+    if (targetUserId) {
+      where.id = targetUserId;
+    }
 
     // 如果有搜索词，支持邮箱和显示名搜索
     if (search) {
@@ -66,6 +72,10 @@ export async function GET(request: NextRequest) {
     // 根据 activeOnly 参数决定查询方式
     let users;
     let total;
+
+    // 如果指定了 targetUserId，不使用分页
+    const finalOffset = targetUserId ? 0 : offset;
+    const finalLimit = targetUserId ? 1 : limit;
 
     if (activeOnly) {
       // 只获取有消息的用户（通过 DMConversationMember 关系）
@@ -98,12 +108,18 @@ export async function GET(request: NextRequest) {
             }
           }
         },
+        select: {
+          isStarred: true,
+          conversationId: true,
+          unreadCount: true,
+          lastReadAt: true
+        },
         orderBy: [
           { conversation: { lastMessageAt: 'desc' } }, // 按最后消息时间倒序
           { user: { displayName: 'asc' } } // 然后按显示名排序
         ],
-        skip: offset,
-        take: limit
+        skip: finalOffset,
+        take: finalLimit
       });
 
       users = dmMembers.map(member => ({
@@ -117,7 +133,8 @@ export async function GET(request: NextRequest) {
         dmConversationId: member.conversationId,
         unreadCount: member.unreadCount,
         lastReadAt: member.lastReadAt,
-        lastMessageAt: member.conversation.lastMessageAt
+        lastMessageAt: member.conversation.lastMessageAt,
+        isStarred: member.isStarred || false
       }));
 
       // 获取总数（用于搜索时）
@@ -200,7 +217,8 @@ export async function GET(request: NextRequest) {
             select: {
               conversationId: true,
               unreadCount: true,
-              lastReadAt: true
+              lastReadAt: true,
+              isStarred: true
             }
           }
         },
@@ -208,8 +226,8 @@ export async function GET(request: NextRequest) {
           { isOnline: 'desc' }, // 在线用户排在前面
           { displayName: 'asc' } // 然后按显示名排序
         ],
-        skip: offset,
-        take: limit
+        skip: finalOffset,
+        take: finalLimit
       });
 
       // 处理用户数据，将 DMConversationMember 信息展平
@@ -225,7 +243,8 @@ export async function GET(request: NextRequest) {
           lastSeenAt: user.lastSeenAt,
           dmConversationId: dmMember?.conversationId || null,
           unreadCount: dmMember?.unreadCount || 0,
-          lastReadAt: dmMember?.lastReadAt || null
+          lastReadAt: dmMember?.lastReadAt || null,
+          isStarred: dmMember?.isStarred || false
         };
       });
 

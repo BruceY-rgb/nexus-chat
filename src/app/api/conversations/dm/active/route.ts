@@ -105,7 +105,8 @@ export async function GET(request: NextRequest) {
             realName: otherMember?.user.realName,
             avatarUrl: otherMember?.user.avatarUrl,
             isOnline: otherMember?.user.isOnline,
-            lastSeenAt: otherMember?.user.lastSeenAt
+            lastSeenAt: otherMember?.user.lastSeenAt,
+            isStarred: otherMember?.isStarred || false
           },
           unreadCount: otherMember?.unreadCount || 0,
           lastReadAt: otherMember?.lastReadAt || null,

@@ -173,7 +173,7 @@ export default function NewDirectMessageModal({
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
                     <img
-                      src={member.avatarUrl}
+                      src={member.avatarUrl || '/default-avatar.png'}
                       alt={member.displayName}
                       className="w-8 h-8 rounded-sm"
                       style={{ borderRadius: '4px' }}
@@ -181,10 +181,8 @@ export default function NewDirectMessageModal({
                     {/* Status indicator */}
                     <span
                       className={`absolute bottom-0 right-0 block w-2.5 h-2.5 rounded-full border-2 border-white ${
-                        member.status === 'online'
+                        member.isOnline
                           ? 'bg-green-500'
-                          : member.status === 'away'
-                          ? 'bg-yellow-500'
                           : 'bg-gray-400'
                       }`}
                     />
@@ -196,16 +194,9 @@ export default function NewDirectMessageModal({
                       {highlightMatch(member.displayName, searchQuery)}
                     </div>
                     <div className="text-xs text-gray-500 truncate">
-                      {member.name} {member.email && `• ${member.email}`}
+                      {member.email}
                     </div>
                   </div>
-
-                  {/* Role indicator for admins */}
-                  {member.role === 'admin' && (
-                    <span className="ml-2 px-1.5 py-0.5 text-xs font-medium text-blue-600 bg-blue-50 rounded">
-                      Admin
-                    </span>
-                  )}
                 </div>
               ))}
             </div>

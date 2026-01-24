@@ -78,6 +78,7 @@ export default function DirectMessagePage() {
   const fetchMember = async () => {
     try {
       setIsLoading(true);
+
       const response = await fetch(`/api/users?userId=${userId}`, {
         credentials: 'include'
       });
@@ -88,9 +89,10 @@ export default function DirectMessagePage() {
         setMember(foundMember || null);
 
         if (!foundMember) {
-          console.warn('Member not found:', userId);
           router.push('/dashboard');
         }
+      } else {
+        router.push('/dashboard');
       }
     } catch (error) {
       console.error('Error fetching member:', error);

@@ -111,7 +111,11 @@ export async function GET(
       },
       include: {
         members: {
-          include: {
+          select: {
+            id: true,
+            isStarred: true,
+            unreadCount: true,
+            lastReadAt: true,
             user: {
               select: {
                 id: true,
@@ -119,7 +123,8 @@ export async function GET(
                 avatarUrl: true,
                 realName: true,
                 status: true,
-                isOnline: true
+                isOnline: true,
+                email: true
               }
             }
           }
@@ -185,7 +190,11 @@ export async function GET(
         },
         include: {
           members: {
-            include: {
+            select: {
+              id: true,
+              isStarred: true,
+              unreadCount: true,
+              lastReadAt: true,
               user: {
                 select: {
                   id: true,
@@ -193,7 +202,8 @@ export async function GET(
                   avatarUrl: true,
                   realName: true,
                   status: true,
-                  isOnline: true
+                  isOnline: true,
+                  email: true
                 }
               }
             }

@@ -126,6 +126,7 @@ model DMConversationMember {
   lastReadAt        DateTime       @default(dbgenerated("'1970-01-01 00:00:00'::timestamp without time zone")) @map("last_read_at")
   lastReadMessageId String?        @map("last_read_message_id")
   unreadCount       Int            @default(0) @map("unread_count")
+  isStarred         Boolean        @default(false) @map("is_starred")
   joinedAt          DateTime       @default(now()) @map("joined_at")
   createdAt         DateTime       @default(now()) @map("created_at")
   updatedAt         DateTime       @updatedAt @map("updated_at")

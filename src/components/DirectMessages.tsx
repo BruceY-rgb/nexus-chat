@@ -26,6 +26,7 @@ interface ActiveDMConversation {
     avatarUrl?: string;
     isOnline: boolean;
     lastSeenAt?: string;
+    isStarred?: boolean;
   };
   unreadCount: number;
   lastReadAt?: string;
@@ -53,11 +54,12 @@ export default function DirectMessages({
   const [searchResults, setSearchResults] = useState<TeamMember[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [activeConversations, setActiveConversations] = useState<ActiveDMConversation[]>([]);
+  const [starredUsers, setStarredUsers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { getUnreadCount } = useUnreadStore();
   const { socket } = useSocket();
 
-  // 加载活跃的DM会话
+  // 加载活跃的DM会话和星标用户
   useEffect(() => {
     const loadActiveConversations = async () => {
       setIsLoading(true);
@@ -77,7 +79,23 @@ export default function DirectMessages({
       }
     };
 
+    const loadStarredUsers = async () => {
+      try {
+        const response = await fetch('/api/users/starred', {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setStarredUsers(data.users || []);
+        }
+      } catch (error) {
+        console.error('Error loading starred users:', error);
+      }
+    };
+
     loadActiveConversations();
+    loadStarredUsers();
 
     // 监听WebSocket事件以实时更新活跃对话列表
     const handleActiveConversationsUpdate = () => {
@@ -85,16 +103,25 @@ export default function DirectMessages({
       loadActiveConversations();
     };
 
+    // 监听星标用户更新事件
+    const handleStarredUsersUpdate = () => {
+      loadStarredUsers();
+    };
+
     // 通过socket监听事件
     if (socket) {
       socket.on('active-conversations-update', handleActiveConversationsUpdate);
     }
+
+    // 监听自定义事件
+    window.addEventListener('starred-users-updated', handleStarredUsersUpdate);
 
     // 清理函数
     return () => {
       if (socket) {
         socket.off('active-conversations-update', handleActiveConversationsUpdate);
       }
+      window.removeEventListener('starred-users-updated', handleStarredUsersUpdate);
     };
   }, [socket]);
 
@@ -224,7 +251,10 @@ export default function DirectMessages({
     lastReadAt: user.lastReadAt,
     lastMessage: null,
     messageCount: 0
-  })) : activeConversations;
+  })) : activeConversations.filter(conv =>
+    // 过滤掉已在星标列表中的用户，避免重复显示
+    !starredUsers.some(starredUser => starredUser.id === conv.otherUser.id)
+  );
 
   const getStatusIndicator = (isOnline: boolean) => {
     if (isOnline) {
@@ -282,69 +312,151 @@ export default function DirectMessages({
         />
       </div>
 
-      {/* Members List */}
-      <div className="space-y-0.5">
-        {displayConversations.map((conversation) => {
-          const otherUser = conversation.otherUser;
-          const isSelected = selectedDirectMessageId === otherUser.id;
-          const isCurrentUser = otherUser.id === currentUserId;
-          const conversationId = conversation.conversationId;
-          const unreadCount = conversation.unreadCount || getUnreadCount(conversationId);
-          const hasUnread = unreadCount > 0;
+      {/* 星标用户分组 - 只在非搜索模式下显示 */}
+      {!searchQuery && starredUsers.length > 0 && (
+        <div className="mb-2">
+          <div className="px-3 py-1.5">
+            <h4 className="text-white/60 text-xs font-medium tracking-wide uppercase">
+              STARRED
+            </h4>
+          </div>
+          <div className="space-y-0.5">
+            {starredUsers.map((user) => {
+              const isSelected = selectedDirectMessageId === user.id;
+              const conversationId = user.dmConversationId || user.id;
+              const unreadCount = user.unreadCount || 0;
 
-          // 防御性检查：只有当未读数大于0且最后一条消息不是当前用户发送的，才显示未读标记
-          // 这确保了用户发送的消息不会触发自身的红点
-          const shouldShowUnreadBadge = hasUnread && (!conversation.lastMessage || conversation.lastMessage.user.id !== currentUserId);
+              return (
+                <div
+                  key={conversationId}
+                  className={`flex items-center px-3 py-1.5 mx-2 rounded cursor-pointer transition-colors group ${
+                    isSelected
+                      ? 'bg-[#1164A3] text-white'
+                      : 'hover:bg-white/10'
+                  }`}
+                  onClick={() => handleStartChat(user.id, conversationId)}
+                >
+                  {/* Avatar with status indicator */}
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={user.avatarUrl || '/default-avatar.png'}
+                      alt={user.displayName}
+                      className="w-5 h-5 rounded-sm"
+                      style={{ borderRadius: '4px' }}
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        if (img.src !== '/default-avatar.png') {
+                          img.src = '/default-avatar.png';
+                        }
+                      }}
+                    />
+                    {getStatusIndicator(user.isOnline)}
+                  </div>
 
-          return (
-            <div
-              key={conversationId}
-              className={`flex items-center px-3 py-1.5 mx-2 rounded cursor-pointer transition-colors group ${
-                isSelected
-                  ? 'bg-[#1164A3] text-white'
-                  : 'hover:bg-white/10'
-              }`}
-              onClick={() => handleStartChat(otherUser.id, conversationId)}
-            >
-              {/* Avatar with status indicator */}
-              <div className="relative flex-shrink-0">
-                <img
-                  src={otherUser.avatarUrl || '/default-avatar.png'}
-                  alt={otherUser.displayName}
-                  className="w-5 h-5 rounded-sm"
-                  style={{ borderRadius: '4px' }}
-                  onError={(e) => {
-                    const img = e.target as HTMLImageElement;
-                    if (img.src !== '/default-avatar.png') {
-                      img.src = '/default-avatar.png';
-                    }
-                  }}
-                />
-                {getStatusIndicator(otherUser.isOnline)}
+                  {/* Display Name with Star Icon */}
+                  <span className={`ml-3 text-sm truncate transition-colors ${
+                    isSelected
+                      ? 'text-white'
+                      : 'text-white/80 group-hover:text-white'
+                  }`}>
+                    {user.displayName}
+                  </span>
+
+                  {/* Yellow Star Icon */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="#FFD700"
+                    viewBox="0 0 24 24"
+                    className="w-4 h-4 ml-2 flex-shrink-0"
+                  >
+                    <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.659.446 1.004l-1.348 1.867a.562.562 0 00-.146.353l-.36 3.178a.563.563 0 01-.611.43l-2.612-.642a.563.563 0 00-.465.316l-1.82 2.165a.562.562 0 01-.857-.348l.109-3.181a.563.563 0 00-.19-.458l-1.867-1.348a.563.563 0 00-.353-.146l-3.178-.36a.563.563 0 01-.43-.611l.642-2.612a.563.563 0 00-.316-.465l-2.165-1.82a.562.562 0 01.348-.857l3.181.109a.563.563 0 00.458-.19l1.348-1.867z" />
+                  </svg>
+
+                  {/* Unread Count Badge */}
+                  {unreadCount > 0 && (
+                    <Badge
+                      count={unreadCount}
+                      size="sm"
+                      className="ml-auto"
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 所有用户分组 */}
+      <div>
+        <div className="px-3 py-1.5">
+          <h4 className="text-white/60 text-xs font-medium tracking-wide uppercase">
+            {searchQuery ? '搜索结果' : 'DIRECT MESSAGES'}
+          </h4>
+        </div>
+        <div className="space-y-0.5">
+          {displayConversations.map((conversation) => {
+            const otherUser = conversation.otherUser;
+            const isSelected = selectedDirectMessageId === otherUser.id;
+            const isCurrentUser = otherUser.id === currentUserId;
+            const conversationId = conversation.conversationId;
+            const unreadCount = conversation.unreadCount || getUnreadCount(conversationId);
+            const hasUnread = unreadCount > 0;
+
+            // 防御性检查：只有当未读数大于0且最后一条消息不是当前用户发送的，才显示未读标记
+            // 这确保了用户发送的消息不会触发自身的红点
+            const shouldShowUnreadBadge = hasUnread && (!conversation.lastMessage || conversation.lastMessage.user.id !== currentUserId);
+
+            return (
+              <div
+                key={conversationId}
+                className={`flex items-center px-3 py-1.5 mx-2 rounded cursor-pointer transition-colors group ${
+                  isSelected
+                    ? 'bg-[#1164A3] text-white'
+                    : 'hover:bg-white/10'
+                }`}
+                onClick={() => handleStartChat(otherUser.id, conversationId)}
+              >
+                {/* Avatar with status indicator */}
+                <div className="relative flex-shrink-0">
+                  <img
+                    src={otherUser.avatarUrl || '/default-avatar.png'}
+                    alt={otherUser.displayName}
+                    className="w-5 h-5 rounded-sm"
+                    style={{ borderRadius: '4px' }}
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      if (img.src !== '/default-avatar.png') {
+                        img.src = '/default-avatar.png';
+                      }
+                    }}
+                  />
+                  {getStatusIndicator(otherUser.isOnline)}
+                </div>
+
+                {/* Display Name */}
+                <span className={`ml-3 text-sm truncate transition-colors ${
+                  isSelected
+                    ? 'text-white'
+                    : shouldShowUnreadBadge
+                    ? 'text-white font-semibold'
+                    : 'text-white/80 group-hover:text-white'
+                }`}>
+                  {otherUser.displayName}{isCurrentUser ? ' (you)' : ''}
+                </span>
+
+                {/* Unread Count Badge */}
+                {shouldShowUnreadBadge && (
+                  <Badge
+                    count={unreadCount}
+                    size="sm"
+                    className="ml-auto"
+                  />
+                )}
               </div>
-
-              {/* Display Name */}
-              <span className={`ml-3 text-sm truncate transition-colors ${
-                isSelected
-                  ? 'text-white'
-                  : shouldShowUnreadBadge
-                  ? 'text-white font-semibold'
-                  : 'text-white/80 group-hover:text-white'
-              }`}>
-                {otherUser.displayName}{isCurrentUser ? ' (you)' : ''}
-              </span>
-
-              {/* Unread Count Badge */}
-              {shouldShowUnreadBadge && (
-                <Badge
-                  count={unreadCount}
-                  size="sm"
-                  className="ml-auto"
-                />
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Empty state */}
