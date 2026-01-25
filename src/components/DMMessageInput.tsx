@@ -62,6 +62,7 @@ export default function DMMessageInput({
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   // Mention autocomplete state
   const [showAutocomplete, setShowAutocomplete] = useState(false);
@@ -95,6 +96,33 @@ export default function DMMessageInput({
       };
     }
   }, [showEmojiPicker]);
+
+  // 同步预览层和textarea的滚动位置
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    const preview = previewRef.current;
+
+    if (textarea && preview) {
+      // 初始化时同步滚动位置
+      preview.scrollTop = textarea.scrollTop;
+
+      // 监听预览层滚动事件，实现双向同步
+      const handlePreviewScroll = (e: Event) => {
+        const target = e.target as HTMLDivElement;
+        if (textarea && target.scrollHeight > textarea.clientHeight) {
+          const scrollPercentage = target.scrollTop / (target.scrollHeight - target.clientHeight);
+          const textareaScrollTop = scrollPercentage * (textarea.scrollHeight - textarea.clientHeight);
+          textarea.scrollTop = textareaScrollTop;
+        }
+      };
+
+      preview.addEventListener('scroll', handlePreviewScroll);
+
+      return () => {
+        preview.removeEventListener('scroll', handlePreviewScroll);
+      };
+    }
+  }, [message]); // 依赖message，确保内容变化时重新设置
 
   // 过滤掉当前用户的成员（使用可选链安全处理）
   const availableMembers = (members || []).filter(member => member.id !== currentUserId);
@@ -925,7 +953,15 @@ export default function DMMessageInput({
             )}
 
             {/* 格式化预览层 */}
-            <div className="absolute inset-0 px-4 py-4 text-white pointer-events-none whitespace-pre-wrap break-words">
+            <div
+              ref={previewRef}
+              className="absolute inset-0 px-4 py-4 text-white pointer-events-none whitespace-pre-wrap break-words overflow-y-auto"
+              style={{
+                minHeight: '52px',
+                maxHeight: '200px',
+                lineHeight: '1.5'
+              }}
+            >
               <div className="text-sm" style={{ lineHeight: '1.5' }}>
                 {renderFormattedMessage()}
               </div>
@@ -940,7 +976,7 @@ export default function DMMessageInput({
               placeholder=""
               disabled={disabled || isSending}
               rows={1}
-              className="w-full px-4 py-4 bg-transparent text-transparent caret-white border-0 resize-none focus:outline-none"
+              className="w-full px-4 py-4 bg-transparent text-transparent caret-white border-0 resize-none focus:outline-none overflow-y-auto"
               style={{
                 minHeight: '52px',
                 maxHeight: '200px',
@@ -951,6 +987,16 @@ export default function DMMessageInput({
                 const target = e.target as HTMLTextAreaElement;
                 target.style.height = 'auto';
                 target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
+              }}
+              onScroll={(e) => {
+                // 同步滚动位置到预览层
+                const textarea = e.target as HTMLTextAreaElement;
+                const previewLayer = previewRef.current;
+                if (previewLayer) {
+                  const scrollPercentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight);
+                  const previewScrollTop = scrollPercentage * (previewLayer.scrollHeight - previewLayer.clientHeight);
+                  previewLayer.scrollTop = previewScrollTop;
+                }
               }}
             />
 

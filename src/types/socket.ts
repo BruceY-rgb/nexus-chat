@@ -4,13 +4,8 @@
 
 import { Socket } from 'socket.io-client';
 
-// 扩展 Socket 类型，添加自定义事件
-export interface CustomSocket extends Socket {
-  // 自定义事件方法
-  emit: (event: string, ...args: any[]) => boolean;
-  on: (event: string, listener: (...args: any[]) => void) => CustomSocket;
-  off: (event: string, listener?: (...args: any[]) => void) => CustomSocket;
-}
+// 扩展 Socket 类型
+export interface CustomSocket extends Socket {}
 
 // WebSocket 事件类型
 export type SocketEventType =
@@ -211,29 +206,3 @@ declare global {
   var io: import('socket.io').Server | undefined;
 }
 
-// 导出所有 Socket 相关类型
-export type {
-  CustomSocket,
-  SocketEventType,
-  NewMessagePayload,
-  TypingPayload,
-  MessageReadPayload,
-  PresenceUpdatePayload,
-  OnlineUsersPayload,
-  JoinChannelPayload,
-  LeaveChannelPayload,
-  JoinDMPayload,
-  LeaveDMPayload,
-  SocketAuthPayload,
-  SocketOptions,
-  SocketError,
-  RoomType,
-  EventListener,
-  RoomMember,
-  ChannelRoom,
-  DMRoom,
-  SocketStats,
-  MessageQueue,
-  WebSocketConfig,
-  EventBus
-};

@@ -3,6 +3,13 @@ import { Server as HTTPServer } from 'http';
 import { verifyToken } from './auth';
 import { prisma } from './prisma';
 
+// 扩展 SocketIOServer 类型以支持自定义方法
+interface ExtendedSocketIOServer extends SocketIOServer {
+  broadcastNewMessage: (message: any, channelId?: string, dmConversationId?: string) => void;
+  broadcastMessageUpdate: (message: any, channelId?: string, dmConversationId?: string) => void;
+  broadcastMessageDelete: (messageId: string, channelId?: string, dmConversationId?: string) => void;
+}
+
 // 用户连接信息
 interface ConnectedUser {
   userId: string;
@@ -11,7 +18,7 @@ interface ConnectedUser {
   dmConversations: Set<string>;
 }
 
-export function setupWebSocket(httpServer: HTTPServer) {
+export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
   const io = new SocketIOServer(httpServer, {
     cors: {
       origin: ["http://127.0.0.1:3000", "http://localhost:3000"],
@@ -19,7 +26,7 @@ export function setupWebSocket(httpServer: HTTPServer) {
       methods: ["GET", "POST"]
     },
     transports: ['websocket', 'polling']
-  });
+  }) as ExtendedSocketIOServer;
 
   // 存储在线用户信息
   const connectedUsers = new Map<string, ConnectedUser>();
@@ -41,7 +48,6 @@ export function setupWebSocket(httpServer: HTTPServer) {
 
       // 将用户信息附加到 socket
       socket.data.userId = decoded.userId;
-      socket.data.userEmail = decoded.email;
 
       next();
     } catch (error) {
@@ -129,7 +135,7 @@ export function setupWebSocket(httpServer: HTTPServer) {
             return;
           }
 
-          console.log(`✅ 用户加入私聊成功:`, { userId, conversationId, role: conversationMember.role });
+          console.log(`✅ 用户加入私聊成功:`, { userId, conversationId });
         } else {
           // 验证自己的消息空间
           const selfId = conversationId.replace('self-', '');
