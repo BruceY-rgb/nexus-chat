@@ -41,7 +41,7 @@ export default function ChannelView({
 
   // 监听 URL 中的 messageId 参数，实现深度联动
   useEffect(() => {
-    if (!messageListRef.current) return;
+    if (!channel?.id || !messageListRef.current) return;
 
     const urlParams = new URLSearchParams(window.location.search);
     const messageId = urlParams.get('messageId');
@@ -54,10 +54,12 @@ export default function ChannelView({
       const newUrl = window.location.pathname + window.location.search.replace(/[?&]messageId=[^&]*/, '');
       window.history.replaceState({}, '', newUrl);
     }
-  }, [channel.id]);
+  }, [channel?.id]);
 
   // 获取频道成员
   useEffect(() => {
+    if (!channel?.id) return;
+
     const fetchMembers = async () => {
       try {
         const response = await fetch(`/api/channels/${channel.id}/members`);
@@ -73,9 +75,10 @@ export default function ChannelView({
     if (isJoined) {
       fetchMembers();
     }
-  }, [channel.id, isJoined]);
+  }, [channel?.id, isJoined]);
 
   const handleToggleMembership = () => {
+    if (!channel?.id) return;
     if (isJoined) {
       onLeaveChannel(channel.id);
     } else {
@@ -84,6 +87,7 @@ export default function ChannelView({
   };
 
   const handleClearMessages = async () => {
+    if (!channel?.id) return;
     if (!window.confirm('确定要清空所有聊天记录吗？此操作不可撤销。')) {
       return;
     }
@@ -114,7 +118,7 @@ export default function ChannelView({
 
   // 获取频道消息
   const fetchMessages = async () => {
-    if (!isJoined) {
+    if (!channel?.id || !isJoined) {
       setMessages([]);
       return;
     }
@@ -141,8 +145,9 @@ export default function ChannelView({
 
   // 当加入状态改变时获取消息
   useEffect(() => {
+    if (!channel?.id) return;
     fetchMessages();
-  }, [isJoined, channel.id]);
+  }, [isJoined, channel?.id]);
 
   const handleMessageSent = () => {
     fetchMessages();
@@ -156,12 +161,12 @@ export default function ChannelView({
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-sm bg-[#1164A3] flex items-center justify-center flex-shrink-0">
               <span className="text-white font-semibold text-sm">
-                #{channel.name.charAt(0).toUpperCase()}
+                #{channel?.name?.charAt(0).toUpperCase() || 'C'}
               </span>
             </div>
             <div>
               <h1 className="text-lg font-semibold text-text-primary">
-                #{channel.name}
+                #{channel?.name || 'Channel'}
               </h1>
               <p className="text-sm text-text-secondary">
                 {members.length} members
@@ -232,7 +237,7 @@ export default function ChannelView({
                         Channel
                       </p>
                       <p className="text-sm text-gray-900 font-medium mt-1">
-                        #{channel.name}
+                        #{channel?.name || 'Channel'}
                       </p>
                     </div>
 
@@ -340,7 +345,7 @@ export default function ChannelView({
                     </svg>
                   </button>
                   <h2 className="text-xl font-semibold text-text-primary">
-                    #{channel.name} 成员
+                    #{channel?.name || 'Channel'} 成员
                   </h2>
                 </div>
 
@@ -392,16 +397,16 @@ export default function ChannelView({
                   currentUserId={user?.id || ''}
                   isLoading={isLoading}
                   className="h-full w-full"
-                  channelId={channel.id}
+                  channelId={channel?.id}
                 />
               </div>
 
               {/* 3. 输入框：使用 flex-shrink-0 确保它被推到最底部，永不上移 */}
               <div className="flex-shrink-0 p-4 bg-background border-t">
                 <DMMessageInput
-                  placeholder={`Message #${channel.name}`}
+                  placeholder={`Message #${channel?.name || ''}`}
                   disabled={false}
-                  channelId={channel.id}
+                  channelId={channel?.id}
                   currentUserId={user?.id || ''}
                   members={members}
                   onMessageSent={handleMessageSent}
@@ -419,10 +424,10 @@ export default function ChannelView({
                 <div>
                   <h2 className="text-2xl font-bold text-text-primary flex items-center gap-2 mb-2">
                     <span className="text-[#1164A3] text-3xl">#</span>
-                    {channel.name}
+                    {channel?.name || 'Channel'}
                   </h2>
-                  {channel.description && (
-                    <p className="text-text-secondary">{channel.description}</p>
+                  {channel?.description && (
+                    <p className="text-text-secondary">{channel?.description}</p>
                   )}
                 </div>
                 <Button
@@ -497,7 +502,7 @@ export default function ChannelView({
               </p>
               <Button
                 variant="primary"
-                onClick={() => onJoinChannel(channel.id)}
+                onClick={() => channel?.id && onJoinChannel(channel.id)}
               >
                 Join Channel
               </Button>
@@ -551,8 +556,8 @@ export default function ChannelView({
       <SearchMessagesModal
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
-        channelId={channel.id}
-        contextName={`#${channel.name}`}
+        channelId={channel?.id}
+        contextName={`#${channel?.name || ''}`}
       />
     </div>
   );

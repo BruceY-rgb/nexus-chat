@@ -193,37 +193,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 创建频道
-    const channel = await prisma.channel.create({
-      data: {
-        name: name.trim(),
-        description: description?.trim() || null,
-        isPrivate: isPrivate || false,
-        createdById: currentUserId
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        isPrivate: true,
-        createdAt: true,
-        createdBy: {
-          select: {
-            id: true,
-            displayName: true,
-            avatarUrl: true
+    // 创建频道和成员关系（使用事务确保原子性）
+    const channel = await prisma.$transaction(async (tx) => {
+      // 创建频道
+      const newChannel = await tx.channel.create({
+        data: {
+          name: name.trim(),
+          description: description?.trim() || null,
+          isPrivate: isPrivate || false,
+          createdById: currentUserId
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          isPrivate: true,
+          createdAt: true,
+          createdBy: {
+            select: {
+              id: true,
+              displayName: true,
+              avatarUrl: true
+            }
           }
         }
-      }
-    });
+      });
 
-    // 自动将创建者添加为频道成员
-    await prisma.channelMember.create({
-      data: {
-        channelId: channel.id,
-        userId: currentUserId,
-        role: 'owner'
-      }
+      // 自动将创建者添加为频道成员
+      await tx.channelMember.create({
+        data: {
+          channelId: newChannel.id,
+          userId: currentUserId,
+          role: 'owner'
+        }
+      });
+
+      return newChannel;
     });
 
     return NextResponse.json({
