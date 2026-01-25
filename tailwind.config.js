@@ -25,29 +25,29 @@ module.exports = {
           info: '#1164A3',        // 信息/选中状态
         },
 
-        // 文本颜色系统 - 深黑色主题
+        // 文本颜色系统 - Aubergine 深色主题
         text: {
           primary: '#FFFFFF',     // 主文本（白色）
-          secondary: '#B8B8B8',  // 次要文本/占位符
-          muted: '#6B7280',      // 弱化文本（时间戳等）
+          secondary: '#D1D2D3',  // 次要文本/标题
+          muted: '#ABABAD',      // 弱化文本/副标题
           bold: '#FFFFFF',        // 加粗文本
-          tertiary: '#9CA3AF',    // 第三级文本
+          tertiary: '#6B7280',    // 第三级文本/占位符
           white: '#FFFFFF',       // 白色文本（侧边栏）
-          'white-secondary': '#B8B8B8',  // 侧边栏次要文本
+          'white-secondary': '#ABABAD',  // 侧边栏次要文本
         },
 
-        // 背景颜色系统 - 深黑色主题
+        // 背景颜色系统 - Aubergine 深色主题
         background: {
-          DEFAULT: '#000000',     // 默认背景（纯黑）
-          component: '#1A1A1A',  // 组件背景（深灰黑）
-          elevated: '#2D2D2D',   // 浮层背景（稍浅灰黑）
+          DEFAULT: '#1A1D21',     // 默认背景（Slack 深色）
+          component: '#222529',  // 组件背景（深炭灰）
+          elevated: '#2D2D30',   // 浮层背景（稍浅灰黑）
         },
 
-        // 边框颜色系统 - 深黑色主题
+        // 边框颜色系统 - Aubergine 深色主题
         border: {
-          DEFAULT: '#3A3A3A',     // 默认边框
+          DEFAULT: '#3E4144',     // 默认边框
           light: '#4A4A4A',      // 浅色边框
-          input: '#3A3A3A',      // 输入框边框
+          input: '#3E4144',      // 输入框边框
         },
 
         // 主要交互色（统一使用 Slack 蓝色）

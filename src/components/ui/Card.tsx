@@ -23,9 +23,9 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     const baseStyles = ['rounded-lg', 'transition-all duration-200'];
 
     const variantStyles = {
-      default: 'bg-background-component border border-border',
-      elevated: 'bg-background-elevated border border-border shadow-lg',
-      outlined: 'bg-transparent border-2 border-border',
+      default: 'bg-[#222529] border border-[#3E4144]',
+      elevated: 'bg-[#2D2D30] border border-[#3E4144] shadow-lg',
+      outlined: 'bg-transparent border-2 border-[#3E4144]',
     };
 
     const paddingStyles = {

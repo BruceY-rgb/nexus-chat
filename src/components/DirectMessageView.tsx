@@ -6,7 +6,7 @@ import { Message, DMConversation } from '@/types/message';
 import DMHeader from './DMHeader';
 import DMTabs from './DMTabs';
 import MySpaceView from './MySpaceView';
-import MessageList from './MessageList';
+import MessageList, { MessageListRef } from './MessageList';
 import DMMessageInput from './DMMessageInput';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useWebSocketMessages } from '@/hooks/useWebSocketMessages';
@@ -29,9 +29,27 @@ export default function DirectMessageView({
   const [error, setError] = useState<string | null>(null);
   const { markAsRead } = useUnreadCount();
   const { socket, isConnected, connect, connectionStatus } = useSocket();
+  const messageListRef = useRef<MessageListRef>(null);
 
   // 用于跟踪是否在消息列表底部
   const isAtBottomRef = useRef(true);
+
+  // 监听 URL 中的 messageId 参数，实现深度联动
+  useEffect(() => {
+    if (!messageListRef.current) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const messageId = urlParams.get('messageId');
+
+    if (messageId) {
+      console.log('🔍 DirectMessageView: Found messageId in URL, highlighting:', messageId);
+      messageListRef.current.highlightMessage(messageId);
+
+      // 清除 URL 中的 messageId 参数，避免刷新时重复高亮
+      const newUrl = window.location.pathname + window.location.search.replace(/[?&]messageId=[^&]*/, '');
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [member.id]);
 
   // 强制连接 WebSocket（如果未连接）
   useEffect(() => {
@@ -215,6 +233,7 @@ export default function DirectMessageView({
             {/* 消息列表：必须设置 flex-1 和 min-h-0 以强制占满空间并支持内部滚动 */}
             <div className="flex-1 min-h-0 relative">
               <MessageList
+                ref={messageListRef}
                 messages={messages}
                 currentUserId={currentUserId}
                 isLoading={isLoading}

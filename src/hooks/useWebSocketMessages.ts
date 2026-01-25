@@ -133,7 +133,9 @@ export function useWebSocketMessages({
       // 限制历史记录大小（最多保留100个消息ID）
       if (previousMessageIds.current.size > 100) {
         const firstId = previousMessageIds.current.values().next().value;
-        previousMessageIds.current.delete(firstId);
+        if (firstId) {
+          previousMessageIds.current.delete(firstId);
+        }
       }
 
       log('info', `✅ Message accepted and will be processed:`, {

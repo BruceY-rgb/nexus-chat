@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Channel } from '../types/channel';
 import { Message } from '@/types/message';
 import { Button } from '@/components/ui';
 import { TeamMember } from '@/types';
-import MessageList from './MessageList';
+import MessageList, { MessageListRef } from './MessageList';
 import DMMessageInput from './DMMessageInput';
 import SearchMessagesModal from './SearchMessagesModal';
 
@@ -29,6 +29,7 @@ export default function ChannelView({
   onShowMembers,
   onClearMessages
 }: ChannelViewProps) {
+  const messageListRef = useRef<MessageListRef>(null);
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +38,23 @@ export default function ChannelView({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+
+  // 监听 URL 中的 messageId 参数，实现深度联动
+  useEffect(() => {
+    if (!messageListRef.current) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const messageId = urlParams.get('messageId');
+
+    if (messageId) {
+      console.log('🔍 ChannelView: Found messageId in URL, highlighting:', messageId);
+      messageListRef.current.highlightMessage(messageId);
+
+      // 清除 URL 中的 messageId 参数，避免刷新时重复高亮
+      const newUrl = window.location.pathname + window.location.search.replace(/[?&]messageId=[^&]*/, '');
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [channel.id]);
 
   // 获取频道成员
   useEffect(() => {
@@ -369,6 +387,7 @@ export default function ChannelView({
               {/* 消息列表：必须设置 flex-1 和 min-h-0 以强制占满空间并支持内部滚动 */}
               <div className="flex-1 min-h-0 relative">
                 <MessageList
+                  ref={messageListRef}
                   messages={messages}
                   currentUserId={user?.id || ''}
                   isLoading={isLoading}

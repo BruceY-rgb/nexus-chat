@@ -226,7 +226,7 @@ export default function ProfilePage() {
               <select
                 value={formData.timezone}
                 onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-                className="input"
+                className="w-full px-3 py-2 bg-[#222529] border border-[#3E4144] rounded-lg text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#1264A3]/50 focus:border-[#1264A3] transition-all duration-200"
               >
                 <option value="UTC">UTC (协调世界时)</option>
                 <option value="Asia/Shanghai">Asia/Shanghai (中国标准时间)</option>

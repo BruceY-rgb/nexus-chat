@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Message } from '@/types/message';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -18,7 +18,11 @@ interface MessageListProps {
   onScrollPositionChange?: (isAtBottom: boolean) => void;
 }
 
-export default function MessageList({
+export interface MessageListRef {
+  highlightMessage: (messageId: string) => void;
+}
+
+const MessageList = forwardRef<MessageListRef, MessageListProps>(({
   messages,
   currentUserId,
   isLoading = false,
@@ -26,7 +30,7 @@ export default function MessageList({
   channelId,
   dmConversationId,
   onScrollPositionChange
-}: MessageListProps) {
+}, ref) => {
   const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -53,6 +57,20 @@ export default function MessageList({
       // 滚动定位通过 highlightedMessageId 状态控制视觉效果，无需直接操作 classList
     }
   };
+
+  // 使用 useImperativeHandle 暴露 highlightMessage 方法
+  useImperativeHandle(ref, () => ({
+    highlightMessage: (messageId: string) => {
+      setHighlightedMessageId(messageId);
+      setTimeout(() => {
+        scrollToMessage(messageId);
+      }, 100);
+      // 3秒后自动清除高亮
+      setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 3000);
+    }
+  }));
 
   // 滚动位置检测 - 判断用户是否在消息列表底部
   useEffect(() => {
@@ -151,6 +169,10 @@ export default function MessageList({
       setTimeout(() => {
         scrollToMessage(messageId);
       }, 100);
+      // 3秒后自动清除高亮
+      setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 3000);
     } else {
       // 没有指定消息时，滚动到底部并清除高亮
       setHighlightedMessageId(null);
@@ -160,11 +182,17 @@ export default function MessageList({
 
   // 监听点击事件，用户点击页面任意位置时清除高亮
   useEffect(() => {
-    const handleClick = () => {
+    const handleClick = (event: MouseEvent) => {
       const messageId = searchParams.get('messageId');
       // 只有在有 messageId 参数时才需要手动清除高亮
       if (messageId) {
-        setHighlightedMessageId(null);
+        // 检查点击是否来自 toast 外部（即用户主动与页面交互）
+        const target = event.target as HTMLElement;
+        const isFromToast = target.closest('[data-sonner-toast]');
+        // 如果不是来自 toast 的点击，则清除高亮
+        if (!isFromToast) {
+          setHighlightedMessageId(null);
+        }
       }
     };
 
@@ -428,4 +456,8 @@ export default function MessageList({
       </div>
     </div>
   );
-}
+});
+
+MessageList.displayName = 'MessageList';
+
+export default MessageList;
