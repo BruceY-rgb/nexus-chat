@@ -13,8 +13,8 @@ import SearchMessagesModal from './SearchMessagesModal';
 interface ChannelViewProps {
   channel: Channel;
   isJoined: boolean;
-  onJoinChannel: (channelId: string) => void;
-  onLeaveChannel: (channelId: string) => void;
+  onJoinChannel: (channelId: string) => Promise<void>;
+  onLeaveChannel: (channelId: string) => Promise<void>;
   onStartChat?: (memberId: string) => void;
   onShowMembers?: () => void;
   onClearMessages?: () => void;
@@ -77,12 +77,12 @@ export default function ChannelView({
     }
   }, [channel?.id, isJoined]);
 
-  const handleToggleMembership = () => {
+  const handleToggleMembership = async () => {
     if (!channel?.id) return;
     if (isJoined) {
-      onLeaveChannel(channel.id);
+      await onLeaveChannel(channel.id);
     } else {
-      onJoinChannel(channel.id);
+      await onJoinChannel(channel.id);
     }
   };
 

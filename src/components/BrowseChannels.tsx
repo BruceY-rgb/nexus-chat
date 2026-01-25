@@ -8,10 +8,11 @@ import { isUserJoined } from '../types/channel';
 interface BrowseChannelsProps {
   channels: Channel[];
   userId: string;
-  onJoinChannel: (channelId: string) => void;
-  onLeaveChannel: (channelId: string) => void;
+  onJoinChannel: (channelId: string) => Promise<void>;
+  onLeaveChannel: (channelId: string) => Promise<void>;
   onSelectChannel: (channelId: string) => void;
   onBack?: () => void;
+  isJoiningChannel?: string;
 }
 
 export default function BrowseChannels({
@@ -20,7 +21,8 @@ export default function BrowseChannels({
   onJoinChannel,
   onLeaveChannel,
   onSelectChannel,
-  onBack
+  onBack,
+  isJoiningChannel
 }: BrowseChannelsProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -132,12 +134,13 @@ export default function BrowseChannels({
                   <Button
                     variant="secondary"
                     size="sm"
+                    disabled={isJoiningChannel === channel.id}
                     onClick={(e) => {
                       e.stopPropagation();
                       onLeaveChannel(channel.id);
                     }}
                   >
-                    Leave
+                    {isJoiningChannel === channel.id ? 'Leaving...' : 'Leave'}
                   </Button>
                 </div>
               ))}
@@ -178,12 +181,13 @@ export default function BrowseChannels({
                   <Button
                     variant="primary"
                     size="sm"
+                    disabled={isJoiningChannel === channel.id}
                     onClick={(e) => {
                       e.stopPropagation();
                       onJoinChannel(channel.id);
                     }}
                   >
-                    Join
+                    {isJoiningChannel === channel.id ? 'Joining...' : 'Join'}
                   </Button>
                 </div>
               ))}

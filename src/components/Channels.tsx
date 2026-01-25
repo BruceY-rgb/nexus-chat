@@ -34,27 +34,45 @@ export default function Channels({
     setIsModalOpen(false);
   };
 
-  const handleCreateChannelSubmit = (channelName: string, description?: string) => {
-    // 创建新频道对象
-    const newChannel: Channel = {
-      id: `channel-${Date.now()}`, // 简单的 ID 生成
-      name: channelName,
-      description,
-      type: 'public',
-      createdAt: new Date(),
-      ownerId: '1' // 默认当前用户创建
-    };
+  const handleCreateChannelSubmit = async (channelName: string, description?: string) => {
+    try {
+      // 调用实际 API 创建频道
+      const response = await fetch('/api/channels', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: channelName,
+          description,
+          isPrivate: false
+        })
+      });
 
-    // 通知父组件
-    onCreateChannel?.(newChannel);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || '创建频道失败');
+      }
 
-    // 关闭模态框
-    setIsModalOpen(false);
+      const data = await response.json();
+      const newChannel = data.channel;
 
-    // 自动选中新建的频道
-    onSelectChannel?.(newChannel.id);
+      // 通知父组件
+      onCreateChannel?.(newChannel);
 
-    console.log('创建新频道:', newChannel);
+      // 关闭模态框
+      setIsModalOpen(false);
+
+      // 自动选中新建的频道（使用真实ID）
+      onSelectChannel?.(newChannel.id);
+
+      console.log('创建新频道成功:', newChannel);
+    } catch (error) {
+      console.error('创建频道错误:', error);
+      // 可以添加用户友好的错误提示
+      alert(`创建频道失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
   };
 
   // 只显示已加入的频道

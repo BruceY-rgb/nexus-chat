@@ -49,6 +49,7 @@ export default function DashboardPage() {
   const [currentView, setCurrentView] = useState<'channel' | 'browse'>('channel');
   const [isNewDMModalOpen, setIsNewDMModalOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
+  const [isJoiningChannel, setIsJoiningChannel] = useState<string | undefined>(undefined);
 
   // 获取频道数据
   useEffect(() => {
@@ -269,39 +270,93 @@ export default function DashboardPage() {
     console.log('创建新频道:', apiChannel);
   };
 
-  const handleJoinChannel = (channelId: string) => {
-    setJoinedChannels(prev => [...prev, channelId]);
-    setCurrentView('channel');
-    setSelectedChannel(channelId);
+  const handleJoinChannel = async (channelId: string) => {
+    // 1. 显示加载状态，防止重复点击
+    setIsJoiningChannel(channelId);
 
-    // 清理 URL 参数
-    const url = new URL(window.location.href);
-    url.searchParams.delete('channel');
-    url.searchParams.delete('view');
-    router.replace(url.pathname + url.search);
+    try {
+      // 2. 调用加入频道 API
+      const response = await fetch(`/api/channels/${channelId}/join`, {
+        method: 'POST',
+        credentials: 'include'
+      });
 
-    console.log('加入频道:', channelId);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || '加入频道失败');
+      }
+
+      const data = await response.json();
+      console.log('✅ 成功加入频道:', data);
+
+      // 3. API 成功，更新前端状态
+      setJoinedChannels(prev => [...prev, channelId]);
+      setCurrentView('channel');
+      setSelectedChannel(channelId);
+
+      // 4. 清理 URL 参数
+      const url = new URL(window.location.href);
+      url.searchParams.delete('channel');
+      url.searchParams.delete('view');
+      router.replace(url.pathname + url.search);
+
+      console.log('✅ 加入频道完成:', channelId);
+    } catch (error) {
+      console.error('❌ 加入频道失败:', error);
+      // 显示错误提示
+      alert(`加入频道失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    } finally {
+      // 5. 清除加载状态
+      setIsJoiningChannel(undefined);
+    }
   };
 
-  const handleLeaveChannel = (channelId: string) => {
-    setJoinedChannels(prev => prev.filter(id => id !== channelId));
+  const handleLeaveChannel = async (channelId: string) => {
+    // 1. 显示加载状态
+    setIsJoiningChannel(channelId);
 
-    // 如果退出的频道是当前选中的频道，则切换到 #general
-    if (selectedChannel === channelId) {
-      const generalChannel = channels.find(c => c.id === 'channel-1');
-      if (generalChannel && joinedChannels.includes(generalChannel.id)) {
-        setSelectedChannel(generalChannel.id);
-      } else {
-        // 如果 #general 也退出了，选择第一个加入的频道
-        const firstJoined = joinedChannels.find(id => id !== channelId);
-        if (firstJoined) {
-          setSelectedChannel(firstJoined);
+    try {
+      // 2. 调用离开频道 API
+      const response = await fetch(`/api/channels/${channelId}/leave`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || '离开频道失败');
+      }
+
+      console.log('✅ 成功离开频道:', channelId);
+
+      // 3. API 成功，更新前端状态
+      setJoinedChannels(prev => prev.filter(id => id !== channelId));
+
+      // 4. 如果退出的频道是当前选中的频道，则切换到其他频道
+      if (selectedChannel === channelId) {
+        const generalChannel = channels.find(c => c.id === 'channel-1');
+        if (generalChannel && joinedChannels.includes(generalChannel.id)) {
+          setSelectedChannel(generalChannel.id);
         } else {
-          setSelectedChannel(undefined);
+          // 如果 #general 也退出了，选择第一个加入的频道
+          const firstJoined = joinedChannels.find(id => id !== channelId);
+          if (firstJoined) {
+            setSelectedChannel(firstJoined);
+          } else {
+            setSelectedChannel(undefined);
+          }
         }
       }
+
+      console.log('✅ 离开频道完成:', channelId);
+    } catch (error) {
+      console.error('❌ 离开频道失败:', error);
+      // 显示错误提示
+      alert(`离开频道失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    } finally {
+      // 5. 清除加载状态
+      setIsJoiningChannel(undefined);
     }
-    console.log('退出频道:', channelId);
   };
 
   const handleBrowseChannels = () => {
@@ -375,6 +430,7 @@ export default function DashboardPage() {
           onLeaveChannel={handleLeaveChannel}
           onSelectChannel={handleSelectChannel}
           onBack={handleBackToChannel}
+          isJoiningChannel={isJoiningChannel}
         />
       ) : (
         <>

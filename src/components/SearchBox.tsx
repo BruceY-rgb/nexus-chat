@@ -144,20 +144,13 @@ export default function SearchBox({ className = '' }: SearchBoxProps) {
   // 跳转到消息
   const navigateToMessage = (result: SearchResult) => {
     if (result.type === 'channel') {
-      // 跳转到频道 - 确保channelId存在
-      const channelId = result.channel?.id;
-      if (channelId) {
-        router.push(`/dashboard?channel=${channelId}&messageId=${result.id}`);
-      } else {
-        console.error('频道ID不存在:', result);
-      }
+      // 跳转到频道
+      router.push(`/dashboard?channel=${result.channel?.id}&messageId=${result.id}`);
     } else if (result.type === 'dm') {
       // 跳转到 DM
       const participantId = result.dmConversation?.participants[0]?.id;
       if (participantId) {
         router.push(`/dm/${participantId}?messageId=${result.id}`);
-      } else {
-        console.error('DM参与者ID不存在:', result);
       }
     }
     setShowResults(false);
@@ -214,7 +207,7 @@ export default function SearchBox({ className = '' }: SearchBoxProps) {
           onKeyDown={handleKeyDown}
           onFocus={() => query && setShowResults(true)}
           placeholder="搜索消息..."
-          className="w-full pl-10 pr-10 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all"
+          className="w-full pl-10 pr-10 py-2 bg-white/5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
         />
         {query && (
           <button

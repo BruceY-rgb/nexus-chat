@@ -15,7 +15,7 @@ export function useUnreadCount() {
   const { user } = useAuth();
 
   // 从数据库加载未读计数
-  const loadUnreadCounts = async () => {
+  const loadUnreadCounts = async (retryCount = 0) => {
     try {
       console.log('📊 Loading unread counts from API...');
       const response = await fetch('/api/users/unread-counts', {
@@ -26,11 +26,26 @@ export function useUnreadCount() {
         const data = await response.json();
         console.log('✅ Loaded unread counts:', data);
         setUnreadFromDB(data);
+      } else if (response.status === 403) {
+        // 权限错误：用户可能不是频道成员
+        console.warn('⚠️ Permission denied for unread counts, may not be a channel member');
+        // 不显示错误，而是延迟重试（最多3次）
+        if (retryCount < 3) {
+          setTimeout(() => {
+            loadUnreadCounts(retryCount + 1);
+          }, 1000 * (retryCount + 1)); // 递增延迟
+        }
       } else {
         console.error('❌ Failed to load unread counts:', response.status);
       }
     } catch (error) {
       console.error('❌ Failed to load unread counts:', error);
+      // 网络错误也可以重试
+      if (retryCount < 3) {
+        setTimeout(() => {
+          loadUnreadCounts(retryCount + 1);
+        }, 1000 * (retryCount + 1));
+      }
     }
   };
 
@@ -60,9 +75,16 @@ export function useUnreadCount() {
         }
 
         return data;
+      } else if (response.status === 403) {
+        // 权限错误：用户可能不是频道成员
+        console.warn('⚠️ Permission denied when marking as read, may not be a channel member');
+        // 不抛出错误，静默处理
+        return null;
       }
     } catch (error) {
       console.error('Failed to mark as read:', error);
+      // 网络错误不抛出，静默处理
+      return null;
     }
   };
 

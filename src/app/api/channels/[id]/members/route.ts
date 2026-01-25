@@ -28,13 +28,17 @@ export async function GET(
     }
 
     const channelId = params.id;
+    const currentUserId = decoded.userId;
 
     // 检查频道是否存在
     const channel = await prisma.channel.findUnique({
       where: { id: channelId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        isPrivate: true,
         members: {
-          include: {
+          select: {
             user: {
               select: {
                 id: true,
@@ -45,7 +49,9 @@ export async function GET(
                 isOnline: true,
                 lastSeenAt: true
               }
-            }
+            },
+            role: true,
+            joinedAt: true
           }
         }
       }
@@ -58,6 +64,16 @@ export async function GET(
       );
     }
 
+    // 检查用户是否是频道成员（包括私有和公有频道）
+    const isMember = channel.members.some(member => member.user.id === currentUserId);
+
+    if (!isMember) {
+      return NextResponse.json(
+        { error: 'You are not a member of this channel' },
+        { status: 403 }
+      );
+    }
+
     // 格式化返回数据
     const members = channel.members.map((member) => ({
       id: member.user.id,
@@ -67,8 +83,8 @@ export async function GET(
       avatarUrl: member.user.avatarUrl,
       isOnline: member.user.isOnline,
       lastSeenAt: member.user.lastSeenAt,
-      role: member.role,
-      joinedAt: member.joinedAt
+      role: (member as any).role,
+      joinedAt: (member as any).joinedAt
     }));
 
     return NextResponse.json({

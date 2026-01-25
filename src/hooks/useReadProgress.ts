@@ -30,7 +30,7 @@ export function useReadProgress({
   const hasScrolledToReadPosition = useRef(false);
 
   // 获取阅读位置
-  const fetchReadPosition = useCallback(async () => {
+  const fetchReadPosition = useCallback(async (retryCount = 0) => {
     if (!channelId && !dmConversationId) {
       setIsLoading(false);
       return;
@@ -52,9 +52,29 @@ export function useReadProgress({
           lastReadMessageId: data.lastReadMessageId,
           lastReadAt: data.lastReadAt ? new Date(data.lastReadAt) : null
         });
+      } else if (response.status === 403) {
+        // 权限错误：用户可能不是频道成员
+        console.warn('⚠️ Permission denied when fetching read position, may not be a channel member');
+        // 设置默认位置（未读）
+        setReadPosition({
+          lastReadMessageId: null,
+          lastReadAt: null
+        });
+        // 延迟重试（最多3次）
+        if (retryCount < 3) {
+          setTimeout(() => {
+            fetchReadPosition(retryCount + 1);
+          }, 1000 * (retryCount + 1));
+        }
       }
     } catch (error) {
       console.error('Failed to fetch read position:', error);
+      // 网络错误也可以重试
+      if (retryCount < 3) {
+        setTimeout(() => {
+          fetchReadPosition(retryCount + 1);
+        }, 1000 * (retryCount + 1));
+      }
     } finally {
       setIsLoading(false);
     }
