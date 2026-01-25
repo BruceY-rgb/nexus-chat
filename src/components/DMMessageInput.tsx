@@ -74,6 +74,10 @@ export default function DMMessageInput({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [emojiPickerPosition, setEmojiPickerPosition] = useState<{ x: number; y: number; isAbove?: boolean }>({ x: 0, y: 0 });
 
+  // File preview modal state
+  const [showFilePreview, setShowFilePreview] = useState(false);
+  const [previewFileIndex, setPreviewFileIndex] = useState(0);
+
   // 点击外部关闭 Emoji picker
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -103,16 +107,28 @@ export default function DMMessageInput({
     const preview = previewRef.current;
 
     if (textarea && preview) {
+      // 标记是否正在同步滚动，防止无限递归
+      let isSyncing = false;
+
       // 初始化时同步滚动位置
       preview.scrollTop = textarea.scrollTop;
 
       // 监听预览层滚动事件，实现双向同步
       const handlePreviewScroll = (e: Event) => {
+        // 防止无限递归
+        if (isSyncing) return;
+
         const target = e.target as HTMLDivElement;
         if (textarea && target.scrollHeight > textarea.clientHeight) {
+          isSyncing = true;
           const scrollPercentage = target.scrollTop / (target.scrollHeight - target.clientHeight);
           const textareaScrollTop = scrollPercentage * (textarea.scrollHeight - textarea.clientHeight);
           textarea.scrollTop = textareaScrollTop;
+
+          // 使用 setTimeout 确保在下一轮事件循环中重置标记
+          setTimeout(() => {
+            isSyncing = false;
+          }, 0);
         }
       };
 
@@ -755,6 +771,54 @@ export default function DMMessageInput({
     '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒'
   ];
 
+  // 处理图片点击预览
+  const handleImagePreview = (index: number) => {
+    setPreviewFileIndex(index);
+    setShowFilePreview(true);
+  };
+
+  // 关闭预览
+  const closePreview = () => {
+    setShowFilePreview(false);
+  };
+
+  // 上一张图片
+  const goToPrevious = () => {
+    setPreviewFileIndex(prev => (prev > 0 ? prev - 1 : imageFiles.length - 1));
+  };
+
+  // 下一张图片
+  const goToNext = () => {
+    setPreviewFileIndex(prev => (prev < imageFiles.length - 1 ? prev + 1 : 0));
+  };
+
+  // 键盘事件处理
+  useEffect(() => {
+    if (showFilePreview) {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        switch (e.key) {
+          case 'Escape':
+            closePreview();
+            break;
+          case 'ArrowLeft':
+            goToPrevious();
+            break;
+          case 'ArrowRight':
+            goToNext();
+            break;
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [showFilePreview]);
+
+  // 获取所有图片文件
+  const imageFiles = uploadedFiles.filter(f => f.file.type.startsWith('image/'));
+
   return (
     <div className="flex-shrink-0 bg-[#313235] border-t border-[#3A3A3D] sticky bottom-0">
       <div className="rounded-lg overflow-hidden">
@@ -989,10 +1053,10 @@ export default function DMMessageInput({
                 target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
               }}
               onScroll={(e) => {
-                // 同步滚动位置到预览层
+                // 标记是否正在同步滚动，防止无限递归
                 const textarea = e.target as HTMLTextAreaElement;
                 const previewLayer = previewRef.current;
-                if (previewLayer) {
+                if (previewLayer && textarea.scrollHeight > textarea.clientHeight) {
                   const scrollPercentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight);
                   const previewScrollTop = scrollPercentage * (previewLayer.scrollHeight - previewLayer.clientHeight);
                   previewLayer.scrollTop = previewScrollTop;
@@ -1086,8 +1150,11 @@ export default function DMMessageInput({
                     className="relative group"
                   >
                     {uploadedFile.file.type.startsWith('image/') ? (
-                      // 图片文件预览
-                      <div className="w-20 h-20 rounded-lg overflow-hidden border border-[#3A3A3D]">
+                      // 图片文件预览 - 可点击全屏查看
+                      <div
+                        className="w-20 h-20 rounded-lg overflow-hidden border border-[#3A3A3D] cursor-pointer hover:border-[#4A4A4D] transition-colors"
+                        onClick={() => handleImagePreview(imageFiles.findIndex(img => img.id === uploadedFile.id))}
+                      >
                         <img
                           src={uploadedFile.preview}
                           alt={uploadedFile.file.name}
@@ -1152,6 +1219,81 @@ export default function DMMessageInput({
           </button>
         </div>
       </div>
+
+      {/* 全屏图片预览模态框 */}
+      {showFilePreview && imageFiles.length > 0 ? createPortal(
+        <div
+          className="fixed inset-0 z-[999999] bg-black/90 flex items-center justify-center"
+          onClick={closePreview}
+        >
+          {/* 关闭按钮 */}
+          <button
+            onClick={closePreview}
+            className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 rounded-full transition-colors"
+          >
+            <X size={24} className="text-white" />
+          </button>
+
+          {/* 上一张按钮 */}
+          {imageFiles.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                goToPrevious();
+              }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+          )}
+
+          {/* 下一张按钮 */}
+          {imageFiles.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                goToNext();
+              }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
+          )}
+
+          {/* 图片容器 */}
+          <div
+            className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={imageFiles[previewFileIndex]?.preview || ''}
+              alt={imageFiles[previewFileIndex]?.file.name || ''}
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
+
+          {/* 图片信息 */}
+          {imageFiles.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/50 rounded-full">
+              <span className="text-white text-sm">
+                {previewFileIndex + 1} / {imageFiles.length}
+              </span>
+            </div>
+          )}
+
+          {/* 图片名称 */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 max-w-[80vw] px-4 py-2 bg-black/50 rounded-lg">
+            <span className="text-white text-sm text-center block">
+              {imageFiles[previewFileIndex]?.file.name}
+            </span>
+          </div>
+        </div>,
+        document.body
+      ) : null}
     </div>
   );
 }
