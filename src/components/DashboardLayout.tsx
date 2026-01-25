@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Button, Avatar } from '@/components/ui';
 import DirectMessages from '@/components/DirectMessages';
 import Channels from '@/components/Channels';
-import SearchBox from '@/components/SearchBox';
 import { TeamMember } from '@/types';
 import { Channel } from '@/types/channel';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
@@ -118,11 +117,6 @@ export default function DashboardLayout({
                 <Settings className="w-4 h-4" />
               </Button>
             </div>
-          </div>
-
-          {/* 搜索框 - 固定不滚动 */}
-          <div className="flex-shrink-0 p-4 border-b border-white/10">
-            <SearchBox className="w-full" />
           </div>
 
           {/* 频道和私聊列表 - 独立滚动 */}

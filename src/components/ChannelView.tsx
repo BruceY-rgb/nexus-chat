@@ -8,6 +8,7 @@ import { Button } from '@/components/ui';
 import { TeamMember } from '@/types';
 import MessageList from './MessageList';
 import DMMessageInput from './DMMessageInput';
+import SearchMessagesModal from './SearchMessagesModal';
 
 interface ChannelViewProps {
   channel: Channel;
@@ -35,6 +36,7 @@ export default function ChannelView({
   const [showMembersList, setShowMembersList] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   // 获取频道成员
   useEffect(() => {
@@ -150,6 +152,29 @@ export default function ChannelView({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* 搜索按钮 */}
+            <button
+              onClick={() => setIsSearchModalOpen(true)}
+              className="p-2 hover:bg-background-tertiary rounded-md transition-colors"
+              aria-label="搜索消息"
+              title="搜索消息"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-5 h-5 text-text-secondary"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z"
+                />
+              </svg>
+            </button>
+
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -502,6 +527,14 @@ export default function ChannelView({
         </div>
         )}
       </div>
+
+      {/* 搜索消息弹窗 */}
+      <SearchMessagesModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        channelId={channel.id}
+        contextName={`#${channel.name}`}
+      />
     </div>
   );
 }

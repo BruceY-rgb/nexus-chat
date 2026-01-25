@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { TeamMember } from '../types';
+import SearchMessagesModal from './SearchMessagesModal';
 
 interface DMHeaderProps {
   member: TeamMember;
@@ -22,6 +23,7 @@ export default function DMHeader({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStarred, setIsStarred] = useState(member.isStarred || false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   // 切换星标状态
   const handleToggleStar = async () => {
@@ -86,11 +88,7 @@ export default function DMHeader({
 
   // 搜索聊天记录
   const handleSearchMessages = () => {
-    // 打开搜索模态框或跳转到搜索页面
-    const query = prompt('请输入搜索关键词：');
-    if (query) {
-      window.location.href = `/search?q=${encodeURIComponent(query)}&type=dm&userId=${member.id}`;
-    }
+    setIsSearchModalOpen(true);
     setIsSettingsOpen(false);
   };
 
@@ -134,8 +132,30 @@ export default function DMHeader({
           </div>
         </div>
 
-        {/* 右侧 - 设置按钮 */}
+        {/* 右侧 - 搜索和设置按钮 */}
         <div className="flex items-center gap-2">
+          {/* 搜索按钮 */}
+          <button
+            onClick={() => setIsSearchModalOpen(true)}
+            className="p-2 hover:bg-background-tertiary rounded-full transition-colors"
+            title="搜索消息"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-5 h-5 text-text-secondary"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z"
+              />
+            </svg>
+          </button>
+
           <div className="relative">
             <button
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
@@ -253,6 +273,14 @@ export default function DMHeader({
           </div>
         </div>
       </div>
+
+      {/* 搜索消息弹窗 */}
+      <SearchMessagesModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        dmConversationId={member.dmConversationId}
+        contextName={isOwnSpace ? 'My Space' : member.displayName}
+      />
     </div>
   );
 }

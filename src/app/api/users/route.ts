@@ -108,12 +108,6 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        select: {
-          isStarred: true,
-          conversationId: true,
-          unreadCount: true,
-          lastReadAt: true
-        },
         orderBy: [
           { conversation: { lastMessageAt: 'desc' } }, // 按最后消息时间倒序
           { user: { displayName: 'asc' } } // 然后按显示名排序
