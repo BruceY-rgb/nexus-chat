@@ -15,6 +15,7 @@ interface MessageListProps {
   className?: string;
   channelId?: string;
   dmConversationId?: string;
+  onScrollPositionChange?: (isAtBottom: boolean) => void;
 }
 
 export default function MessageList({
@@ -23,10 +24,12 @@ export default function MessageList({
   isLoading = false,
   className = '',
   channelId,
-  dmConversationId
+  dmConversationId,
+  onScrollPositionChange
 }: MessageListProps) {
   const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [showReadIndicator, setShowReadIndicator] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
@@ -50,6 +53,52 @@ export default function MessageList({
       // 滚动定位通过 highlightedMessageId 状态控制视觉效果，无需直接操作 classList
     }
   };
+
+  // 滚动位置检测 - 判断用户是否在消息列表底部
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    let isAtBottom = false;
+    let timeoutId: NodeJS.Timeout;
+
+    const checkScrollPosition = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      // 判断是否在底部（允许100px的误差）
+      isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+
+      // 通知父组件滚动位置变化
+      if (onScrollPositionChange) {
+        onScrollPositionChange(isAtBottom);
+      }
+    };
+
+    // 滚动事件处理函数
+    const handleScroll = () => {
+      // 使用防抖，避免频繁触发
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(checkScrollPosition, 50);
+    };
+
+    // 初始检查
+    checkScrollPosition();
+
+    // 添加滚动监听
+    container.addEventListener('scroll', handleScroll, { passive: true });
+
+    // 监听消息变化（可能改变容器高度）
+    const resizeObserver = new ResizeObserver(() => {
+      checkScrollPosition();
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      resizeObserver.disconnect();
+      clearTimeout(timeoutId);
+    };
+  }, [onScrollPositionChange, messages]);
 
   // 监听滚动并自动上报阅读进度
   useEffect(() => {
@@ -273,7 +322,12 @@ export default function MessageList({
   const messageGroups = groupMessagesByDate(messages);
 
   return (
-    <div className={`flex-1 min-h-0 overflow-y-auto message-scroll h-full p-6`} style={{ scrollbarGutter: 'stable' }}>
+    <div
+      ref={scrollContainerRef}
+      className={`flex-1 min-h-0 overflow-y-auto message-scroll h-full p-6`}
+      style={{ scrollbarGutter: 'stable' }}
+      id="messages-scroll-container"
+    >
       <div className="max-w-4xl mx-auto">
         {Object.entries(messageGroups).map(([dateKey, dayMessages]) => (
           <div key={dateKey}>
@@ -370,7 +424,7 @@ export default function MessageList({
           </div>
         ))}
         {/* 自动滚动锚点 - 确保新消息到达时能滚动到底部 */}
-        <div ref={messagesEndRef} className="h-1" />
+        <div ref={messagesEndRef} className="h-1" id="messages-end-ref" />
       </div>
     </div>
   );

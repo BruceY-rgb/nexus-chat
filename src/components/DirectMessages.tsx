@@ -5,6 +5,7 @@ import { TeamMember } from '../types';
 import { Badge } from './ui';
 import { useUnreadStore } from '../store/unreadStore';
 import { useSocket } from '../hooks/useSocket';
+import { useUnreadCount } from '../hooks/useUnreadCount';
 
 interface DirectMessagesProps {
   members?: TeamMember[];
@@ -58,6 +59,7 @@ export default function DirectMessages({
   const [isLoading, setIsLoading] = useState(true);
   const { getUnreadCount } = useUnreadStore();
   const { socket } = useSocket();
+  const { markAsRead } = useUnreadCount();
 
   // 加载活跃的DM会话和星标用户
   useEffect(() => {
@@ -135,6 +137,12 @@ export default function DirectMessages({
 
     // 如果已经有 dmConversationId，直接使用
     if (dmConversationId) {
+      // 点击进入对话时，自动清除未读计数
+      try {
+        await markAsRead(undefined, dmConversationId);
+      } catch (error) {
+        console.error('Failed to mark as read:', error);
+      }
       onStartChat?.(userId, dmConversationId);
       return;
     }
@@ -324,7 +332,12 @@ export default function DirectMessages({
             {starredUsers.map((user) => {
               const isSelected = selectedDirectMessageId === user.id;
               const conversationId = user.dmConversationId || user.id;
-              const unreadCount = user.unreadCount || 0;
+              const realUnreadCount = getUnreadCount(conversationId);
+              const hasUnread = realUnreadCount > 0;
+
+              // 防御性检查：只有当未读数大于0且最后一条消息不是当前用户发送的，才显示未读标记
+              // 注意：星标列表没有lastMessage信息，但getUnreadCount已经排除了发送者
+              const shouldShowUnreadBadge = hasUnread;
 
               return (
                 <div
@@ -373,9 +386,9 @@ export default function DirectMessages({
                   </svg>
 
                   {/* Unread Count Badge */}
-                  {unreadCount > 0 && (
+                  {shouldShowUnreadBadge && (
                     <Badge
-                      count={unreadCount}
+                      count={realUnreadCount}
                       size="sm"
                       className="ml-auto"
                     />

@@ -8,6 +8,7 @@ interface ExtendedSocketIOServer extends SocketIOServer {
   broadcastNewMessage: (message: any, channelId?: string, dmConversationId?: string) => void;
   broadcastMessageUpdate: (message: any, channelId?: string, dmConversationId?: string) => void;
   broadcastMessageDelete: (messageId: string, channelId?: string, dmConversationId?: string) => void;
+  broadcastNewNotification: (notification: any, userId: string) => void;
 }
 
 // 用户连接信息
@@ -69,6 +70,9 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
         dmConversations: new Set()
       });
     }
+
+    // 加入用户自己的通知房间
+    socket.join(`user:${userId}`);
 
     // 更新用户在线状态
     updateUserPresence(userId, true);
@@ -295,6 +299,11 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
     } else if (dmConversationId) {
       io.to(`dm:${dmConversationId}`).emit('message-deleted', { messageId });
     }
+  };
+
+  // 公共方法：广播新通知
+  io.broadcastNewNotification = (notification: any, userId: string) => {
+    io.to(`user:${userId}`).emit('new-notification', notification);
   };
 
   console.log('✅ WebSocket server initialized');

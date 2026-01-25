@@ -31,27 +31,40 @@ export function useSocket(): UseSocketReturn {
   const maxReconnectAttempts = 5;
   const reconnectInterval = useRef<NodeJS.Timeout | null>(null);
 
-  // 获取 token 从 cookie
+  // 获取 token 从 cookie (ws_token 供 WebSocket 使用)
   const getToken = useCallback(() => {
     if (typeof document === 'undefined') return null;
     const cookies = document.cookie.split(';');
     for (let cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
-      if (name === 'auth_token') {
+      if (name === 'ws_token') {
+        console.log(`🔑 [getToken] Found ws_token`);
         return value;
       }
     }
+    console.log(`⚠️ [getToken] ws_token not found in cookies`);
     return null;
   }, []);
 
   const connect = useCallback(() => {
     const token = getToken();
+    console.log(`🔌 [connect] Attempting to connect with ws_token:`, {
+      hasToken: !!token,
+      hasUser: !!user,
+      userId: user?.id,
+      existingSocket: !!socket,
+      tokenLength: token ? token.length : 0
+    });
+
     if (!token || !user) {
-      console.log('Cannot connect: missing token or user');
+      console.log(`❌ [connect] Cannot connect: missing token or user:`, {
+        noToken: !token,
+        noUser: !user
+      });
       return;
     }
 
-    console.log('🔌 Connecting to WebSocket server...');
+    console.log('🔌 [connect] Connecting to WebSocket server...');
 
     const socketInstance = io('http://127.0.0.1:3000', {
       auth: { token },
@@ -115,6 +128,10 @@ export function useSocket(): UseSocketReturn {
     });
 
     setSocket(socketInstance);
+    console.log(`✅ [connect] Socket instance created and set to state:`, {
+      socketId: socketInstance.id,
+      connected: socketInstance.connected
+    });
   }, [user, getToken]);
 
   const disconnect = useCallback(() => {
@@ -127,11 +144,27 @@ export function useSocket(): UseSocketReturn {
     }
   }, [socket]);
 
-  // 自动连接
+  // 自动连接 - 修复循环依赖
   useEffect(() => {
     const token = getToken();
-    if (token && user && !socket) {
+    console.log(`🔌 [useSocket] Auto-connect check with ws_token:`, {
+      hasToken: !!token,
+      hasUser: !!user,
+      hasSocket: !!socket,
+      socketId: socket?.id,
+      userId: user?.id,
+      tokenPreview: token ? `${token.substring(0, 10)}...` : null
+    });
+
+    // 移除 socket 依赖，避免循环
+    if (token && user) {
+      console.log(`🔌 [useSocket] IMMEDIATELY connecting with ws_token (forcing)...`);
       connect();
+    } else {
+      console.log(`🔌 [useSocket] Missing requirements:`, {
+        noToken: !token,
+        noUser: !user
+      });
     }
 
     return () => {
@@ -139,7 +172,7 @@ export function useSocket(): UseSocketReturn {
         clearInterval(reconnectInterval.current);
       }
     };
-  }, [user, socket, connect, getToken]);
+  }, [user, connect, getToken]); // 移除 socket 依赖
 
   // 清理
   useEffect(() => {

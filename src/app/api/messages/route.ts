@@ -4,6 +4,7 @@ import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 import { Server as SocketIOServer } from 'socket.io';
 import { parseMentions, extractUsernames } from '@/lib/mention-parser';
+import { notificationService } from '@/lib/notification-service';
 
 // 全局变量存储 Socket.IO 实例
 let io: SocketIOServer | null = null;
@@ -49,6 +50,12 @@ export async function POST(request: NextRequest) {
         unauthorizedResponse(),
         { status: 401 }
       );
+    }
+
+    // 设置 WebSocket 实例到 NotificationService
+    if (typeof (global as any).io !== 'undefined') {
+      const ioInstance = (global as any).io as SocketIOServer;
+      notificationService.setSocketIO(ioInstance);
     }
 
     // 验证 token
@@ -182,7 +189,7 @@ export async function POST(request: NextRequest) {
       console.log(`📎 Created ${attachments.length} attachments for message ${message.id}`);
     }
 
-    // 如果有提及，创建提及记录
+    // 如果有提及，创建提及记录和通知
     if (mentions.length > 0) {
       const usernames = extractUsernames(mentions);
 
@@ -208,6 +215,19 @@ export async function POST(request: NextRequest) {
         });
 
         console.log(`📌 Created ${mentionedUsers.length} mentions for message ${message.id}`);
+
+        // 为提及创建通知
+        try {
+          await notificationService.createMentionNotifications(
+            message.id,
+            currentUserId,
+            message.content,
+            channelId || undefined,
+            dmConversationId || undefined
+          );
+        } catch (error) {
+          console.error('Error creating mention notifications:', error);
+        }
       }
     }
 
@@ -253,17 +273,41 @@ export async function POST(request: NextRequest) {
           lastMessageAt: new Date()
         }
       });
+
+      // 为私聊消息创建通知
+      try {
+        await notificationService.createDMNotification(
+          message.id,
+          currentUserId,
+          dmConversationId
+        );
+      } catch (error) {
+        console.error('Error creating DM notification:', error);
+      }
     }
 
     // 通过 WebSocket 广播新消息
     try {
       // 在生产环境中，应该通过全局事件系统或Redis Pub/Sub来获取 io 实例
       // 这里为了简化示例，我们使用全局变量
-      if (typeof (global as any).io !== 'undefined') {
-        const ioInstance = (global as any).io as SocketIOServer;
+      const globalIo = (global as any).io;
+      if (typeof globalIo !== 'undefined') {
+        console.log(`✅ [API] WebSocket instance found:`, !!globalIo);
+        const ioInstance = globalIo as SocketIOServer;
+        console.log(`🚀 [API] Broadcasting new message via WebSocket:`, {
+          messageId: message.id,
+          content: message.content?.substring(0, 50),
+          fromUser: currentUserId,
+          channelId,
+          dmConversationId,
+          timestamp: new Date().toISOString()
+        });
 
         if (channelId) {
-          ioInstance.to(`channel:${channelId}`).emit('new-message', message);
+          const channelRoom = `channel:${channelId}`;
+          console.log(`📡 [API] Broadcasting to channel room: ${channelRoom}`);
+          ioInstance.to(channelRoom).emit('new-message', message);
+          console.log(`✅ [API] Message broadcasted to channel room successfully`);
 
           // 广播未读计数更新
           const channelMembers = await prisma.channelMember.findMany({
@@ -281,7 +325,10 @@ export async function POST(request: NextRequest) {
             }
           });
         } else if (dmConversationId) {
-          ioInstance.to(`dm:${dmConversationId}`).emit('new-message', message);
+          const dmRoom = `dm:${dmConversationId}`;
+          console.log(`📡 [API] Broadcasting to DM room: ${dmRoom}`);
+          ioInstance.to(dmRoom).emit('new-message', message);
+          console.log(`✅ [API] Message broadcasted to DM room successfully`);
 
           // 广播未读计数更新
           const dmMembers = await prisma.dMConversationMember.findMany({
@@ -306,10 +353,12 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        console.log(`📡 Broadcasted new message via WebSocket: ${message.id}`);
+        console.log(`📡 [API] WebSocket broadcast completed for message: ${message.id}`);
+      } else {
+        console.warn(`⚠️ [API] WebSocket instance not found in global variables. Message will not be broadcasted.`);
       }
     } catch (wsError) {
-      console.error('WebSocket broadcast error:', wsError);
+      console.error('❌ [API] WebSocket broadcast error:', wsError);
       // 即使 WebSocket 广播失败，也不影响 HTTP 响应
     }
 

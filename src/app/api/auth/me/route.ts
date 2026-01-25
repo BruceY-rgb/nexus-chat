@@ -10,7 +10,8 @@ import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth_token')?.value;
+    // 优先使用 httpOnly token, 备用 ws_token
+    const token = request.cookies.get('auth_token')?.value || request.cookies.get('ws_token')?.value;
 
     if (!token) {
       return NextResponse.json(

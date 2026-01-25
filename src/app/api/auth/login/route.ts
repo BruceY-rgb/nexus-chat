@@ -148,9 +148,18 @@ export async function POST(request: NextRequest) {
       )
     );
 
-    // 设置 cookie
+    // 设置 cookie (httpOnly, 用于 API 认证)
     response.cookies.set('auth_token', token, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7天
+      path: '/',
+    });
+
+    // 同时设置一个非 httpOnly 的 token 供 WebSocket 使用
+    response.cookies.set('ws_token', token, {
+      httpOnly: false, // JavaScript 可以访问
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7天

@@ -26,7 +26,8 @@ export type SocketEventType =
   | 'typing-start'
   | 'typing-stop'
   | 'message-read'
-  | 'get-online-users';
+  | 'get-online-users'
+  | 'new-notification';
 
 // WebSocket 消息事件负载
 export interface NewMessagePayload {
@@ -67,6 +68,24 @@ export interface MessageReadPayload {
   messageIds: string[];
   channelId?: string;
   dmConversationId?: string;
+}
+
+// 新通知事件负载
+export interface NewNotificationPayload {
+  id: string;
+  type: 'mention' | 'dm' | 'channel_invite' | 'system';
+  title: string;
+  content?: string;
+  relatedMessageId?: string;
+  relatedChannelId?: string;
+  relatedDmConversationId?: string;
+  isRead: boolean;
+  createdAt: Date | string;
+  user: {
+    id: string;
+    displayName: string;
+    avatarUrl?: string | null;
+  };
 }
 
 // 用户在线状态事件负载
