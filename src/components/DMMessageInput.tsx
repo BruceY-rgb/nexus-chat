@@ -945,7 +945,7 @@ export default function DMMessageInput({
             <input
               id="file-transfer-input"
               type="file"
-              accept=".xls,.xlsx,.doc,.docx,.ppt,.pptx,.zip,.pdf,.txt,image/*"
+              accept=".xls,.xlsx,.doc,.docx,.ppt,.pptx,.zip,.pdf,.txt"
               multiple
               className="hidden"
               onChange={(e) => {
