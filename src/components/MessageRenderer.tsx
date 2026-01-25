@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Message } from '@/types/message';
 import MentionToken from './MentionToken';
+import AttachmentCard from './AttachmentCard';
 import { X } from 'lucide-react';
 
 interface MessageRendererProps {
@@ -171,7 +172,7 @@ export default function MessageRenderer({
   };
 
   /**
-   * 渲染消息内容，支持 Token 化提及
+   * 渲染消息内容，支持 Token 化提及和 Emoji 优化
    * 使用 matchAll 替代 split 避免重复渲染问题
    */
   const renderMessageContent = () => {
@@ -192,10 +193,9 @@ export default function MessageRenderer({
       // 添加匹配前的普通文本
       if (matchStart > lastIndex) {
         const beforeText = message.content.slice(lastIndex, matchStart);
+        // 渲染普通文本（包含 Emoji 优化）
         elements.push(
-          <span key={`text-${matchIndex}`}>
-            {beforeText}
-          </span>
+          <EmojiText key={`text-${matchIndex}`} text={beforeText} />
         );
       }
 
@@ -226,9 +226,7 @@ export default function MessageRenderer({
     if (lastIndex < message.content.length) {
       const remainingText = message.content.slice(lastIndex);
       elements.push(
-        <span key={`text-${matches.length}`}>
-          {remainingText}
-        </span>
+        <EmojiText key={`text-${matches.length}`} text={remainingText} />
       );
     }
 
@@ -237,141 +235,223 @@ export default function MessageRenderer({
   };
 
   /**
-   * 渲染图片附件
+   * Emoji 文本渲染组件
+   * 支持 Jumboji 效果（纯 Emoji 消息大尺寸显示）
+   * 和混合文本中的中等尺寸 Emoji
+   */
+  const EmojiText = ({ text }: { text: string }) => {
+    // 匹配各种 Unicode 范围的 Emoji 字符
+    // 包括：基本多语言平面、补充多语言平面、杂项符号、表情符号等
+    const emojiRegex = /(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})/gu;
+
+    // 检查是否是纯 Emoji 文本（去除空格和换行后）
+    const isPureEmoji = text.replace(/\s/g, '').match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})+$/u);
+
+    if (isPureEmoji) {
+      // 纯 Emoji 消息：Jumboji 效果
+      return (
+        <span style={{ fontSize: '2.5rem', lineHeight: '1.2' }}>
+          {text}
+        </span>
+      );
+    }
+
+    // 混合文本：按字符分割并渲染
+    const parts = [...text];
+
+    return (
+      <>
+        {parts.map((char, index) => {
+          const isEmoji = emojiRegex.test(char);
+          if (isEmoji) {
+            // 重置正则状态
+            emojiRegex.lastIndex = 0;
+            // Emoji 字符：中等尺寸
+            return (
+              <span
+                key={index}
+                style={{
+                  fontSize: '1.5rem',
+                  verticalAlign: 'middle',
+                  lineHeight: '1.2'
+                }}
+              >
+                {char}
+              </span>
+            );
+          }
+          // 普通文本字符
+          return <span key={index}>{char}</span>;
+        })}
+      </>
+    );
+  };
+
+  /**
+   * 渲染附件 - 支持图片和其他类型文件
    */
   const renderAttachments = () => {
-    if (imageAttachments.length === 0) {
+    if (!message.attachments || message.attachments.length === 0) {
       return null;
     }
 
-    // 根据图片数量决定布局
-    const imageCount = imageAttachments.length;
+    // 分离图片附件和其他附件
+    const imageAttachments = message.attachments.filter(att => att.mimeType.startsWith('image/'));
+    const otherAttachments = message.attachments.filter(att => !att.mimeType.startsWith('image/'));
 
     return (
       <div className="mt-2">
-        {imageCount === 1 ? (
-          // 单张图片 - 显示较大
-          <div className="relative group cursor-pointer rounded-lg overflow-hidden max-w-md">
-            <img
-              src={imageAttachments[0].thumbnailUrl || imageAttachments[0].filePath}
-              alt={imageAttachments[0].fileName}
-              className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
-              style={{ maxHeight: '400px' }}
-              onClick={() => setSelectedImageIndex(0)}
-            />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-          </div>
-        ) : imageCount === 2 ? (
-          // 两张图片 - 水平排列
-          <div className="grid grid-cols-2 gap-2">
-            {imageAttachments.map((attachment) => (
-              <div
-                key={attachment.id}
-                className="relative group cursor-pointer rounded-lg overflow-hidden"
-                onClick={() => {
-                  const index = imageAttachments.findIndex(att => att.id === attachment.id);
-                  if (index !== -1) {
-                    setSelectedImageIndex(index);
-                  }
-                }}
-              >
-                <img
-                  src={attachment.thumbnailUrl || attachment.filePath}
-                  alt={attachment.fileName}
-                  className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
-                  style={{ aspectRatio: '1', maxHeight: '200px' }}
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-              </div>
-            ))}
-          </div>
-        ) : imageCount === 3 ? (
-          // 三张图片 - 第一个占一半，剩下两个在右边
-          <div className="grid grid-cols-2 gap-2">
-            <div
-              className="relative group cursor-pointer rounded-lg overflow-hidden row-span-2"
-              onClick={() => setSelectedImageIndex(0)}
-            >
-              <img
-                src={imageAttachments[0].thumbnailUrl || imageAttachments[0].filePath}
-                alt={imageAttachments[0].fileName}
-                className="w-full h-full object-cover hover:opacity-90 transition-opacity"
-                style={{ aspectRatio: '1', maxHeight: '400px' }}
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-            </div>
-            {imageAttachments.slice(1, 3).map((attachment) => (
-              <div
-                key={attachment.id}
-                className="relative group cursor-pointer rounded-lg overflow-hidden"
-                onClick={() => {
-                  const index = imageAttachments.findIndex(att => att.id === attachment.id);
-                  if (index !== -1) {
-                    setSelectedImageIndex(index);
-                  }
-                }}
-              >
-                <img
-                  src={attachment.thumbnailUrl || attachment.filePath}
-                  alt={attachment.fileName}
-                  className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
-                  style={{ aspectRatio: '1' }}
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-              </div>
-            ))}
-          </div>
-        ) : imageCount === 4 ? (
-          // 四张图片 - 2x2 网格
-          <div className="grid grid-cols-2 gap-2">
-            {imageAttachments.map((attachment) => (
-              <div
-                key={attachment.id}
-                className="relative group cursor-pointer rounded-lg overflow-hidden"
-                onClick={() => {
-                  const index = imageAttachments.findIndex(att => att.id === attachment.id);
-                  if (index !== -1) {
-                    setSelectedImageIndex(index);
-                  }
-                }}
-              >
-                <img
-                  src={attachment.thumbnailUrl || attachment.filePath}
-                  alt={attachment.fileName}
-                  className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
-                  style={{ aspectRatio: '1' }}
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          // 超过四张图片 - 显示前四张，其余显示计数
-          <div className="grid grid-cols-2 gap-2">
-            {imageAttachments.slice(0, 4).map((attachment, index) => (
-              <div
-                key={attachment.id}
-                className="relative group cursor-pointer rounded-lg overflow-hidden"
-                onClick={() => {
-                  const index = imageAttachments.findIndex(att => att.id === attachment.id);
-                  if (index !== -1) {
-                    setSelectedImageIndex(index);
-                  }
-                }}
-              >
-                <img
-                  src={attachment.thumbnailUrl || attachment.filePath}
-                  alt={attachment.fileName}
-                  className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
-                  style={{ aspectRatio: '1' }}
-                />
-                {index === 3 && imageCount > 4 && (
-                  <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                    <span className="text-white text-2xl font-bold">+{imageCount - 4}</span>
+        {/* 渲染图片附件 - 使用原有布局 */}
+        {imageAttachments.length > 0 && (
+          <div className="mb-2">
+            {(() => {
+              const imageCount = imageAttachments.length;
+
+              if (imageCount === 1) {
+                // 单张图片 - 显示较大
+                return (
+                  <div className="relative group cursor-pointer rounded-lg overflow-hidden max-w-md">
+                    <img
+                      src={imageAttachments[0].thumbnailUrl || imageAttachments[0].filePath}
+                      alt={imageAttachments[0].fileName}
+                      className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
+                      style={{ maxHeight: '400px' }}
+                      onClick={() => setSelectedImageIndex(0)}
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                   </div>
-                )}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-              </div>
+                );
+              } else if (imageCount === 2) {
+                // 两张图片 - 水平排列
+                return (
+                  <div className="grid grid-cols-2 gap-2">
+                    {imageAttachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="relative group cursor-pointer rounded-lg overflow-hidden"
+                        onClick={() => {
+                          const index = imageAttachments.findIndex(att => att.id === attachment.id);
+                          if (index !== -1) {
+                            setSelectedImageIndex(index);
+                          }
+                        }}
+                      >
+                        <img
+                          src={attachment.thumbnailUrl || attachment.filePath}
+                          alt={attachment.fileName}
+                          className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
+                          style={{ aspectRatio: '1', maxHeight: '200px' }}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
+                      </div>
+                    ))}
+                  </div>
+                );
+              } else if (imageCount === 3) {
+                // 三张图片 - 第一个占一半，剩下两个在右边
+                return (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div
+                      className="relative group cursor-pointer rounded-lg overflow-hidden row-span-2"
+                      onClick={() => setSelectedImageIndex(0)}
+                    >
+                      <img
+                        src={imageAttachments[0].thumbnailUrl || imageAttachments[0].filePath}
+                        alt={imageAttachments[0].fileName}
+                        className="w-full h-full object-cover hover:opacity-90 transition-opacity"
+                        style={{ aspectRatio: '1', maxHeight: '400px' }}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
+                    </div>
+                    {imageAttachments.slice(1, 3).map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="relative group cursor-pointer rounded-lg overflow-hidden"
+                        onClick={() => {
+                          const index = imageAttachments.findIndex(att => att.id === attachment.id);
+                          if (index !== -1) {
+                            setSelectedImageIndex(index);
+                          }
+                        }}
+                      >
+                        <img
+                          src={attachment.thumbnailUrl || attachment.filePath}
+                          alt={attachment.fileName}
+                          className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
+                          style={{ aspectRatio: '1' }}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
+                      </div>
+                    ))}
+                  </div>
+                );
+              } else if (imageCount === 4) {
+                // 四张图片 - 2x2 网格
+                return (
+                  <div className="grid grid-cols-2 gap-2">
+                    {imageAttachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="relative group cursor-pointer rounded-lg overflow-hidden"
+                        onClick={() => {
+                          const index = imageAttachments.findIndex(att => att.id === attachment.id);
+                          if (index !== -1) {
+                            setSelectedImageIndex(index);
+                          }
+                        }}
+                      >
+                        <img
+                          src={attachment.thumbnailUrl || attachment.filePath}
+                          alt={attachment.fileName}
+                          className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
+                          style={{ aspectRatio: '1' }}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
+                      </div>
+                    ))}
+                  </div>
+                );
+              } else {
+                // 超过四张图片 - 显示前四张，其余显示计数
+                return (
+                  <div className="grid grid-cols-2 gap-2">
+                    {imageAttachments.slice(0, 4).map((attachment, index) => (
+                      <div
+                        key={attachment.id}
+                        className="relative group cursor-pointer rounded-lg overflow-hidden"
+                        onClick={() => {
+                          const index = imageAttachments.findIndex(att => att.id === attachment.id);
+                          if (index !== -1) {
+                            setSelectedImageIndex(index);
+                          }
+                        }}
+                      >
+                        <img
+                          src={attachment.thumbnailUrl || attachment.filePath}
+                          alt={attachment.fileName}
+                          className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
+                          style={{ aspectRatio: '1' }}
+                        />
+                        {index === 3 && imageCount > 4 && (
+                          <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                            <span className="text-white text-2xl font-bold">+{imageCount - 4}</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+            })()}
+          </div>
+        )}
+
+        {/* 渲染其他类型附件 - 使用 AttachmentCard */}
+        {otherAttachments.length > 0 && (
+          <div className="space-y-2">
+            {otherAttachments.map((attachment) => (
+              <AttachmentCard key={attachment.id} attachment={attachment} />
             ))}
           </div>
         )}

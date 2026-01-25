@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
-import { uploadFile, validateFileType, validateFileSize } from '@/lib/s3';
+import { uploadFile, validateFileType, validateFileSize, getAllowedFileTypes } from '@/lib/s3';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -62,8 +62,9 @@ export async function POST(request: NextRequest) {
     for (const file of files) {
       // 验证文件类型
       if (!validateFileType(file.type)) {
+        const allowedTypes = getAllowedFileTypes();
         return NextResponse.json(
-          { error: `Invalid file type: ${file.type}. Allowed types: image/jpeg, image/png, image/gif, image/webp, application/pdf, text/plain` },
+          { error: `Invalid file type: ${file.type}. Allowed types: ${allowedTypes.join(', ')}` },
           { status: 400 }
         );
       }

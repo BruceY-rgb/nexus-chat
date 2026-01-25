@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useDropzone } from 'react-dropzone';
 import {
   Bold,
@@ -16,13 +17,13 @@ import {
   Type,
   Smile,
   AtSign,
-  Video,
   Mic,
   Send,
   MoreHorizontal,
   Image as ImageIcon,
   X,
   Upload,
+  Folder,
   Loader2
 } from 'lucide-react';
 import MentionAutocomplete from './MentionAutocomplete';
@@ -68,11 +69,38 @@ export default function DMMessageInput({
   const [autocompletePosition, setAutocompletePosition] = useState({ x: 0, y: 0 });
   const [mentionStartIndex, setMentionStartIndex] = useState(-1);
 
+  // Emoji picker state
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [emojiPickerPosition, setEmojiPickerPosition] = useState<{ x: number; y: number; isAbove?: boolean }>({ x: 0, y: 0 });
+
+  // 点击外部关闭 Emoji picker
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showEmojiPicker) {
+        const target = event.target as Node;
+        const emojiPicker = document.querySelector('[data-emoji-picker="true"]');
+        const emojiButton = document.querySelector('[data-emoji-button="true"]');
+
+        // 如果点击的不是 emoji picker 本身，也不是 emoji 按钮，则关闭
+        if (emojiPicker && !emojiPicker.contains(target) && emojiButton !== target) {
+          setShowEmojiPicker(false);
+        }
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showEmojiPicker]);
+
   // 过滤掉当前用户的成员（使用可选链安全处理）
   const availableMembers = (members || []).filter(member => member.id !== currentUserId);
 
   /**
-   * 处理文件上传
+   * 处理文件上传（图片）
    */
   const handleFileUpload = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
@@ -147,6 +175,73 @@ export default function DMMessageInput({
   }, []);
 
   /**
+   * 处理文件传输（任意类型文件）
+   */
+  const handleFileTransfer = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
+
+    // 检查文件大小 (50MB 限制)
+    const maxSize = 50 * 1024 * 1024;
+    const oversizedFiles = files.filter(file => file.size > maxSize);
+    if (oversizedFiles.length > 0) {
+      alert(`文件大小不能超过 50MB。超出限制的文件：${oversizedFiles.map(f => f.name).join(', ')}`);
+      return;
+    }
+
+    // 为每个文件创建预览（仅用于显示文件信息）
+    const newFiles: UploadedFile[] = files.map(file => ({
+      id: Math.random().toString(36).substring(7),
+      file,
+      preview: '' // 非图片文件没有预览
+    }));
+
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+
+    // 实际执行上传
+    try {
+      setIsUploading(true);
+
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || '上传失败');
+      }
+
+      const result = await response.json();
+
+      // 将上传结果存储到文件对象中
+      setUploadedFiles(prev => prev.map(f => {
+        const uploadedFile = result.files.find((uf: any) => uf.originalName === f.file.name);
+        if (uploadedFile) {
+          return {
+            ...f,
+            uploadData: uploadedFile
+          };
+        }
+        return f;
+      }));
+
+    } catch (error) {
+      console.error('❌ 文件传输失败:', error);
+      alert(`传输失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      // 移除失败的文件
+      setUploadedFiles(prev => prev.filter(f => !newFiles.some(nf => nf.id === f.id)));
+    } finally {
+      setIsUploading(false);
+    }
+  }, []);
+
+  /**
    * 移除已上传的文件
    */
   const removeFile = useCallback((fileId: string) => {
@@ -165,7 +260,17 @@ export default function DMMessageInput({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFileUpload,
     accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp'],
+      'application/pdf': ['.pdf'],
+      'text/plain': ['.txt'],
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.ms-powerpoint': ['.ppt'],
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
+      'application/zip': ['.zip'],
+      'application/x-zip-compressed': ['.zip']
     },
     maxFiles: 10,
     disabled: disabled || isSending
@@ -315,10 +420,22 @@ export default function DMMessageInput({
       // 获取已上传的文件数据
       const attachments = uploadedFiles
         .filter(f => f.uploadData)
-        .map(f => ({
-          ...f.uploadData,
-          fileType: 'image'  // 明确标识为图片类型
-        }));
+        .map(f => {
+          const file = f.file;
+          // 根据 mimeType 确定文件类型
+          let fileType = 'file';
+          if (file.type.startsWith('image/')) {
+            fileType = 'image';
+          } else if (file.type === 'application/pdf') {
+            fileType = 'pdf';
+          } else if (file.type.startsWith('text/')) {
+            fileType = 'text';
+          }
+          return {
+            ...f.uploadData,
+            fileType
+          };
+        });
 
       const response = await fetch('/api/messages', {
         method: 'POST',
@@ -392,6 +509,7 @@ export default function DMMessageInput({
 
   /**
    * 渲染格式化后的消息（用于输入框预览层）
+   * 支持 @提及高亮和 Emoji 优化
    */
   const renderFormattedMessage = () => {
     if (!message) {
@@ -433,8 +551,42 @@ export default function DMMessageInput({
         }
       }
 
-      // 偶数索引是普通文本
-      return part;
+      // 偶数索引是普通文本：处理 Emoji
+      return renderEmojiInText(part);
+    });
+  };
+
+  /**
+   * 在文本中渲染 Emoji
+   * 为 Emoji 字符添加样式，使其更大且对齐更好
+   */
+  const renderEmojiInText = (text: string) => {
+    // 匹配各种 Unicode 范围的 Emoji 字符
+    const emojiRegex = /(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})/gu;
+    const parts = [...text];
+
+    return parts.map((char, index) => {
+      const isEmoji = emojiRegex.test(char);
+      if (isEmoji) {
+        // 重置正则状态
+        emojiRegex.lastIndex = 0;
+        // Emoji 字符：中等尺寸
+        return (
+          <span
+            key={index}
+            style={{
+              fontSize: '1.25rem',
+              verticalAlign: 'middle',
+              lineHeight: '1.2',
+              fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'
+            }}
+          >
+            {char}
+          </span>
+        );
+      }
+      // 普通文本字符
+      return <span key={index}>{char}</span>;
     });
   };
 
@@ -480,6 +632,100 @@ export default function DMMessageInput({
       }, 50); // 增加延迟确保DOM更新完成
     }
   };
+
+  // 处理 emoji 按钮点击
+  const handleEmojiButtonClick = () => {
+    if (textareaRef.current) {
+      // 计算emoji选择器的位置
+      const textarea = textareaRef.current;
+      const rect = textarea.getBoundingClientRect();
+      const cursorPos = textarea.selectionStart;
+      const caretCoords = getCaretCoordinates(textarea, cursorPos);
+
+      // Emoji选择器尺寸 - 调整为适应6列布局
+      const emojiPickerWidth = 320;
+      const emojiPickerHeight = 280;
+
+      // 计算相对于视口的绝对位置
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // 基础位置（相对于输入框）
+      let x = rect.left + Math.max(10, Math.min(caretCoords.x, rect.width - emojiPickerWidth));
+      let y;
+
+      // 智能位置检测：检查上方和下方空间
+      const spaceAbove = rect.top;
+      const spaceBelow = viewportHeight - rect.bottom;
+
+      // 如果上方空间不足280px且下方空间充足，则向下弹出
+      if (spaceAbove < emojiPickerHeight && spaceBelow > spaceAbove) {
+        y = rect.bottom + 8; // 向下弹出，距离输入框底部8px
+      } else {
+        y = rect.top - emojiPickerHeight - 8; // 向上弹出，距离输入框顶部8px
+      }
+
+      // 边界检测：确保X坐标不超出视口
+      if (x + emojiPickerWidth > viewportWidth - 10) {
+        x = viewportWidth - emojiPickerWidth - 10;
+      }
+      if (x < 10) {
+        x = 10;
+      }
+
+      // 边界检测：确保Y坐标不超出视口
+      if (y + emojiPickerHeight > viewportHeight - 10) {
+        y = viewportHeight - emojiPickerHeight - 10;
+      }
+      if (y < 10) {
+        y = 10;
+      }
+
+      setEmojiPickerPosition({
+        x,
+        y,
+        isAbove: y < rect.top // 记录是否向上弹出，用于样式调整
+      });
+
+      setShowEmojiPicker(!showEmojiPicker);
+    }
+  };
+
+  // 处理选择emoji
+  const handleEmojiSelect = (emoji: string) => {
+    if (textareaRef.current) {
+      const cursorPos = textareaRef.current.selectionStart;
+      const textBeforeCursor = message.substring(0, cursorPos);
+      const textAfterCursor = message.substring(cursorPos);
+      const newMessage = `${textBeforeCursor}${emoji}${textAfterCursor}`;
+      setMessage(newMessage);
+
+      // 重新聚焦并设置光标位置
+      setTimeout(() => {
+        if (textareaRef.current) {
+          const newCursorPos = cursorPos + emoji.length;
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        }
+      }, 0);
+    }
+
+    setShowEmojiPicker(false);
+  };
+
+  // 常用emoji列表
+  const commonEmojis = [
+    '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
+    '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚',
+    '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩',
+    '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣',
+    '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬',
+    '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉',
+    '👆', '👇', '☝️', '👋', '🤚', '🖐️', '🖖', '👊', '✊', '🤛',
+    '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔',
+    '🎉', '🎊', '🎈', '🎁', '🏆', '🥇', '🥈', '🥉', '⚽', '🏀',
+    '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒'
+  ];
 
   return (
     <div className="flex-shrink-0 bg-[#313235] border-t border-[#3A3A3D] sticky bottom-0">
@@ -569,7 +815,7 @@ export default function DMMessageInput({
               className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
               title="Upload images"
               disabled={disabled || isSending || isUploading}
-              onClick={() => document.getElementById('file-upload-input')?.click()}
+              onClick={() => document.getElementById('image-upload-input')?.click()}
             >
               {isUploading ? (
                 <Loader2 size={18} className="text-white/60 animate-spin" />
@@ -578,9 +824,19 @@ export default function DMMessageInput({
               )}
             </button>
 
-            {/* 隐藏的文件输入框 */}
+            {/* 文件传输 */}
+            <button
+              className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
+              title="File transfer"
+              disabled={disabled || isSending}
+              onClick={() => document.getElementById('file-transfer-input')?.click()}
+            >
+              <Folder size={18} className="text-white/60" />
+            </button>
+
+            {/* 隐藏的图片文件输入框 */}
             <input
-              id="file-upload-input"
+              id="image-upload-input"
               type="file"
               accept="image/*"
               multiple
@@ -588,6 +844,21 @@ export default function DMMessageInput({
               onChange={(e) => {
                 const files = Array.from(e.target.files || []);
                 handleFileUpload(files);
+                // 清空输入框，允许重复选择同一文件
+                e.currentTarget.value = '';
+              }}
+            />
+
+            {/* 隐藏的文件传输输入框 */}
+            <input
+              id="file-transfer-input"
+              type="file"
+              accept=".xls,.xlsx,.doc,.docx,.ppt,.pptx,.zip,.pdf,.txt,image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                handleFileTransfer(files);
                 // 清空输入框，允许重复选择同一文件
                 e.currentTarget.value = '';
               }}
@@ -604,9 +875,11 @@ export default function DMMessageInput({
 
             {/* 表情 */}
             <button
+              data-emoji-button="true"
               className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
               title="Add emoji"
               disabled={disabled || isSending}
+              onClick={handleEmojiButtonClick}
             >
               <Smile size={18} className="text-white/60" />
             </button>
@@ -619,15 +892,6 @@ export default function DMMessageInput({
               onClick={handleAtButtonClick}
             >
               <AtSign size={18} className="text-white/60" />
-            </button>
-
-            {/* 视频录制 */}
-            <button
-              className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-              title="Record video"
-              disabled={disabled || isSending}
-            >
-              <Video size={18} className="text-white/60" />
             </button>
 
             {/* 麦克风 */}
@@ -705,9 +969,68 @@ export default function DMMessageInput({
                 />
               </>
             ) : null}
+
+            {/* Emoji Picker - 使用 Portal 渲染到 document.body */}
+            {showEmojiPicker ? createPortal(
+              <div
+                data-emoji-picker="true"
+                className="fixed z-[999999] bg-[#2A2A2D] border border-[#3A3A3D] rounded-lg shadow-2xl"
+                style={{
+                  left: `${emojiPickerPosition.x}px`,
+                  top: `${emojiPickerPosition.y}px`,
+                  width: '320px',
+                  maxHeight: '280px',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                }}
+              >
+                {/* 箭头指示器 - 根据弹出方向显示 */}
+                <div
+                  className={`absolute w-3 h-3 bg-[#2A2A2D] border-[#3A3A3D] ${
+                    emojiPickerPosition.isAbove ? 'top-full' : 'bottom-full'
+                  }`}
+                  style={{
+                    transform: emojiPickerPosition.isAbove ? 'rotate(45deg) translateY(-6px)' : 'rotate(45deg) translateY(6px)',
+                    left: '24px',
+                    borderLeft: emojiPickerPosition.isAbove ? 'none' : '1px',
+                    borderTop: emojiPickerPosition.isAbove ? 'none' : '1px',
+                    borderRight: emojiPickerPosition.isAbove ? '1px' : 'none',
+                    borderBottom: emojiPickerPosition.isAbove ? '1px' : 'none'
+                  }}
+                />
+
+                <div className="p-3 border-b border-[#3A3A3D] flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-white">选择表情</h3>
+                  <button
+                    onClick={() => setShowEmojiPicker(false)}
+                    className="text-white/60 hover:text-white transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="p-3 overflow-y-auto" style={{ maxHeight: '240px' }}>
+                  <div className="grid grid-cols-6 gap-2">
+                    {commonEmojis.map((emoji, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleEmojiSelect(emoji)}
+                        className="w-11 h-11 flex items-center justify-center text-3xl hover:bg-[#3A3A3D] rounded-lg transition-colors"
+                        title={emoji}
+                        style={{
+                          fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif',
+                          lineHeight: 1
+                        }}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>,
+              document.body
+            ) : null}
           </div>
 
-          {/* 图片预览区域 */}
+          {/* 文件预览区域 */}
           {uploadedFiles.length > 0 && (
             <div className="flex-1 px-4 pb-2">
               <div className="flex flex-wrap gap-2">
@@ -716,18 +1039,41 @@ export default function DMMessageInput({
                     key={uploadedFile.id}
                     className="relative group"
                   >
-                    <div className="w-20 h-20 rounded-lg overflow-hidden border border-[#3A3A3D]">
-                      <img
-                        src={uploadedFile.preview}
-                        alt={uploadedFile.file.name}
-                        className="w-full h-full object-cover"
-                      />
-                      {uploadedFile.error && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <span className="text-xs text-red-400">上传失败</span>
+                    {uploadedFile.file.type.startsWith('image/') ? (
+                      // 图片文件预览
+                      <div className="w-20 h-20 rounded-lg overflow-hidden border border-[#3A3A3D]">
+                        <img
+                          src={uploadedFile.preview}
+                          alt={uploadedFile.file.name}
+                          className="w-full h-full object-cover"
+                        />
+                        {uploadedFile.error && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <span className="text-xs text-red-400">上传失败</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      // 非图片文件显示
+                      <div className="w-48 h-20 rounded-lg border border-[#3A3A3D] bg-[#2A2A2D] flex items-center px-3">
+                        <div className="flex items-center gap-3">
+                          <Upload size={20} className="text-white/60 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm text-white/90 truncate">
+                              {uploadedFile.file.name}
+                            </div>
+                            <div className="text-xs text-white/50">
+                              {(uploadedFile.file.size / 1024 / 1024).toFixed(2)} MB
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </div>
+                        {uploadedFile.error && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <span className="text-xs text-red-400">上传失败</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <button
                       onClick={() => removeFile(uploadedFile.id)}
                       className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"

@@ -45,7 +45,9 @@ export async function uploadFile({
     // 上传到 OSS
     const result = await ossClient.put(s3Key, file, {
       headers: {
-        'Content-Type': mimeType
+        'Content-Type': mimeType,
+        'Content-Disposition': `inline; filename="${encodeURIComponent(fileName)}"`,  // 确保文件名编码正确
+        'Cache-Control': 'public, max-age=31536000'  // 添加缓存控制
       }
     });
 
@@ -92,7 +94,7 @@ export async function deleteFile(s3Key: string): Promise<void> {
  */
 export async function getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
   try {
-    const url = await ossClient.signatureUrl(key, {
+    const url = ossClient.signatureUrl(key, {
       expires: expiresIn
     });
     return url;
@@ -103,18 +105,81 @@ export async function getSignedUrl(key: string, expiresIn: number = 3600): Promi
 }
 
 /**
- * 验证文件类型
+ * 生成用于预览的内联 URL（私有 Bucket）
+ * 添加参数确保浏览器以 inline 方式处理文件
  */
-export function validateFileType(mimeType: string): boolean {
-  const allowedTypes = [
+export function getPreviewInlineUrl(fileUrl: string): string {
+  // 如果 URL 已经包含参数，添加 &response-content-type=inline
+  // 如果没有参数，添加 ?response-content-type=inline
+  if (fileUrl.includes('?')) {
+    return `${fileUrl}&response-content-type=inline`;
+  }
+  return `${fileUrl}?response-content-type=inline`;
+}
+
+/**
+ * 获取允许的文件类型列表
+ */
+export function getAllowedFileTypes(): string[] {
+  return [
+    // 图片类型
     'image/jpeg',
     'image/png',
     'image/gif',
     'image/webp',
+    // 文档类型
     'application/pdf',
-    'text/plain'
+    'text/plain',
+    // Office 文档 - Excel
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    // Office 文档 - Word
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    // Office 文档 - PowerPoint
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    // 压缩包
+    'application/zip',
+    'application/x-zip-compressed'
   ];
+}
+
+/**
+ * 验证文件类型
+ */
+export function validateFileType(mimeType: string): boolean {
+  const allowedTypes = getAllowedFileTypes();
   return allowedTypes.includes(mimeType);
+}
+
+/**
+ * 检查文件是否支持在线预览
+ */
+export function canPreviewInline(mimeType: string, fileSize: number): boolean {
+  // 支持预览的文件类型
+  const previewableTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/svg+xml',
+    'application/pdf',
+    'text/plain',
+    'text/markdown',
+    'text/csv',
+    'application/json',
+    'application/xml'
+  ];
+
+  // 检查文件类型
+  if (!previewableTypes.includes(mimeType)) {
+    return false;
+  }
+
+  // 检查文件大小（超过 50MB 的文件不建议预览）
+  const maxPreviewSize = 50 * 1024 * 1024; // 50MB
+  return Number(fileSize) <= maxPreviewSize;
 }
 
 /**
