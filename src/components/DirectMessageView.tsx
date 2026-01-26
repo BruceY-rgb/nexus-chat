@@ -11,7 +11,6 @@ import DMMessageInput from './DMMessageInput';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useWebSocketMessages } from '@/hooks/useWebSocketMessages';
 import { useSocket } from '@/hooks/useSocket';
-import WebSocketStatus from './WebSocketStatus';
 
 interface DirectMessageViewProps {
   member: TeamMember;
@@ -215,12 +214,6 @@ export default function DirectMessageView({
         <DMTabs isOwnSpace={isOwnSpace} />
       </div>
 
-      {/* 3. WebSocket 状态指示器 - 仅在有问题时显示 */}
-      {!isOwnSpace && (connectionStatus === 'reconnecting' || connectionStatus === 'error' || (connectionStatus !== 'connected' && connectionStatus !== 'connecting')) && (
-        <div className="flex-shrink-0 px-4 py-2 bg-yellow-50 border-b border-yellow-200">
-          <WebSocketStatus showDetails={true} />
-        </div>
-      )}
 
       {/* 3. 核心内容区：确保它占据所有剩余高度 */}
       <div className="flex-1 flex flex-col min-h-0">

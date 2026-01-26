@@ -1,6 +1,6 @@
 # =====================================================
-# 生产环境部署配置
-# 用于部署到Linux服务器
+# Mac本地开发环境配置
+# 使用Docker Compose开发配置
 # =====================================================
 
 version: '3.8'
@@ -9,54 +9,54 @@ services:
   # PostgreSQL数据库
   db:
     image: postgres:15-alpine
-    container_name: slack_db
+    container_name: slack_db_dev
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER:-yangsmac}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ysx050223}
       POSTGRES_DB: ${DB_NAME:-slack_chat}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "5432:5432"
     networks:
-      - slack_network
+      - slack_network_dev
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-yangsmac}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Next.js应用
+  # Next.js开发应用
   app:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: slack_app
+      dockerfile: Dockerfile.dev
+    container_name: slack_app_dev
     restart: unless-stopped
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD}@db:5432/${DB_NAME:-slack_chat}?schema=public
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD:-ysx050223}@db:5432/${DB_NAME:-slack_chat}?schema=public
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: ${DB_USER:-yangsmac}
-      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PASSWORD: ${DB_PASSWORD:-ysx050223}
       DB_NAME: ${DB_NAME:-slack_chat}
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      EMAIL_FROM: ${EMAIL_FROM}
-      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO}
+      RESEND_API_KEY: ${RESEND_API_KEY:-re_CzzzpiVR_2L2z9YQXqWReMzpjyvXvAK5T}
+      EMAIL_FROM: ${EMAIL_FROM:-"Slack聊天应用 <onboarding@resend.dev>"}
+      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-onboarding@resend.dev}
       APP_NAME: ${APP_NAME:-Slack聊天应用}
-      SESSION_SECRET: ${SESSION_SECRET}
-      OSS_REGION: ${OSS_REGION}
-      OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID}
-      OSS_ACCESS_KEY_SECRET: ${OSS_ACCESS_KEY_SECRET}
-      OSS_BUCKET: ${OSS_BUCKET}
-      OSS_ENDPOINT: ${OSS_ENDPOINT}
+      SESSION_SECRET: ${SESSION_SECRET:-your-super-secret-session-key-change-this-in-production}
+      OSS_REGION: ${OSS_REGION:-oss-cn-hangzhou}
+      OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID:-LTAI5tRzvjda8NKmbZmUVNmZ}
+      OSS_ACCESS_KEY_SECRET: ${OSS_ACCESS_KEY_SECRET:-PC0QgV7zo2x00m9OhxiqkkApWwz2Bi}
+      OSS_BUCKET: ${OSS_BUCKET:-q-and-a-chatbot}
+      OSS_ENDPOINT: ${OSS_ENDPOINT:-https://oss-cn-hangzhou.aliyuncs.com}
       PORT: 3000
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       WEBSOCKET_PORT: 3001
       ENABLE_FILE_UPLOAD: ${ENABLE_FILE_UPLOAD:-true}
       ENABLE_SEARCH: ${ENABLE_SEARCH:-true}
@@ -70,38 +70,22 @@ services:
       LOG_FORMAT: ${LOG_FORMAT:-dev}
     ports:
       - "3000:3000"
+      - "24678:24678" # Next.js HMR端口
     depends_on:
       db:
         condition: service_healthy
     networks:
-      - slack_network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Nginx反向代理
-  nginx:
-    image: nginx:alpine
-    container_name: slack_nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
+      - slack_network_dev
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - app
-    networks:
-      - slack_network
+      # 挂载源码实现热重载
+      - .:/app
+      - /app/node_modules
+      - /app/.next
 
 volumes:
-  postgres_data:
+  postgres_data_dev:
     driver: local
 
 networks:
-  slack_network:
+  slack_network_dev:
     driver: bridge
