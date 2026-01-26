@@ -1,0 +1,39 @@
+# 简化的 Dockerfile - 单阶段构建
+FROM node:18-alpine
+
+WORKDIR /app
+
+# 安装系统依赖
+RUN apk add --no-cache libc6-compat openssl
+
+# 复制 package 文件
+COPY package.json package-lock.json* ./
+
+# 安装所有依赖（包括 devDependencies）
+RUN npm install
+
+# 复制应用代码
+COPY . .
+
+# 生成 Prisma 客户端
+RUN npx prisma generate
+
+# 构建应用
+RUN npm run build
+
+# 创建非 root 用户
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# 设置权限
+USER nextjs
+
+# 暴露端口
+EXPOSE 3000
+
+# 环境变量
+ENV PORT 3000
+ENV NODE_ENV production
+
+# 启动应用
+CMD ["node", "server.js"]

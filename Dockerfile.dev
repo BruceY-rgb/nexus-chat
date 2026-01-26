@@ -1,7 +1,7 @@
 # 开发环境 Dockerfile
 # 用于Mac本地开发，支持热重载
 
-FROM node:18-alpine
+FROM node:20-alpine
 
 # 设置工作目录
 WORKDIR /app
@@ -12,10 +12,13 @@ RUN apk add --no-cache libc6-compat
 # 复制package文件
 COPY package.json package-lock.json* ./
 
-# 安装依赖
-RUN npm install
+# 复制 Prisma schema
+COPY prisma ./prisma
 
-# 生成Prisma客户端
+# 安装依赖（跳过 postinstall 脚本以避免 electron-builder 问题）
+RUN npm install --ignore-scripts
+
+# 显式生成 Prisma 客户端
 RUN npx prisma generate
 
 # 复制应用代码
@@ -29,9 +32,9 @@ RUN addgroup --system --gid 1001 nodejs && \
 EXPOSE 3000 24678
 
 # 环境变量
-ENV PORT 3000
-ENV NODE_ENV development
-ENV WATCHPACK_POLLING true
+ENV PORT=3000
+ENV NODE_ENV=development
+ENV WATCHPACK_POLLING=true
 
 # 启动开发服务器
 CMD ["npm", "run", "dev"]

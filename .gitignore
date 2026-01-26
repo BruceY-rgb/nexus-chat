@@ -221,3 +221,11 @@ db-connect.sh
 
 # Development scripts
 start-dev.sh
+
+# Environment files with sensitive data
+.env.production
+.env.local
+.env.staging
+
+# Docker volumes
+postgres_data/
