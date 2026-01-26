@@ -374,7 +374,7 @@ export default function DMMessageInput({
   };
 
   /**
-   * 处理 @ 提及自动完成
+   * 处理 @ 提及自动完成 - 智能空格检测版
    */
   const handleMentionAutocomplete = (textarea: HTMLTextAreaElement) => {
     const cursorPos = textarea.selectionStart;
@@ -389,8 +389,37 @@ export default function DMMessageInput({
       return;
     }
 
-    const query = mentionMatch[1];
-    const startIndex = mentionMatch.index!;
+    const query = mentionMatch[1]; // @ 后面的内容
+    const startIndex = mentionMatch.index!; // @ 符号的位置
+
+    // 智能过滤逻辑：检查是否应该显示自动完成
+    let finalQuery = query;
+
+    // 如果查询包含空格，说明用户可能已经输入完整昵称
+    if (query.includes(' ')) {
+      // 获取第一个单词（空格前的部分）
+      const firstWord = query.split(' ')[0];
+
+      // 检查是否完全匹配某个成员
+      const exactMatch = availableMembers.find(
+        m => m.displayName.toLowerCase() === firstWord.toLowerCase()
+      );
+
+      if (exactMatch) {
+        // 完全匹配某个成员，说明已完成提及，关闭自动完成
+        setShowAutocomplete(false);
+        return;
+      } else {
+        // 不匹配，说明空格是昵称的一部分，继续显示
+        finalQuery = query;
+      }
+    } else {
+      // 不包含空格，使用当前内容作为查询
+      finalQuery = query;
+    }
+
+    // 如果查询为空，显示所有成员
+    const displayQuery = finalQuery.trim() === '' ? '' : finalQuery;
 
     // 计算位置 - 简化相对定位版
     const caretPos = getCaretCoordinates(textarea, cursorPos);
@@ -417,7 +446,7 @@ export default function DMMessageInput({
     };
 
     setShowAutocomplete(true);
-    setAutocompleteQuery(query);
+    setAutocompleteQuery(displayQuery);
     setAutocompletePosition(finalPosition);
     setMentionStartIndex(startIndex);
   };

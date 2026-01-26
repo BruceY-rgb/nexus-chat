@@ -1,77 +1,102 @@
-# =====================================================
-# Docker Compose for Slack-like Chat Tool
-# PostgreSQL + Redis
-# =====================================================
-
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
+  # PostgreSQL数据库
+  db:
     image: postgres:15-alpine
-    container_name: slack_chat_db
+    container_name: slack_db
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: slack_user
-      POSTGRES_PASSWORD: slack_password
-      POSTGRES_DB: slack_chat
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${DB_USER:-yangsmac}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-slack_chat}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U slack_user -d slack_chat"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - slack_chat_network
-    restart: unless-stopped
-
-  # Redis for caching and sessions (optional)
-  redis:
-    image: redis:7-alpine
-    container_name: slack_chat_redis
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+      - "5432:5432"
+    networks:
+      - slack_network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-yangsmac}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - slack_chat_network
-    restart: unless-stopped
 
-  # pgAdmin for database management (optional)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: slack_chat_pgadmin
+  # Next.js应用
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: slack_app
+    restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@slack-chat.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD}@db:5432/${DB_NAME:-slack_chat}?schema=public
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-yangsmac}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-slack_chat}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      EMAIL_FROM: ${EMAIL_FROM}
+      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO}
+      APP_NAME: ${APP_NAME:-Slack聊天应用}
+      SESSION_SECRET: ${SESSION_SECRET}
+      OSS_REGION: ${OSS_REGION}
+      OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID}
+      OSS_ACCESS_KEY_SECRET: ${OSS_ACCESS_KEY_SECRET}
+      OSS_BUCKET: ${OSS_BUCKET}
+      OSS_ENDPOINT: ${OSS_ENDPOINT}
+      PORT: 3000
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      WEBSOCKET_PORT: 3001
+      ENABLE_FILE_UPLOAD: ${ENABLE_FILE_UPLOAD:-true}
+      ENABLE_SEARCH: ${ENABLE_SEARCH:-true}
+      ENABLE_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS:-true}
+      ENABLE_EMAIL_NOTIFICATIONS: ${ENABLE_EMAIL_NOTIFICATIONS:-false}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+      ALLOWED_FILE_TYPES: ${ALLOWED_FILE_TYPES:-image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-dev}
     ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - "3000:3000"
     depends_on:
-      - postgres
+      db:
+        condition: service_healthy
     networks:
-      - slack_chat_network
+      - slack_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: slack_nginx
     restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    networks:
+      - slack_network
 
 volumes:
   postgres_data:
     driver: local
-  redis_data:
-    driver: local
-  pgadmin_data:
-    driver: local
 
 networks:
-  slack_chat_network:
+  slack_network:
     driver: bridge
