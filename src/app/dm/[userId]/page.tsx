@@ -105,7 +105,7 @@ export default function DirectMessagePage() {
   if (loading || !user || (isLoading && !member)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-text-secondary">加载中...</div>
+        <div className="text-text-secondary">Loading...</div>
       </div>
     );
   }
@@ -116,7 +116,7 @@ export default function DirectMessagePage() {
   };
 
   const handleNewChat = () => {
-    console.log('打开新聊天对话框');
+    console.log('Open new chat dialog');
   };
 
   const handleLogout = async () => {

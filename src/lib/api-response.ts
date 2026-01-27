@@ -73,7 +73,7 @@ export function notFoundResponse(message = '资源未找到') {
 }
 
 /**
- * 验证错误响应
+ * Validation error响应
  */
 export function validationErrorResponse(errors: Record<string, string>) {
   return errorResponse('输入数据验证失败', 'VALIDATION_ERROR', { errors });

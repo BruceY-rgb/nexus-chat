@@ -76,11 +76,11 @@ export default function DMHeader({
         // 刷新页面或触发消息列表刷新
         window.location.reload();
       } else {
-        alert('清空消息失败，请重试');
+        alert('Clear messages failed, please try again');
       }
     } catch (error) {
       console.error('清空消息错误:', error);
-      alert('清空消息失败，请重试');
+      alert('Clear messages failed, please try again');
     } finally {
       setIsLoading(false);
     }

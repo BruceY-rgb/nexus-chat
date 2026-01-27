@@ -45,11 +45,11 @@ interface ActiveDMConversation {
 }
 
 export default function DirectMessages({
-  members = [], // 未使用，但保留以保持接口兼容
+  members = [], // Not used, but kept for interface compatibility
   currentUserId,
   selectedDirectMessageId,
   onStartChat,
-  onNewChat // 未使用，但保留以保持接口兼容
+  onNewChat // Not used, but kept for interface compatibility
 }: DirectMessagesProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<TeamMember[]>([]);
@@ -61,7 +61,7 @@ export default function DirectMessages({
   const { socket } = useSocket();
   const { markAsRead } = useUnreadCount();
 
-  // 加载活跃的DM会话和星标用户
+  // Load active DM conversations and starred users
   useEffect(() => {
     const loadActiveConversations = async () => {
       setIsLoading(true);
@@ -101,16 +101,16 @@ export default function DirectMessages({
 
     // 监听WebSocket事件以实时更新活跃对话列表
     const handleActiveConversationsUpdate = () => {
-      // 刷新活跃对话列表
+      // Refresh active conversation list
       loadActiveConversations();
     };
 
-    // 监听星标用户更新事件
+    // Listen for starred users update events
     const handleStarredUsersUpdate = () => {
       loadStarredUsers();
     };
 
-    // 通过socket监听事件
+    // Listen to events via socket
     if (socket) {
       socket.on('active-conversations-update', handleActiveConversationsUpdate);
     }
@@ -118,7 +118,7 @@ export default function DirectMessages({
     // 监听自定义事件
     window.addEventListener('starred-users-updated', handleStarredUsersUpdate);
 
-    // 清理函数
+    // Cleanup function
     return () => {
       if (socket) {
         socket.off('active-conversations-update', handleActiveConversationsUpdate);
@@ -129,15 +129,15 @@ export default function DirectMessages({
 
   // 处理开始聊天（立即将对话添加到列表中）
   const handleStartChat = useCallback(async (userId: string, dmConversationId?: string) => {
-    // === 步骤1: 立即清空搜索查询，切换到活跃会话列表 ===
+    // === 步骤1: 立即Clear search query, switching to active conversation list ===
     if (searchQuery.trim()) {
       setSearchQuery('');
-      console.log('🔍 [DEBUG] 清空搜索查询，切换到活跃会话列表');
+      console.log('🔍 [DEBUG] Clear search query, switching to active conversation list');
     }
 
     // 如果已经有 dmConversationId，直接使用
     if (dmConversationId) {
-      // 点击进入对话时，自动清除未读计数
+      // When clicking to enter conversation, automatically clear unread count
       try {
         await markAsRead(undefined, dmConversationId);
       } catch (error) {
@@ -147,7 +147,7 @@ export default function DirectMessages({
       return;
     }
 
-    // 否则，创建或获取对话
+    // Otherwise, create or get conversation
     try {
       const response = await fetch('/api/conversations/dm', {
         method: 'POST',
@@ -482,7 +482,7 @@ export default function DirectMessages({
       {/* Loading state */}
       {isLoading && (
         <div className="px-3 py-2 text-white/50 text-sm">
-          加载中...
+          Loading...
         </div>
       )}
 

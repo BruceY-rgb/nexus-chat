@@ -34,7 +34,7 @@ export default function DirectMessagesExample() {
 
   const handleNewChat = () => {
     console.log('Opening new chat dialog');
-    // TODO: 实现打开新聊天对话框逻辑
+    // TODO: 实现Open new chat dialog逻辑
   };
 
   return (

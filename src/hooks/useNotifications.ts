@@ -214,7 +214,7 @@ export function useNotifications(options?: UseNotificationsOptions) {
     // 注册监听器
     socket.on('new-notification', handleNewNotification);
 
-    // 清理函数
+    // Cleanup function
     return () => {
       console.log('🔔 Removing notification listener for user:', userId);
       socket.off('new-notification', handleNewNotification);

@@ -52,7 +52,7 @@ export default function Channels({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '创建频道失败');
+        throw new Error(error.error || 'Failed to create channel');
       }
 
       const data = await response.json();
@@ -67,11 +67,11 @@ export default function Channels({
       // 自动选中新建的频道（使用真实ID）
       onSelectChannel?.(newChannel.id);
 
-      console.log('创建新频道成功:', newChannel);
+      console.log('Created new channel successfully:', newChannel);
     } catch (error) {
-      console.error('创建频道错误:', error);
+      console.error('Create channel error:', error);
       // 可以添加用户友好的错误提示
-      alert(`创建频道失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      alert(`Failed to create channel: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   };
 

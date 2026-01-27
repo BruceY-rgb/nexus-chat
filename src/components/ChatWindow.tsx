@@ -253,7 +253,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
       {/* 消息列表 - 独立滚动 */}
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 message-scroll">
         {isLoading ? (
-          <div className="text-center text-gray-500">加载中...</div>
+          <div className="text-center text-gray-500">Loading...</div>
         ) : messages.length === 0 ? (
           <div className="text-center text-gray-500">还没有消息</div>
         ) : (

@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     if (!ipLimitResult.allowed) {
       console.warn(`⚠️  IP频率限制触发: ${clientIP}`);
       return NextResponse.json(
-        errorResponse('请求过于频繁，请稍后再试', 'IP_RATE_LIMIT_EXCEEDED'),
+        errorResponse('Request too frequent, please try again later', 'IP_RATE_LIMIT_EXCEEDED'),
         { status: 429 }
       );
     }
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!emailLimitResult.allowed) {
       console.warn(`⚠️  邮箱频率限制触发: ${email}`);
       return NextResponse.json(
-        errorResponse('发送验证码过于频繁，请稍后再试', 'EMAIL_RATE_LIMIT_EXCEEDED'),
+        errorResponse('Sending verification code too frequent, please try again later', 'EMAIL_RATE_LIMIT_EXCEEDED'),
         { status: 429 }
       );
     }
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     if (!isEmailServiceReady()) {
       console.error('❌ 邮件服务未配置');
       return NextResponse.json(
-        errorResponse('邮件服务未配置，请联系管理员', 'EMAIL_SERVICE_NOT_CONFIGURED'),
+        errorResponse('Email service not configured, please contact administrator', 'EMAIL_SERVICE_NOT_CONFIGURED'),
         { status: 500 }
       );
     }
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     if (!emailResult.success) {
       console.error('❌ 邮件发送失败:', emailResult.error);
       return NextResponse.json(
-        errorResponse('发送验证码失败，请稍后重试', 'EMAIL_SEND_FAILED'),
+        errorResponse('Failed to send verification code, please try again later', 'EMAIL_SEND_FAILED'),
         { status: 500 }
       );
     }
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('发送验证码错误:', error);
     return NextResponse.json(
-      errorResponse('发送验证码失败，请稍后重试'),
+      errorResponse('Failed to send verification code, please try again later'),
       { status: 500 }
     );
   }

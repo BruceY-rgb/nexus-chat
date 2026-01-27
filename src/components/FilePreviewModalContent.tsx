@@ -249,7 +249,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
       }, 10000);
     }
 
-    // 清理函数
+    // Cleanup function
     return () => {
       if (iframeTimeoutRef.current) {
         clearTimeout(iframeTimeoutRef.current);
@@ -366,7 +366,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1D] z-10">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 size={32} className="text-white/60 animate-spin" />
-                    <div className="text-white/60 text-sm">加载中...</div>
+                    <div className="text-white/60 text-sm">Loading...</div>
                   </div>
                 </div>
               )}

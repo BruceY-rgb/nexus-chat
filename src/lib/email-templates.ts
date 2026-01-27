@@ -67,7 +67,7 @@ export function generateVerificationEmailHTML(data: VerificationEmailData): stri
 
               <p style="margin:0 0 24px;">
                 我们刚刚收到了你的登录请求。  
-                请输入下面的验证码以继续：
+                Please enter下面的验证码以继续：
               </p>
 
               <!-- Code block -->

@@ -52,7 +52,7 @@ export default function NewDirectMessageModal({
           setSearchResults(formattedUsers);
         }
       } catch (error) {
-        console.error('搜索用户失败:', error);
+        console.error('Failed to search users:', error);
         setSearchResults([]);
       } finally {
         setIsSearching(false);

@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 // 注册验证模式
 export const registerSchema = z.object({
-  email: z.string().email('请输入有效的邮箱地址'),
+  email: z.string().email('Please enter有效的邮箱地址'),
   password: z
     .string()
     .min(8, '密码至少8个字符')
@@ -29,24 +29,24 @@ export const registerSchema = z.object({
 
 // 登录验证模式
 export const loginSchema = z.object({
-  email: z.string().email('请输入有效的邮箱地址'),
-  password: z.string().min(1, '请输入密码'),
+  email: z.string().email('Please enter有效的邮箱地址'),
+  password: z.string().min(1, 'Please enter密码'),
 });
 
 // 发送验证码验证模式
 export const sendVerificationSchema = z.object({
-  email: z.string().email('请输入有效的邮箱地址'),
+  email: z.string().email('Please enter有效的邮箱地址'),
 });
 
 // 验证码登录验证模式
 export const verificationLoginSchema = z.object({
-  email: z.string().email('请输入有效的邮箱地址'),
+  email: z.string().email('Please enter有效的邮箱地址'),
   code: z.string().length(6, '验证码为6位数字'),
 });
 
 // 更改密码验证模式
 export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, '请输入当前密码'),
+  currentPassword: z.string().min(1, 'Please enter当前密码'),
   newPassword: z
     .string()
     .min(8, '密码至少8个字符')
@@ -74,7 +74,7 @@ export const updateProfileSchema = z.object({
     .max(50, '真实姓名不能超过50个字符')
     .optional()
     .or(z.literal('')),
-  avatarUrl: z.string().url('请输入有效的URL').optional().or(z.literal('')),
+  avatarUrl: z.string().url('Please enter有效的URL').optional().or(z.literal('')),
   timezone: z.string().optional(),
 });
 

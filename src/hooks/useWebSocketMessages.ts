@@ -183,7 +183,7 @@ export function useWebSocketMessages({
     socket.on('message-deleted', handleMessageDeleted);
     log('info', '✅ Socket event listeners registered successfully');
 
-    // 清理函数
+    // Cleanup function
     return () => {
       log('info', 'Cleaning up socket event listeners...');
       socket.off('new-message', handleNewMessage);

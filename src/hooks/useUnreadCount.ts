@@ -132,7 +132,7 @@ export function useUnreadCount() {
     socket.on('unread-count-update', handleUnreadUpdate);
     socket.on('new-message', handleNewMessage);
 
-    // 清理函数
+    // Cleanup function
     return () => {
       socket.off('unread-count-update', handleUnreadUpdate);
       socket.off('new-message', handleNewMessage);

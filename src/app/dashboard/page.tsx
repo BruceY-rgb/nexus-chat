@@ -10,7 +10,7 @@ import BrowseChannels from '@/components/BrowseChannels';
 import NewDirectMessageModal from '@/components/NewDirectMessageModal';
 import { Channel as ChannelType } from '@/types/channel';
 
-// 类型定义 - 匹配API返回数据格式
+// Type definitions - matching API response data format
 interface User {
   id: string;
   email: string;
@@ -51,7 +51,7 @@ export default function DashboardPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [isJoiningChannel, setIsJoiningChannel] = useState<string | undefined>(undefined);
 
-  // 获取频道数据
+  // Get channel data
   useEffect(() => {
     const fetchChannels = async () => {
       try {
@@ -63,13 +63,13 @@ export default function DashboardPage() {
           const data = await response.json();
           setChannels(data.channels);
 
-          // 获取已加入的频道ID
+          // Get joined channel IDs
           const joined = data.channels
             .filter((channel: ApiChannel) => channel.isJoined)
             .map((channel: ApiChannel) => channel.id);
           setJoinedChannels(joined);
 
-          // 如果没有选中的频道，选中第一个已加入的频道
+          // If no channel is selected, select the first joined channel
           if (!selectedChannel && joined.length > 0) {
             setSelectedChannel(joined[0]);
           }
@@ -84,7 +84,7 @@ export default function DashboardPage() {
     }
   }, [user, selectedChannel]);
 
-  // 获取用户数据
+  // Get user data
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -106,7 +106,7 @@ export default function DashboardPage() {
     }
   }, [user]);
 
-  // 监听路由变化，同步状态
+  // Listen for route changes and sync state
   useEffect(() => {
     if (userId && users.length > 0) {
       const member = users.find(u => u.id === userId);
@@ -114,40 +114,40 @@ export default function DashboardPage() {
         setSelectedChat(userId);
         setSelectedChannel(undefined);
         setCurrentView('channel');
-        console.log('🔄 [DEBUG] 路由状态同步 - 切换到私聊:', userId);
+        console.log('🔄 [DEBUG] Route state sync - switching to DM:', userId);
       }
     } else if (!userId) {
-      // 如果没有 userId 参数，且当前处于私聊模式，则切换回频道模式
+      // If no userId parameter and currently in DM mode, switch back to channel mode
       if (selectedChat) {
         setSelectedChat(undefined);
-        console.log('🔄 [DEBUG] 路由状态同步 - 切换到频道模式');
+        console.log('🔄 [DEBUG] Route state sync - switching to channel mode');
       }
     }
   }, [userId, users, selectedChat]);
 
-  // 监听 URL 参数中的 channel 值
+  // Listen for channel value in URL parameters
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const channelParam = searchParams.get('channel');
     const viewParam = searchParams.get('view');
 
     if (channelParam) {
-      console.log('🎯 [DEBUG] 检测到频道参数:', channelParam);
-      // 检查频道是否已加入
+      console.log('🎯 [DEBUG] Channel parameter detected:', channelParam);
+      // Check if channel is joined
       if (joinedChannels.includes(channelParam)) {
         setSelectedChannel(channelParam);
         setSelectedChat(undefined);
         setCurrentView('channel');
-        console.log('✅ [DEBUG] 频道已选中:', channelParam);
+        console.log('✅ [DEBUG] Channel selected:', channelParam);
       } else {
-        console.log('⚠️ [DEBUG] 频道未加入或不存在:', channelParam);
+        console.log('⚠️ [DEBUG] Channel not joined or does not exist:', channelParam);
       }
     }
 
     if (viewParam === 'browse') {
       setCurrentView('browse');
       setSelectedChat(undefined);
-      console.log('🔍 [DEBUG] 切换到浏览频道视图');
+      console.log('🔍 [DEBUG] Switching to browse channels view');
     }
   }, [joinedChannels]);
 
@@ -162,25 +162,25 @@ export default function DashboardPage() {
       await logout();
       router.push('/login');
     } catch (err) {
-      console.error('登出失败:', err);
+      console.error('Logout failed:', err);
     }
   };
 
   const handleStartChat = async (memberId: string, dmConversationId?: string) => {
     try {
-      // === 步骤1: 立即进行乐观更新 ===
-      // 更新当前选中的私聊状态，立即高亮
+      // === Step 1: Immediate optimistic update ===
+      // Update selected DM state and highlight immediately
       setSelectedChat(memberId);
-      // 清除选中的频道
+      // Clear selected channel
       setSelectedChannel(undefined);
 
-      // === 步骤2: 立即进行页面跳转 ===
-      // 使用 router.push 进行导航（仍然使用 memberId 路径以兼容现有路由）
+      // === Step 2: Immediate page navigation ===
+      // Use router.push for navigation (still use memberId path to be compatible with existing routes)
       const targetUrl = `/dm/${memberId}`;
       router.push(targetUrl);
 
-      // === 步骤3: 后台创建/获取会话（不阻塞UI） ===
-      // 如果没有提供 conversationId，则创建或获取 DM 会话
+      // === Step 3: Create/get conversation in background (non-blocking) ===
+      // If conversationId is not provided, create or get DM conversation
       if (!dmConversationId) {
         const createConversation = async () => {
           try {
@@ -194,24 +194,24 @@ export default function DashboardPage() {
             if (resp.ok) {
               const conversation = await resp.json();
 
-              // 派发全局事件，通知 DirectMessages 乐观加入新会话
+              // Dispatch global event to notify DirectMessages to optimistically add new conversation
               try {
                 window.dispatchEvent(new CustomEvent('dm-created', { detail: conversation }));
               } catch (e) {
-                console.warn('无法派发 dm-created 事件', e);
+                console.warn('Cannot dispatch dm-created event', e);
               }
             }
           } catch (err) {
-            console.error('后台创建会话失败:', err);
+            console.error('Background conversation creation failed:', err);
           }
         };
 
-        // 不等待结果，立即返回
+        // Return immediately without waiting for result
         createConversation();
       }
     } catch (err) {
-      console.error('启动私聊时出错:', err);
-      // 即使出错，也要确保状态更新和跳转
+      console.error('Error starting DM:', err);
+      // Even if there's an error, ensure state update and navigation
       setSelectedChat(memberId);
       setSelectedChannel(undefined);
       router.push(`/dm/${memberId}`);
@@ -219,30 +219,30 @@ export default function DashboardPage() {
   };
 
   const handleNewChat = () => {
-    console.log('打开新聊天对话框');
+    console.log('Open new chat dialog');
     setIsNewDMModalOpen(true);
   };
 
   const handleSelectMemberFromModal = (memberId: string) => {
-    console.log('🟡 [DEBUG] 从模态框选择成员:', memberId);
+    console.log('🟡 [DEBUG] Select member from modal:', memberId);
     handleStartChat(memberId);
   };
 
   const handleSelectChannel = (channelId: string) => {
     setSelectedChannel(channelId);
-    setSelectedChat(undefined); // 清除选中的私聊
+    setSelectedChat(undefined); // Clear selected DM
     setCurrentView('channel');
 
-    // 清理 URL 参数，避免干扰后续的频道切换
+    // Clean up URL parameters to avoid interference with subsequent channel switching
     const url = new URL(window.location.href);
     url.searchParams.delete('channel');
     url.searchParams.delete('view');
     router.replace(url.pathname + url.search);
-    console.log('🧹 [DEBUG] 清理 URL 参数');
+    console.log('🧹 [DEBUG] Clean up URL parameters');
   };
 
   const handleCreateChannel = (newChannel: ChannelType) => {
-    // 将Channel类型转换为ApiChannel类型
+    // Convert Channel type to ApiChannel type
     const apiChannel: ApiChannel = {
       id: newChannel.id,
       name: newChannel.name,
@@ -258,24 +258,24 @@ export default function DashboardPage() {
       isJoined: true
     };
     setChannels(prevChannels => [...prevChannels, apiChannel]);
-    setJoinedChannels(prev => [...prev, apiChannel.id]); // 自动加入新创建的频道
+    setJoinedChannels(prev => [...prev, apiChannel.id]); // Auto-join newly created channel
     setSelectedChannel(apiChannel.id);
 
-    // 清理 URL 参数
+    // Clean up URL parameters
     const url = new URL(window.location.href);
     url.searchParams.delete('channel');
     url.searchParams.delete('view');
     router.replace(url.pathname + url.search);
 
-    console.log('创建新频道:', apiChannel);
+    console.log('Create new channel:', apiChannel);
   };
 
   const handleJoinChannel = async (channelId: string) => {
-    // 1. 显示加载状态，防止重复点击
+    // 1. Show loading state to prevent duplicate clicks
     setIsJoiningChannel(channelId);
 
     try {
-      // 2. 调用加入频道 API
+      // 2. Call join channel API
       const response = await fetch(`/api/channels/${channelId}/join`, {
         method: 'POST',
         credentials: 'include'
@@ -283,40 +283,40 @@ export default function DashboardPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '加入频道失败');
+        throw new Error(error.error || 'Failed to join channel');
       }
 
       const data = await response.json();
-      console.log('✅ 成功加入频道:', data);
+      console.log('✅ Successfully joined channel:', data);
 
-      // 3. API 成功，更新前端状态
+      // 3. API success, update frontend state
       setJoinedChannels(prev => [...prev, channelId]);
       setCurrentView('channel');
       setSelectedChannel(channelId);
 
-      // 4. 清理 URL 参数
+      // 4. Clean up URL parameters
       const url = new URL(window.location.href);
       url.searchParams.delete('channel');
       url.searchParams.delete('view');
       router.replace(url.pathname + url.search);
 
-      console.log('✅ 加入频道完成:', channelId);
+      console.log('✅ Join channel complete:', channelId);
     } catch (error) {
-      console.error('❌ 加入频道失败:', error);
-      // 显示错误提示
-      alert(`加入频道失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      console.error('❌ Join channel failed:', error);
+      // Show error message
+      alert(`Failed to join channel: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
-      // 5. 清除加载状态
+      // 5. Clear loading state
       setIsJoiningChannel(undefined);
     }
   };
 
   const handleLeaveChannel = async (channelId: string) => {
-    // 1. 显示加载状态
+    // 1. Show loading state
     setIsJoiningChannel(channelId);
 
     try {
-      // 2. 调用离开频道 API
+      // 2. Call leave channel API
       const response = await fetch(`/api/channels/${channelId}/leave`, {
         method: 'POST',
         credentials: 'include'
@@ -324,21 +324,21 @@ export default function DashboardPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '离开频道失败');
+        throw new Error(error.error || 'Failed to leave channel');
       }
 
-      console.log('✅ 成功离开频道:', channelId);
+      console.log('✅ Successfully left channel:', channelId);
 
-      // 3. API 成功，更新前端状态
+      // 3. API success, update frontend state
       setJoinedChannels(prev => prev.filter(id => id !== channelId));
 
-      // 4. 如果退出的频道是当前选中的频道，则切换到其他频道
+      // 4. If the left channel is the currently selected channel, switch to another channel
       if (selectedChannel === channelId) {
         const generalChannel = channels.find(c => c.id === 'channel-1');
         if (generalChannel && joinedChannels.includes(generalChannel.id)) {
           setSelectedChannel(generalChannel.id);
         } else {
-          // 如果 #general 也退出了，选择第一个加入的频道
+          // If #general is also left, select the first joined channel
           const firstJoined = joinedChannels.find(id => id !== channelId);
           if (firstJoined) {
             setSelectedChannel(firstJoined);
@@ -348,13 +348,13 @@ export default function DashboardPage() {
         }
       }
 
-      console.log('✅ 离开频道完成:', channelId);
+      console.log('✅ Leave channel complete:', channelId);
     } catch (error) {
-      console.error('❌ 离开频道失败:', error);
-      // 显示错误提示
-      alert(`离开频道失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      console.error('❌ Leave channel failed:', error);
+      // Show error message
+      alert(`Failed to leave channel: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
-      // 5. 清除加载状态
+      // 5. Clear loading state
       setIsJoiningChannel(undefined);
     }
   };
@@ -365,22 +365,22 @@ export default function DashboardPage() {
   };
 
   const handleShowMembers = (channelId: string) => {
-    // 设置选中的频道
+    // Set selected channel
     setSelectedChannel(channelId);
     setSelectedChat(undefined);
     setCurrentView('channel');
-    console.log('显示频道成员:', channelId);
+    console.log('Show channel members:', channelId);
   };
 
   const handleClearMessages = (channelId: string) => {
-    console.log('清空频道消息:', channelId);
-    // 这里不需要额外的逻辑，因为API调用已经在ChannelView中处理
-    // 可能需要刷新消息列表或触发重新获取
+    console.log('Clear channel messages:', channelId);
+    // No additional logic needed here, API calls are already handled in ChannelView
+    // May need to refresh message list or trigger refetch
   };
 
   const handleBackToChannel = () => {
     setCurrentView('channel');
-    // 返回到之前选中的频道，如果没有则默认选择第一个
+    // Return to previously selected channel, or default to first one if none
     if (!selectedChannel && joinedChannels.length > 0) {
       setSelectedChannel(joinedChannels[0]);
     }
@@ -389,13 +389,13 @@ export default function DashboardPage() {
   if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-text-secondary">加载中...</div>
+        <div className="text-text-secondary">Loading...</div>
       </div>
     );
   }
 
-  // 过滤掉当前用户，获取其他成员
-  // 将User转换为TeamMember格式以兼容NewDirectMessageModal
+  // Filter out current user to get other members
+  // Convert User to TeamMember format for NewDirectMessageModal compatibility
   const availableMembers = users
     .filter(member => member.id !== user.id)
     .map(user => ({
@@ -408,7 +408,7 @@ export default function DashboardPage() {
       lastSeenAt: user.lastSeenAt
     }));
 
-  // 转换ApiChannel为Channel类型以匹配组件期望
+  // Convert ApiChannel to Channel type to match component expectations
   const convertedChannels: ChannelType[] = channels.map(channel => ({
     id: channel.id,
     name: channel.name,
@@ -421,7 +421,7 @@ export default function DashboardPage() {
 
   const content = (
     <>
-      {/* 浏览频道视图 */}
+      {/* Browse channels view */}
       {currentView === 'browse' ? (
         <BrowseChannels
           channels={convertedChannels}
@@ -434,7 +434,7 @@ export default function DashboardPage() {
         />
       ) : (
         <>
-          {/* 主内容区 - ChannelView 现在包含头部 */}
+          {/* Main content area - ChannelView now includes header */}
           <div className="flex-1 h-full bg-background">
             {selectedChannel ? (
               <ChannelView
@@ -466,7 +466,7 @@ export default function DashboardPage() {
                   </div>
                   <h2 className="text-2xl font-semibold text-text-primary mb-2">Direct Message</h2>
                   <p className="text-text-secondary mb-6">
-                    选择左侧的成员开始私聊
+                    Select a member from the left to start a private chat
                   </p>
                   <Button
                     variant="primary"
@@ -478,7 +478,7 @@ export default function DashboardPage() {
                     }}
                     disabled={availableMembers.length === 0}
                   >
-                    开始聊天
+                    Start Chat
                   </Button>
                 </div>
               </div>
@@ -500,9 +500,9 @@ export default function DashboardPage() {
                       />
                     </svg>
                   </div>
-                  <h2 className="text-2xl font-semibold text-text-primary mb-2">欢迎使用 Slack</h2>
+                  <h2 className="text-2xl font-semibold text-text-primary mb-2">Welcome to Slack</h2>
                   <p className="text-text-secondary mb-6">
-                    从左侧选择一个频道或成员开始交流
+                    Select a channel or member from the left to start chatting
                   </p>
                   <Button
                     variant="primary"
@@ -514,7 +514,7 @@ export default function DashboardPage() {
                     }}
                     disabled={availableMembers.length === 0}
                   >
-                    开始聊天
+                    Start Chat
                   </Button>
                 </div>
               </div>

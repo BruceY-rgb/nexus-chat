@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 interface UnreadState {
-  // 未读消息映射：key为channelId或dmConversationId，value为未读数
+  // Unread message mapping: key is channelId or dmConversationId, value is unread count
   unreadMap: Record<string, number>;
   // 静音的会话列表
   mutedList: Set<string>;
@@ -57,7 +57,7 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
       [conversationId]: newCount
     };
 
-    // 如果计数为0，删除该条目
+    // If count is 0, delete the entry
     if (newCount === 0) {
       delete newUnreadMap[conversationId];
     }
@@ -74,7 +74,7 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
   setUnread: (conversationId: string, count: number) => {
     const { unreadMap, mutedList } = get();
 
-    // 如果已静音，不设置未读数
+    // If muted, do not set unread count
     if (mutedList.has(conversationId)) {
       return;
     }
@@ -84,7 +84,7 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
       [conversationId]: Math.max(0, count)
     };
 
-    // 如果计数为0，删除该条目
+    // If count is 0, delete the entry
     if (count === 0) {
       delete newUnreadMap[conversationId];
     }

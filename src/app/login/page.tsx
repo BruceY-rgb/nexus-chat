@@ -23,7 +23,7 @@ export default function LoginPage() {
 
   const handleSendVerification = async () => {
     if (!email) {
-      setError('请输入邮箱地址');
+      setError('Please enter your email address');
       return;
     }
 
@@ -42,15 +42,15 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || '发送验证码失败');
+        throw new Error(data.message || 'Failed to send verification code');
       }
 
-      // 切换到验证码模式
+      // Switch to verification code mode
       setMode('verification');
       setVerificationCode('');
       setError('');
     } catch (err: any) {
-      setError(err.message || '发送验证码失败，请重试');
+      setError(err.message || 'Failed to send verification code, please try again');
     } finally {
       setSendingCode(false);
     }
@@ -73,7 +73,7 @@ export default function LoginPage() {
       await login(loginData);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || '登录失败，请检查您的信息');
+      setError(err.message || 'Login failed, please check your information');
     } finally {
       setLoading(false);
     }
@@ -99,12 +99,13 @@ export default function LoginPage() {
               />
             </svg>
           </div>
-          <h1 className="text-heading-2">欢迎回来</h1>
-          <p className="text-body-secondary mt-2">登录您的账户以继续</p>
+          <h1 className="text-heading-2">Welcome Back</h1>
+          <p className="text-body-secondary mt-2">Log in to your account to continue
+</p>
         </div>
 
         <Card className="animate-fade-in">
-          {/* 登录方式切换 */}
+          {/* Login method toggle */}
           <div className="flex p-1 bg-background-elevated rounded-lg mb-6">
             <button
               type="button"
@@ -116,7 +117,7 @@ export default function LoginPage() {
               }`}
             >
               <Lock className="w-4 h-4" />
-              密码登录
+              Password
             </button>
             <button
               type="button"
@@ -128,7 +129,7 @@ export default function LoginPage() {
               }`}
             >
               <Shield className="w-4 h-4" />
-              验证码登录
+              Verification code
             </button>
           </div>
 
@@ -141,8 +142,8 @@ export default function LoginPage() {
 
             <Input
               type="email"
-              label="邮箱地址"
-              placeholder="请输入您的邮箱"
+              label="email"
+              placeholder="please enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               leftIcon={<Mail className="w-4 h-4" />}
@@ -152,8 +153,8 @@ export default function LoginPage() {
             {mode === 'password' ? (
               <Input
                 type="password"
-                label="密码"
-                placeholder="请输入您的密码"
+                label="password"
+                placeholder="please enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 leftIcon={<Lock className="w-4 h-4" />}
@@ -164,8 +165,8 @@ export default function LoginPage() {
                 <div className="flex gap-2">
                   <Input
                     type="text"
-                    label="验证码"
-                    placeholder="请输入6位验证码"
+                    label="verification code"
+                    placeholder="please enter 6-digit verification code"
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value)}
                     leftIcon={<Shield className="w-4 h-4" />}
@@ -181,7 +182,7 @@ export default function LoginPage() {
                       loading={sendingCode}
                       className="whitespace-nowrap"
                     >
-                      {sendingCode ? '发送中...' : '获取验证码'}
+                      {sendingCode ? 'sending...' : 'send verification code'}
                     </Button>
                   </div>
                 </div>
@@ -197,7 +198,7 @@ export default function LoginPage() {
               size="lg"
               className="mt-6"
             >
-              {loading ? '登录中...' : '登录'}
+              {loading ? 'logging in...' : 'login'}
             </Button>
           </form>
 
@@ -205,9 +206,9 @@ export default function LoginPage() {
 
           <div className="text-center space-y-4">
             <p className="text-body-secondary">
-              还没有账户？{' '}
+              Don't have an account?{' '}
               <Link href="/register" className="text-primary hover:text-primary/80 font-medium">
-                立即注册
+                Sign up
               </Link>
             </p>
 
@@ -220,7 +221,7 @@ export default function LoginPage() {
                 }}
                 className="p-2 text-xs text-text-tertiary hover:text-text-secondary border border-border rounded-lg hover:border-border-light transition-all"
               >
-                使用管理员账户
+                Use Admin Account
               </button>
               <button
                 type="button"
@@ -230,14 +231,14 @@ export default function LoginPage() {
                 }}
                 className="p-2 text-xs text-text-tertiary hover:text-text-secondary border border-border rounded-lg hover:border-border-light transition-all"
               >
-                使用 Alice 账户
+                Use Alice Account
               </button>
             </div>
           </div>
         </Card>
 
         <div className="text-center mt-6 text-xs text-text-tertiary">
-          <p>登录即表示您同意我们的服务条款和隐私政策</p>
+          <p>By logging in, you agree to our Terms of Service and Privacy Policy</p>
         </div>
       </div>
     </div>

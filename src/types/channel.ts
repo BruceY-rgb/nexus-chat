@@ -1,4 +1,4 @@
-// Channel 接口定义 - 模仿 Slack 频道属性
+// Channel interface definition - mimicking Slack channel properties
 export interface Channel {
   id: string;
   name: string;
@@ -12,18 +12,18 @@ export interface Channel {
   isMuted?: boolean;
 }
 
-// 检查用户是否已加入频道
+// Check if user has joined channel
 export const isUserJoined = (channel: Channel, userId: string): boolean => {
-  // 默认所有频道用户都已加入（根据实际需求调整）
+  // Default all channel users are joined (adjust according to actual needs)
   return true;
 };
 
-// Mock 数据 - 包含 #general 和 #random 频道
+// Mock data - including #general and #random channels
 export const mockChannels: Channel[] = [
   {
     id: 'channel-1',
     name: 'general',
-    description: '通用频道 - 团队日常交流',
+    description: 'General channel - daily team communication',
     type: 'public',
     createdAt: new Date('2024-01-01'),
     ownerId: '1',
@@ -32,7 +32,7 @@ export const mockChannels: Channel[] = [
   {
     id: 'channel-2',
     name: 'random',
-    description: '随机频道 - 随意聊天',
+    description: 'Random channel - casual chat',
     type: 'public',
     createdAt: new Date('2024-01-01'),
     ownerId: '1',
@@ -41,7 +41,7 @@ export const mockChannels: Channel[] = [
   {
     id: 'channel-3',
     name: 'announcements',
-    description: '公告频道 - 重要通知',
+    description: 'Announcement channel - important notifications',
     type: 'public',
     createdAt: new Date('2024-01-01'),
     ownerId: '1',
@@ -50,7 +50,7 @@ export const mockChannels: Channel[] = [
   {
     id: 'channel-4',
     name: 'help',
-    description: '帮助频道 - 提问与解答',
+    description: 'Help channel - questions and answers',
     type: 'public',
     createdAt: new Date('2024-01-01'),
     ownerId: '1',
@@ -59,7 +59,7 @@ export const mockChannels: Channel[] = [
   {
     id: 'channel-5',
     name: 'social',
-    description: '社交频道 - 非工作相关聊天',
+    description: 'Social channel - non-work related chat',
     type: 'public',
     createdAt: new Date('2024-01-01'),
     ownerId: '1',
@@ -67,12 +67,12 @@ export const mockChannels: Channel[] = [
   }
 ];
 
-// 获取用户已加入的频道
+// Get user's joined channels
 export const getJoinedChannels = (channels: Channel[], userId: string): Channel[] => {
   return channels.filter(channel => isUserJoined(channel, userId));
 };
 
-// 获取用户未加入的频道
+// Get user's unjoined channels
 export const getAvailableChannels = (channels: Channel[], userId: string): Channel[] => {
   return channels.filter(channel => !isUserJoined(channel, userId));
 };

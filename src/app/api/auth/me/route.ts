@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('获取用户信息错误:', error);
     return NextResponse.json(
-      errorResponse('获取用户信息失败'),
+      errorResponse('Failed to get user information'),
       { status: 500 }
     );
   }

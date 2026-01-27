@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // 创建响应
     const response = NextResponse.json(
-      successResponse(null, '登出成功')
+      successResponse(null, 'Logout successful')
     );
 
     // 清除 cookie
@@ -26,9 +26,9 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('登出错误:', error);
+    console.error('Logout error:', error);
     return NextResponse.json(
-      errorResponse('登出失败'),
+      errorResponse('Logout failed'),
       { status: 500 }
     );
   }

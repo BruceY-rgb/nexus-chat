@@ -6,11 +6,11 @@
 export type UserStatus = 'active' | 'inactive' | 'suspended';
 export type UserRole = 'owner' | 'admin' | 'member';
 
-// 频道相关类型
+// Channel-related types
 export type ChannelType = 'public' | 'private';
 export type ChannelRole = 'owner' | 'admin' | 'member';
 
-// 消息相关类型
+// Message-related types
 export type MessageType = 'text' | 'image' | 'file' | 'system';
 export type NotificationType = 'mention' | 'dm' | 'channel_invite' | 'system';
 
@@ -27,14 +27,14 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// 消息列表响应类型
+// Message list response type
 export interface MessageListResponse {
   messages: any[];
   hasMore: boolean;
   cursor?: string;
 }
 
-// 频道列表响应类型
+// Channel list response type
 export interface ChannelListResponse {
   channels: any[];
   total: number;
@@ -52,14 +52,14 @@ export interface UserListResponse {
   total: number;
 }
 
-// WebSocket 消息事件
+// WebSocket message events
 export interface WSMessage {
   type: 'message' | 'typing' | 'read' | 'presence';
   payload: any;
   timestamp: number;
 }
 
-// 消息事件负载
+// Message event payload
 export interface MessageEventPayload {
   message: any;
   channelId?: string;
@@ -82,7 +82,7 @@ export interface ReadEventPayload {
   dmConversationId?: string;
 }
 
-// 在线状态事件负载
+// Online status event payload
 export interface PresenceEventPayload {
   userId: string;
   isOnline: boolean;
@@ -105,7 +105,7 @@ export interface S3Config {
   publicUrl: string;
 }
 
-// 搜索请求
+// Search request
 export interface SearchRequest {
   query: string;
   type?: 'message' | 'user' | 'channel';
@@ -118,7 +118,7 @@ export interface SearchRequest {
   offset?: number;
 }
 
-// 搜索响应
+// Search response
 export interface SearchResponse {
   query: string;
   results: {
@@ -139,7 +139,7 @@ export interface UserStats {
   lastActiveAt: Date;
 }
 
-// 频道统计
+// Channel statistics
 export interface ChannelStats {
   channelId: string;
   messageCount: number;
@@ -157,19 +157,19 @@ export interface TeamStats {
   totalDmConversations: number;
 }
 
-// 创建频道表单
+// Create channel form
 export interface CreateChannelForm {
   name: string;
   description?: string;
   isPrivate: boolean;
 }
 
-// 创建 DM 对话表单
+// Create DM conversation form
 export interface CreateDMConversationForm {
   userIds: string[];
 }
 
-// 发送消息表单
+// Send message form
 export interface SendMessageForm {
   content: string;
   channelId?: string;
@@ -178,7 +178,7 @@ export interface SendMessageForm {
   attachments?: File[];
 }
 
-// 更新用户资料表单
+// Update user profile form
 export interface UpdateUserProfileForm {
   displayName?: string;
   realName?: string;
@@ -186,7 +186,7 @@ export interface UpdateUserProfileForm {
   timezone?: string;
 }
 
-// 更新通知设置表单
+// Update notification settings form
 export interface UpdateNotificationSettingsForm {
   mentionInChannel?: boolean;
   mentionInDm?: boolean;
@@ -197,7 +197,7 @@ export interface UpdateNotificationSettingsForm {
   quietHoursEnd?: string;
 }
 
-// API 错误响应
+// API error response
 export interface ApiError {
   code: string;
   message: string;
@@ -205,7 +205,7 @@ export interface ApiError {
   timestamp: number;
 }
 
-// 验证错误
+// Validation error
 export interface ValidationError {
   field: string;
   message: string;
@@ -278,7 +278,7 @@ export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
 // 通用部分更新类型
 export type PartialUpdate<T> = Partial<T> & { id: string };
 
-// 通用创建类型（排除自动生成字段）
+// Common create type (excluding auto-generated fields)
 export type CreateInput<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
 
 // 通用更新类型（排除不可更新字段）

@@ -205,7 +205,7 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
       }
     });
 
-    // 消息已读标记
+    // Message read标记
     socket.on('message-read', (data: {
       messageIds: string[];
       channelId?: string;

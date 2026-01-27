@@ -12,14 +12,14 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const SALT_ROUNDS = 10;
 
 /**
- * 哈希密码
+ * Hash password
  */
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, SALT_ROUNDS);
 }
 
 /**
- * 验证密码
+ * Verify password
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   return bcrypt.compare(password, hash);
@@ -49,7 +49,7 @@ export function verifyToken(token: string): { userId: string } | null {
 }
 
 /**
- * 创建用户会话
+ * Create user session
  */
 export async function createUserSession(
   userId: string,
@@ -93,7 +93,7 @@ export async function verifyUserSession(token: string, ipAddress?: string) {
         data: { lastAccessedAt: new Date() },
       });
 
-      // 返回用户信息
+      // Return user information
       const user = await prisma.user.findUnique({
         where: { id: session.userId },
         include: {
@@ -109,7 +109,7 @@ export async function verifyUserSession(token: string, ipAddress?: string) {
 }
 
 /**
- * 删除用户会话
+ * Delete user session
  */
 export async function deleteUserSession(token: string) {
   const sessions = await prisma.userSession.findMany({
@@ -130,7 +130,7 @@ export async function deleteUserSession(token: string) {
 }
 
 /**
- * 删除用户所有会话
+ * Delete all user sessions
  */
 export async function deleteAllUserSessions(userId: string) {
   await prisma.userSession.deleteMany({

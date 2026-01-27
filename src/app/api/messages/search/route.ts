@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 获取用户已加入的频道列表
+    // Get user's joined channels列表
     const channelMemberships = await prisma.channelMember.findMany({
       where: { userId: currentUserId },
       select: { channelId: true }
@@ -174,9 +174,9 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('搜索消息时发生错误:', error);
+    console.error('Error occurred while searching messages:', error);
     return NextResponse.json(
-      { error: '内部服务器错误' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

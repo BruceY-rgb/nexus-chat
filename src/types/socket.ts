@@ -29,7 +29,7 @@ export type SocketEventType =
   | 'get-online-users'
   | 'new-notification';
 
-// WebSocket 消息事件负载
+// WebSocket message events负载
 export interface NewMessagePayload {
   id: string;
   content: string;
@@ -62,7 +62,7 @@ export interface TypingPayload {
   displayName?: string;
 }
 
-// 消息已读事件负载
+// Message read事件负载
 export interface MessageReadPayload {
   userId: string;
   messageIds: string[];
@@ -88,7 +88,7 @@ export interface NewNotificationPayload {
   };
 }
 
-// 用户在线状态事件负载
+// 用户Online status event payload
 export interface PresenceUpdatePayload {
   userId: string;
   isOnline: boolean;

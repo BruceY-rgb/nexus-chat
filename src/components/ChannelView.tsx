@@ -161,11 +161,11 @@ export default function ChannelView({
         setMessages([]);
         onClearMessages?.();
       } else {
-        alert('清空消息失败，请重试');
+        alert('Clear messages failed, please try again');
       }
     } catch (error) {
       console.error('清空消息错误:', error);
-      alert('清空消息失败，请重试');
+      alert('Clear messages failed, please try again');
     } finally {
       setIsClearing(false);
       setIsDropdownOpen(false);
@@ -504,7 +504,7 @@ export default function ChannelView({
                 </Button>
               </div>
 
-              {/* 频道统计 */}
+              {/* Channel statistics */}
               <div className="flex items-center gap-6 text-sm text-text-tertiary">
                 <div className="flex items-center gap-2">
                   <svg

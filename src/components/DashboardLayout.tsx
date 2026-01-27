@@ -146,7 +146,7 @@ export default function DashboardLayout({
               className="w-full text-white/70 hover:text-white hover:bg-white/10 justify-start"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              登出
+              Log Out
             </Button>
           </div>
         </div>

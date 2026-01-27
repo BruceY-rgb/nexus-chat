@@ -153,7 +153,7 @@ export default function DMMessageInput({
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
 
     if (imageFiles.length === 0) {
-      alert('请选择图片文件');
+      alert('Please select image files');
       return;
     }
 

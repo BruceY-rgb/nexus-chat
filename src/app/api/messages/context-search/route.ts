@@ -206,9 +206,9 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('搜索消息时发生错误:', error);
+    console.error('Error occurred while searching messages:', error);
     return NextResponse.json(
-      { error: '内部服务器错误' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

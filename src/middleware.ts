@@ -16,14 +16,14 @@ export async function middleware(request: NextRequest) {
   // 检查认证状态
   const isAuthenticated = token ? true : false;
 
-  // 如果访问受保护的路由但未认证，重定向到登录页
+  // If accessing protected route without authentication, redirect to login page
   if (isProtectedPath && !isAuthenticated) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 如果已认证但访问登录页，重定向到仪表盘
+  // If authenticated but accessing login page, redirect to dashboard
   if ((pathname === '/login' || pathname === '/register') && isAuthenticated) {
     const dashboardUrl = new URL('/dashboard', request.url);
     return NextResponse.redirect(dashboardUrl);
@@ -41,8 +41,8 @@ export const config = {
      * - _next/static (静态文件)
      * - _next/image (图像优化)
      * - favicon.ico (favicon 文件)
-     * - login (登录页)
-     * - register (注册页)
+     * - login (Login page)
+     * - register (Register page)
      */
     '/((?!api|_next/static|_next/image|favicon.ico|public|login|register).*)',
   ],

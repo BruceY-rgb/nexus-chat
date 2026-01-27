@@ -1,7 +1,7 @@
 'use client';
 
 // =====================================================
-// 注册页面
+// Register page
 // =====================================================
 
 import { useState } from 'react';
@@ -33,14 +33,14 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
-    // 验证密码
+    // Validate password
     if (formData.password !== formData.confirmPassword) {
-      setError('两次输入的密码不一致');
+      setError('Passwords do not match');
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('密码至少8个字符');
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -55,7 +55,7 @@ export default function RegisterPage() {
       });
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || '注册失败，请稍后重试');
+      setError(err.message || 'Registration failed, please try again later');
     } finally {
       setLoading(false);
     }
@@ -66,12 +66,12 @@ export default function RegisterPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            创建您的账户
+            Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            已有账户？{' '}
+            Already have an account?{' '}
             <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-              立即登录
+              Sign in now
             </Link>
           </p>
         </div>
@@ -86,7 +86,7 @@ export default function RegisterPage() {
           <div className="rounded-md shadow-sm space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                邮箱地址
+                Email address
               </label>
               <input
                 id="email"
@@ -103,7 +103,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
-                昵称
+                Display name
               </label>
               <input
                 id="displayName"
@@ -111,7 +111,7 @@ export default function RegisterPage() {
                 type="text"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="您的昵称"
+                placeholder="Your display name"
                 value={formData.displayName}
                 onChange={handleChange}
               />
@@ -119,14 +119,14 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="realName" className="block text-sm font-medium text-gray-700">
-                真实姓名（可选）
+                Real name (optional)
               </label>
               <input
                 id="realName"
                 name="realName"
                 type="text"
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="您的真实姓名"
+                placeholder="Your real name"
                 value={formData.realName}
                 onChange={handleChange}
               />
@@ -134,7 +134,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                密码
+                Password
               </label>
               <input
                 id="password"
@@ -143,7 +143,7 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="至少8个字符"
+                placeholder="At least 8 characters"
                 value={formData.password}
                 onChange={handleChange}
               />
@@ -151,7 +151,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                确认密码
+                Confirm password
               </label>
               <input
                 id="confirmPassword"
@@ -160,7 +160,7 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="再次输入密码"
+                placeholder="Enter password again"
                 value={formData.confirmPassword}
                 onChange={handleChange}
               />
@@ -173,12 +173,12 @@ export default function RegisterPage() {
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '注册中...' : '注册'}
+              {loading ? 'Registering...' : 'Register'}
             </button>
           </div>
 
           <div className="text-xs text-gray-500 text-center">
-            注册即表示您同意我们的服务条款和隐私政策
+            By registering, you agree to our Terms of Service and Privacy Policy
           </div>
         </form>
       </div>

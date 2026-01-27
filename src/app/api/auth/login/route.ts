@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     // 检查用户状态
     if (user.status !== 'active') {
       return NextResponse.json(
-        errorResponse('账户已被禁用，请联系管理员', 'ACCOUNT_DISABLED'),
+        errorResponse('Account has been disabled, please contact administrator', 'ACCOUNT_DISABLED'),
         { status: 403 }
       );
     }
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       // 密码登录
       if (!user.passwordHash) {
         return NextResponse.json(
-          errorResponse('该账户未设置密码，请使用验证码登录', 'NO_PASSWORD'),
+          errorResponse('This account has no password set, please use verification code to login', 'NO_PASSWORD'),
           { status: 401 }
         );
       }
@@ -83,14 +83,14 @@ export async function POST(request: NextRequest) {
       // 验证码登录
       if (!user.emailVerificationCode || !user.emailCodeExpiresAt) {
         return NextResponse.json(
-          errorResponse('未发送验证码，请先获取验证码', 'NO_VERIFICATION_CODE'),
+          errorResponse('Verification code not sent, please get the code first', 'NO_VERIFICATION_CODE'),
           { status: 401 }
         );
       }
 
       if (new Date() > user.emailCodeExpiresAt) {
         return NextResponse.json(
-          errorResponse('验证码已过期，请重新获取', 'CODE_EXPIRED'),
+          errorResponse('Verification code has expired, please get it again', 'CODE_EXPIRED'),
           { status: 401 }
         );
       }
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
 
     await createUserSession(user.id, token, ipAddress, userAgent);
 
-    // 返回用户信息（不包含密码）
+    // Return user information (password not included)
     const response = NextResponse.json(
       successResponse(
         {
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('登录错误:', error);
     return NextResponse.json(
-      errorResponse('登录失败，请稍后重试'),
+      errorResponse('Login failed, please try again later'),
       { status: 500 }
     );
   }

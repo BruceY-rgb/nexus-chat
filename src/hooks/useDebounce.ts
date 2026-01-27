@@ -15,7 +15,7 @@ export function useDebounce<T>(value: T, delay: number): T {
       setDebouncedValue(value);
     }, delay);
 
-    // 清理函数：如果 value 发生变化，会清除上一个定时器
+    // Cleanup function：如果 value 发生变化，会清除上一个定时器
     return () => {
       clearTimeout(handler);
     };

@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       }
     } catch (error) {
-      console.error('🔴 [AUTH] 获取用户信息失败:', error);
+      console.error('🔴 [AUTH] Failed to get user information:', error);
       setUser(null);
     } finally {
       setLoading(false);
@@ -121,8 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('🟢 [AUTH] 用户数据:', data);
 
       if (!data.data || !data.data.user) {
-        console.error('🔴 [AUTH] 响应格式错误:', data);
-        throw new Error('响应格式错误');
+        console.error('🔴 [AUTH] Response format error:', data);
+        throw new Error('Response format error');
       }
 
       setUser(data.data.user);
@@ -165,8 +165,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('🟢 [AUTH] 注册成功:', data);
 
       if (!data.data || !data.data.user) {
-        console.error('🔴 [AUTH] 注册响应格式错误:', data);
-        throw new Error('响应格式错误');
+        console.error('🔴 [AUTH] 注册Response format error:', data);
+        throw new Error('Response format error');
       }
 
       setUser(data.data.user);
@@ -186,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser(null);
     } catch (error) {
-      console.error('登出失败:', error);
+      console.error('Logout failed:', error);
     }
   };
 

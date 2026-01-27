@@ -75,7 +75,7 @@ export function useSocket(): UseSocketReturn {
       reconnectionAttempts: maxReconnectAttempts
     });
 
-    // 连接成功
+    // Connection successful
     socketInstance.on('connect', () => {
       console.log('✅ WebSocket connected');
       setIsConnected(true);
@@ -107,21 +107,21 @@ export function useSocket(): UseSocketReturn {
       reconnectAttempts.current = attemptNumber;
     });
 
-    // 重连成功
+    // Reconnection successful
     socketInstance.on('reconnect', (attemptNumber) => {
       console.log(`✅ Reconnected after ${attemptNumber} attempts`);
       setIsConnected(true);
       setConnectionStatus('connected');
     });
 
-    // 重连失败
+    // Reconnection failed
     socketInstance.on('reconnect_failed', () => {
       console.log('❌ Failed to reconnect after maximum attempts');
       setConnectionStatus('error');
       setIsConnected(false);
     });
 
-    // 错误处理
+    // Error handling
     socketInstance.on('error', (error) => {
       console.error('WebSocket error:', error);
       setConnectionStatus('error');
@@ -183,7 +183,7 @@ export function useSocket(): UseSocketReturn {
     };
   }, [socket]);
 
-  // 频道操作
+  // Channel operations
   const joinChannel = useCallback((channelId: string) => {
     if (socket && isConnected) {
       console.log(`📥 Joining channel: ${channelId}`);
@@ -226,7 +226,7 @@ export function useSocket(): UseSocketReturn {
     }
   }, [socket, isConnected]);
 
-  // 消息已读
+  // Message read
   const markMessagesAsRead = useCallback((data: {
     messageIds: string[];
     channelId?: string;
