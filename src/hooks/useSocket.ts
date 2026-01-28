@@ -9,6 +9,7 @@ interface UseSocketReturn {
   connectionStatus: ConnectionStatus;
   connect: () => void;
   disconnect: () => void;
+  forceReconnect: () => void;
   joinChannel: (channelId: string) => void;
   leaveChannel: (channelId: string) => void;
   joinDM: (conversationId: string) => void;
@@ -30,6 +31,7 @@ export function useSocket(): UseSocketReturn {
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   const reconnectInterval = useRef<NodeJS.Timeout | null>(null);
+  const isConnecting = useRef(false);
 
   // 获取 token 从 cookie (ws_token 供 WebSocket 使用)
   const getToken = useCallback(() => {
@@ -38,15 +40,19 @@ export function useSocket(): UseSocketReturn {
     for (let cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
       if (name === 'ws_token') {
-        console.log(`🔑 [getToken] Found ws_token`);
         return value;
       }
     }
-    console.log(`⚠️ [getToken] ws_token not found in cookies`);
     return null;
   }, []);
 
   const connect = useCallback(() => {
+    // 防止重复连接
+    if (isConnecting.current || socket?.connected) {
+      console.log(`🔌 [connect] Already connected or connecting, skipping`);
+      return;
+    }
+
     const token = getToken();
     console.log(`🔌 [connect] Attempting to connect with ws_token:`, {
       hasToken: !!token,
@@ -57,13 +63,11 @@ export function useSocket(): UseSocketReturn {
     });
 
     if (!token || !user) {
-      console.log(`❌ [connect] Cannot connect: missing token or user:`, {
-        noToken: !token,
-        noUser: !user
-      });
+      console.log(`❌ [connect] Cannot connect: missing token or user`);
       return;
     }
 
+    isConnecting.current = true;
     console.log('🔌 [connect] Connecting to WebSocket server...');
 
     const socketInstance = io('http://127.0.0.1:3000', {
@@ -81,6 +85,7 @@ export function useSocket(): UseSocketReturn {
       setIsConnected(true);
       setConnectionStatus('connected');
       reconnectAttempts.current = 0;
+      isConnecting.current = false;
 
       if (reconnectInterval.current) {
         clearInterval(reconnectInterval.current);
@@ -93,6 +98,7 @@ export function useSocket(): UseSocketReturn {
       console.log('❌ WebSocket disconnected:', reason);
       setIsConnected(false);
       setConnectionStatus('disconnected');
+      isConnecting.current = false;
 
       // 如果是服务器主动断开，尝试重连
       if (reason === 'io server disconnect') {
@@ -112,6 +118,7 @@ export function useSocket(): UseSocketReturn {
       console.log(`✅ Reconnected after ${attemptNumber} attempts`);
       setIsConnected(true);
       setConnectionStatus('connected');
+      isConnecting.current = false;
     });
 
     // Reconnection failed
@@ -119,12 +126,14 @@ export function useSocket(): UseSocketReturn {
       console.log('❌ Failed to reconnect after maximum attempts');
       setConnectionStatus('error');
       setIsConnected(false);
+      isConnecting.current = false;
     });
 
     // Error handling
     socketInstance.on('error', (error) => {
       console.error('WebSocket error:', error);
       setConnectionStatus('error');
+      isConnecting.current = false;
     });
 
     setSocket(socketInstance);
@@ -132,11 +141,12 @@ export function useSocket(): UseSocketReturn {
       socketId: socketInstance.id,
       connected: socketInstance.connected
     });
-  }, [user, getToken]);
+  }, [user, getToken, socket]);
 
   const disconnect = useCallback(() => {
     if (socket) {
       console.log('🔌 Manually disconnecting WebSocket');
+      isConnecting.current = false;
       socket.disconnect();
       setSocket(null);
       setIsConnected(false);
@@ -144,27 +154,36 @@ export function useSocket(): UseSocketReturn {
     }
   }, [socket]);
 
+  // 强制重新连接
+  const forceReconnect = useCallback(() => {
+    console.log('🔌 Force reconnecting WebSocket');
+    disconnect();
+    setTimeout(() => {
+      connect();
+    }, 500);
+  }, [disconnect, connect]);
+
   // 自动连接 - 修复循环依赖
   useEffect(() => {
     const token = getToken();
-    console.log(`🔌 [useSocket] Auto-connect check with ws_token:`, {
+    console.log(`🔌 [useSocket] Auto-connect check:`, {
       hasToken: !!token,
       hasUser: !!user,
+      isConnecting: isConnecting.current,
       hasSocket: !!socket,
       socketId: socket?.id,
-      userId: user?.id,
-      tokenPreview: token ? `${token.substring(0, 10)}...` : null
+      userId: user?.id
     });
 
-    // 移除 socket 依赖，避免循环
-    if (token && user) {
-      console.log(`🔌 [useSocket] IMMEDIATELY connecting with ws_token (forcing)...`);
-      connect();
-    } else {
-      console.log(`🔌 [useSocket] Missing requirements:`, {
-        noToken: !token,
-        noUser: !user
-      });
+    // 只有在有token和用户，且当前未连接且未在连接中时才连接
+    if (token && user && !socket?.connected && !isConnecting.current) {
+      console.log(`🔌 [useSocket] Starting connection...`);
+      // 使用setTimeout避免在渲染阶段直接调用connect
+      const timeoutId = setTimeout(() => {
+        connect();
+      }, 0);
+
+      return () => clearTimeout(timeoutId);
     }
 
     return () => {
@@ -172,7 +191,7 @@ export function useSocket(): UseSocketReturn {
         clearInterval(reconnectInterval.current);
       }
     };
-  }, [user, connect, getToken]); // 移除 socket 依赖
+  }, [user, socket?.connected, connect, getToken]); // 使用socket?.connected而不是整个socket
 
   // 清理
   useEffect(() => {
@@ -243,6 +262,7 @@ export function useSocket(): UseSocketReturn {
     connectionStatus,
     connect,
     disconnect,
+    forceReconnect,
     joinChannel,
     leaveChannel,
     joinDM,

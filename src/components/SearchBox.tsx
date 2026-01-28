@@ -206,7 +206,7 @@ export default function SearchBox({ className = '' }: SearchBoxProps) {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => query && setShowResults(true)}
-          placeholder="搜索消息..."
+          placeholder="Search messages..."
           className="w-full pl-10 pr-10 py-2 bg-white/5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
         />
         {query && (

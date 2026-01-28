@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Channel } from '../types/channel';
 import { Message } from '@/types/message';
@@ -212,11 +212,22 @@ export default function ChannelView({
     onNewMessage: handleNewMessage
   });
 
-  const handleMessageSent = () => {
-    // 不再需要手动刷新消息列表，WebSocket 会自动推送新消息
-    // 但可以保留作为备用方案
-    console.log('✅ Message sent via API, WebSocket will handle real-time update');
-  };
+  const handleMessageSent = useCallback((message?: Message) => {
+    // 如果收到了消息对象，进行乐观更新
+    if (message) {
+      console.log('✅ [ChannelView] Message sent successfully, performing optimistic update:', message.id);
+      setMessages(prev => {
+        // 防止重复
+        if (prev.some(msg => msg.id === message.id)) {
+          console.log('⚠️ [ChannelView] Duplicate message in optimistic update, ignoring:', message.id);
+          return prev;
+        }
+        return [...prev, message];
+      });
+    } else {
+      console.log('✅ [ChannelView] Message sent via API, WebSocket will handle real-time update');
+    }
+  }, []);
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
@@ -244,8 +255,8 @@ export default function ChannelView({
             <button
               onClick={() => setIsSearchModalOpen(true)}
               className="p-2 hover:bg-background-tertiary rounded-md transition-colors"
-              aria-label="搜索消息"
-              title="搜索消息"
+              aria-label="Search messages"
+              title="Search messages"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -328,7 +339,7 @@ export default function ChannelView({
                           d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
                         />
                       </svg>
-                      查看频道成员
+                      View Channel Members
                     </button>
 
                     <button
@@ -350,7 +361,7 @@ export default function ChannelView({
                           d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
                         />
                       </svg>
-                      {isClearing ? '清空中...' : '清空聊天记录'}
+                      {isClearing ? 'Clearing...' : 'Clear Chat History'}
                     </button>
 
                     <button
@@ -371,7 +382,7 @@ export default function ChannelView({
                           d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
                         />
                       </svg>
-                      离开频道
+                      Leave Channel
                     </button>
                   </div>
                 </>
@@ -410,7 +421,7 @@ export default function ChannelView({
                     </svg>
                   </button>
                   <h2 className="text-xl font-semibold text-text-primary">
-                    #{channel?.name || 'Channel'} 成员
+                    #{channel?.name || 'Channel'} Members
                   </h2>
                 </div>
 

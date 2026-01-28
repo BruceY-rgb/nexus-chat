@@ -42,14 +42,6 @@ export async function POST(
       );
     }
 
-    // 检查是否是频道创建者
-    if (channel.createdById === currentUserId) {
-      return NextResponse.json(
-        { error: 'Channel owner cannot leave the channel. Delete the channel instead.' },
-        { status: 400 }
-      );
-    }
-
     // 检查是否是成员
     const channelMember = await prisma.channelMember.findFirst({
       where: {
@@ -65,7 +57,92 @@ export async function POST(
       );
     }
 
-    // 离开频道
+    // 检查是否是频道创建者
+    const isOwner = channel.createdById === currentUserId;
+
+    // 如果是频道创建者，检查剩余成员数量
+    if (isOwner) {
+      // 获取频道的成员总数
+      const memberCount = await prisma.channelMember.count({
+        where: { channelId }
+      });
+
+      // 如果删除当前成员后频道为空，则删除整个频道
+      if (memberCount <= 1) {
+        await prisma.$transaction([
+          // 删除频道成员关系
+          prisma.channelMember.delete({
+            where: {
+              id: channelMember.id
+            }
+          }),
+          // 软删除频道
+          prisma.channel.update({
+            where: {
+              id: channelId
+            },
+            data: {
+              deletedAt: new Date()
+            }
+          })
+        ]);
+
+        return NextResponse.json({
+          message: 'You were the last member. The channel has been deleted.',
+          channelId,
+          channelDeleted: true
+        });
+      } else {
+        // 有其他成员，转移所有权给另一个成员
+        // 获取除当前用户外的其他成员
+        const otherMembers = await prisma.channelMember.findMany({
+          where: {
+            channelId,
+            userId: { not: currentUserId }
+          },
+          take: 1
+        });
+
+        if (otherMembers.length > 0) {
+          const newOwner = otherMembers[0];
+
+          await prisma.$transaction([
+            // 删除当前成员
+            prisma.channelMember.delete({
+              where: {
+                id: channelMember.id
+              }
+            }),
+            // 转移所有权
+            prisma.channel.update({
+              where: {
+                id: channelId
+              },
+              data: {
+                createdById: newOwner.userId
+              }
+            }),
+            // 更新新所有者的角色
+            prisma.channelMember.update({
+              where: {
+                id: newOwner.id
+              },
+              data: {
+                role: 'owner'
+              }
+            })
+          ]);
+
+          return NextResponse.json({
+            message: 'You left the channel. Ownership has been transferred to another member.',
+            channelId,
+            ownershipTransferred: true
+          });
+        }
+      }
+    }
+
+    // 普通成员离开频道
     await prisma.channelMember.delete({
       where: {
         id: channelMember.id

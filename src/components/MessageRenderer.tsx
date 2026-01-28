@@ -317,6 +317,25 @@ export default function MessageRenderer({
                       className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
                       style={{ maxHeight: '400px' }}
                       onClick={() => setSelectedImageIndex(0)}
+                      onError={(e) => {
+                        // 图片加载失败时显示错误占位符
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = `
+                            <div class="w-full h-48 bg-gray-800 flex flex-col items-center justify-center rounded-lg">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span class="text-gray-400 text-sm">Image loading failed</span>
+                              <button onclick="window.open('${imageAttachments[0].filePath}', '_blank')" class="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                                Open in new tab
+                              </button>
+                            </div>
+                          `;
+                        }
+                      }}
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                   </div>
@@ -341,6 +360,21 @@ export default function MessageRenderer({
                           alt={attachment.fileName}
                           className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
                           style={{ aspectRatio: '1', maxHeight: '200px' }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `
+                                <div class="w-full h-32 bg-gray-800 flex flex-col items-center justify-center rounded-lg">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  <span class="text-gray-400 text-xs">Loading failed</span>
+                                </div>
+                              `;
+                            }
+                          }}
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                       </div>
@@ -379,6 +413,21 @@ export default function MessageRenderer({
                           alt={attachment.fileName}
                           className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
                           style={{ aspectRatio: '1' }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `
+                                <div class="w-full h-32 bg-gray-800 flex flex-col items-center justify-center rounded-lg">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  <span class="text-gray-400 text-xs">Loading failed</span>
+                                </div>
+                              `;
+                            }
+                          }}
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                       </div>
@@ -405,6 +454,21 @@ export default function MessageRenderer({
                           alt={attachment.fileName}
                           className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
                           style={{ aspectRatio: '1' }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `
+                                <div class="w-full h-32 bg-gray-800 flex flex-col items-center justify-center rounded-lg">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  <span class="text-gray-400 text-xs">Loading failed</span>
+                                </div>
+                              `;
+                            }
+                          }}
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                       </div>
@@ -415,7 +479,7 @@ export default function MessageRenderer({
                 // 超过四张图片 - 显示前四张，其余显示计数
                 return (
                   <div className="grid grid-cols-2 gap-2">
-                    {imageAttachments.slice(0, 4).map((attachment, index) => (
+                    {imageAttachments.slice(0, 4).map((attachment, imgIndex) => (
                       <div
                         key={attachment.id}
                         className="relative group cursor-pointer rounded-lg overflow-hidden"
@@ -431,8 +495,23 @@ export default function MessageRenderer({
                           alt={attachment.fileName}
                           className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
                           style={{ aspectRatio: '1' }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `
+                                <div class="w-full h-32 bg-gray-800 flex flex-col items-center justify-center rounded-lg">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  <span class="text-gray-400 text-xs">Loading failed</span>
+                                </div>
+                              `;
+                            }
+                          }}
                         />
-                        {index === 3 && imageCount > 4 && (
+                        {imgIndex === 3 && imageCount > 4 && (
                           <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
                             <span className="text-white text-2xl font-bold">+{imageCount - 4}</span>
                           </div>
@@ -488,7 +567,7 @@ export default function MessageRenderer({
           >
             <path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-1-6h2v-2h-2v2zm0-4h2V7h-2v3z"/>
           </svg>
-          你被提及了
+          You were mentioned
         </div>
       )}
 

@@ -243,10 +243,10 @@ export default function SearchMessagesModal({
         {/* 顶部标题栏 */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">搜索消息</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Search messages</h2>
             {contextName && (
               <p className="text-sm text-gray-500 mt-0.5">
-                在 {contextName} 中搜索
+                Search in the {contextName}
               </p>
             )}
           </div>
@@ -271,7 +271,7 @@ export default function SearchMessagesModal({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="搜索消息..."
+              placeholder="Search for messages..."
               className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900"
             />
             {query && (
@@ -295,12 +295,12 @@ export default function SearchMessagesModal({
           {isSearching ? (
             <div className="p-8 text-center text-gray-500">
               <div className="inline-block w-5 h-5 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin mr-2" />
-              搜索中...
+              Searching...
             </div>
           ) : results.length > 0 ? (
             <div className="py-2">
               <div className="px-4 py-2 text-xs font-medium text-gray-500 border-b border-gray-200">
-                搜索结果 ({results.length})
+                Search results ({results.length})
               </div>
               <div className="divide-y divide-gray-200">
                 {results.map((result, index) => (
@@ -358,11 +358,11 @@ export default function SearchMessagesModal({
             </div>
           ) : query.trim() ? (
             <div className="p-8 text-center text-gray-500">
-              未找到匹配的消息
+              No results found for "{query}"
             </div>
           ) : (
             <div className="p-8 text-center text-gray-400">
-              输入关键词开始搜索
+              Enter a keyword to search messages
             </div>
           )}
         </div>
@@ -370,8 +370,8 @@ export default function SearchMessagesModal({
         {/* 底部提示 */}
         <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
           <div className="flex items-center justify-between">
-            <span>使用 ↑↓ 键选择，Enter 键跳转</span>
-            <span>Esc 键关闭</span>
+            <span>Use ↑↓ keys to select, Enter to jump</span>
+            <span>Esc to close</span>
           </div>
         </div>
       </div>

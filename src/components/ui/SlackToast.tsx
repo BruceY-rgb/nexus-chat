@@ -25,25 +25,25 @@ export function SlackToast({ notification, onDismiss }: SlackToastProps) {
         return {
           icon: AtSign,
           color: '#E8912D', // 橘黄色
-          buttonText: '查看',
+          buttonText: 'Reply',
         };
       case 'dm':
         return {
           icon: MessageSquare,
           color: '#1D9BD1', // 蓝色
-          buttonText: '回复',
+          buttonText: 'Reply',
         };
       case 'channel_invite':
         return {
           icon: AtSign,
           color: '#E8912D',
-          buttonText: '查看',
+          buttonText: 'View',
         };
       default:
         return {
           icon: MessageSquare,
           color: '#1D9BD1',
-          buttonText: '查看',
+          buttonText: 'View',
         };
     }
   };
@@ -52,66 +52,40 @@ export function SlackToast({ notification, onDismiss }: SlackToastProps) {
   const Icon = config.icon;
 
   // 处理点击查看按钮
-  const handleView = (e?: React.MouseEvent) => {
-    e?.stopPropagation(); // 阻止事件冒泡
-
-    console.log('🔔 [SlackToast] handleView clicked:', {
-      type: notification.type,
-      relatedChannelId: notification.relatedChannelId,
-      relatedDmConversationId: notification.relatedDmConversationId,
-      userId: notification.user.id,
-      relatedMessageId: notification.relatedMessageId
-    });
-
+  const handleView = () => {
     // 根据通知类型跳转到相应页面
     if (notification.type === 'mention' && notification.relatedChannelId) {
       // 跳转到频道
-      console.log('➡️ 跳转到频道:', notification.relatedChannelId);
+      console.log('jump to channel:', notification.relatedChannelId);
       const url = notification.relatedMessageId
         ? `/dashboard?channel=${notification.relatedChannelId}&messageId=${notification.relatedMessageId}`
         : `/dashboard?channel=${notification.relatedChannelId}`;
       router.push(url);
-    } else if (notification.type === 'channel_invite' && notification.relatedChannelId) {
-      // 跳转到频道邀请页面
-      console.log('➡️ 跳转到频道邀请:', notification.relatedChannelId);
-      router.push(`/dashboard?channel=${notification.relatedChannelId}`);
-    } else if (notification.type === 'dm') {
-      // 跳转到私聊 - 使用 relatedDmConversationId 或 user.id
-      const dmId = notification.relatedDmConversationId || notification.user.id;
-      console.log('➡️ 跳转到私聊:', dmId);
+    } else if (notification.type === 'dm' && notification.relatedDmConversationId) {
+      // 跳转到私聊
+      console.log('jump to dm:', notification.relatedDmConversationId);
       const url = notification.relatedMessageId
-        ? `/dm/${dmId}?messageId=${notification.relatedMessageId}`
-        : `/dm/${dmId}`;
+        ? `/dm/${notification.relatedDmConversationId}?messageId=${notification.relatedMessageId}`
+        : `/dm/${notification.relatedDmConversationId}`;
       router.push(url);
     }
-
-    // 自动聚焦到应用窗口
-    window.focus();
 
     // 关闭 toast
     onDismiss();
   };
 
   // 处理忽略按钮
-  const handleDismiss = (e: React.MouseEvent) => {
-    e?.stopPropagation(); // 阻止事件冒泡
+  const handleDismiss = () => {
     console.log('忽略通知:', notification.id);
     onDismiss();
   };
 
-  // 处理容器点击（整个 toast 区域）
-  const handleContainerClick = () => {
-    handleView();
-  };
-
   return (
     <div
-      onClick={handleContainerClick}
       className="
         w-[350px] rounded-lg overflow-hidden shadow-2xl
         border border-[#303235]
         bg-[#1A1D21]
-        cursor-pointer
       "
     >
       {/* 左侧彩色指示条 */}
@@ -177,7 +151,7 @@ export function SlackToast({ notification, onDismiss }: SlackToastProps) {
                 transition-all
               "
             >
-              忽略
+              Ignore
             </button>
           </div>
         </div>

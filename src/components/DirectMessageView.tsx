@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { TeamMember } from '../types';
 import { Message, DMConversation } from '@/types/message';
 import DMHeader from './DMHeader';
@@ -196,11 +196,22 @@ export default function DirectMessageView({
   }, [shouldUseWebSocket, conversation, isOwnSpace, member.id]);
 
   // 处理消息发送完成
-  const handleMessageSent = () => {
-    // 不再需要手动刷新消息列表，WebSocket 会自动推送新消息
-    // 但可以保留作为备用方案
-    console.log('✅ Message sent via API, WebSocket will handle real-time update');
-  };
+  const handleMessageSent = useCallback((message?: Message) => {
+    // 如果收到了消息对象，进行乐观更新
+    if (message) {
+      console.log('✅ [DirectMessageView] Message sent successfully, performing optimistic update:', message.id);
+      setMessages(prev => {
+        // 防止重复
+        if (prev.some(msg => msg.id === message.id)) {
+          console.log('⚠️ [DirectMessageView] Duplicate message in optimistic update, ignoring:', message.id);
+          return prev;
+        }
+        return [...prev, message];
+      });
+    } else {
+      console.log('✅ [DirectMessageView] Message sent via API, WebSocket will handle real-time update');
+    }
+  }, []);
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">

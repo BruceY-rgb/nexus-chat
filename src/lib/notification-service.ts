@@ -147,7 +147,7 @@ export class NotificationService {
           continue;
         }
 
-        let title = `${sender.displayName} 在消息中提到了你`;
+        let title = `${sender.displayName} mentioned you in a message`;
         let notificationContent = content.substring(0, 100);
 
         // 如果是频道消息，添加频道信息
@@ -223,8 +223,8 @@ export class NotificationService {
         await this.createNotification({
           userId: member.userId,
           type: 'dm',
-          title: `来自 ${sender.displayName} 的新消息`,
-          content: '你收到了一条新的私聊消息',
+          title: `The new message from ${sender.displayName} `,
+          content: 'You have a new message',
           relatedMessageId: messageId,
           relatedDmConversationId: dmConversationId,
         });

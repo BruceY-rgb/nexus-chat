@@ -31,6 +31,9 @@ export function useWebSocketMessages({
   const { socket, isConnected } = useSocket();
   const hasJoinedRoom = useRef(false);
   const previousMessageIds = useRef<Set<string>>(new Set());
+  const joinAttempts = useRef(0);
+  const maxJoinAttempts = 3;
+  const joinRetryTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // 调试信息
   const [debugInfo] = useState<WebSocketDebugInfo>({
@@ -49,20 +52,37 @@ export function useWebSocketMessages({
   // 防止重复初始化的保护机制
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // 加入房间
-  const joinRoom = useCallback(() => {
+  // 加入房间（带重试机制）
+  const joinRoom = useCallback((attempt = 1) => {
     const roomId = dmConversationId || channelId;
     if (!roomId) {
       log('info', 'No room ID provided, skipping join');
       return;
     }
 
-    if (!socket || !isConnected) {
-      log('info', `Socket not ready for joining room ${roomId}: socket=${!!socket}, isConnected=${isConnected}`);
+    // 检查socket是否准备好
+    if (!socket) {
+      log('warn', `Socket not available for joining room ${roomId} (attempt ${attempt}/${maxJoinAttempts})`);
+      if (attempt < maxJoinAttempts) {
+        joinRetryTimeout.current = setTimeout(() => {
+          joinRoom(attempt + 1);
+        }, 200);
+      }
       return;
     }
 
-    log('info', `Attempting to join room: ${dmConversationId ? 'DM' : 'Channel'} ${roomId}`);
+    // 使用socket.connected而不是isConnected状态
+    if (!socket.connected) {
+      log('warn', `Socket not connected for joining room ${roomId} (attempt ${attempt}/${maxJoinAttempts})`);
+      if (attempt < maxJoinAttempts) {
+        joinRetryTimeout.current = setTimeout(() => {
+          joinRoom(attempt + 1);
+        }, 200);
+      }
+      return;
+    }
+
+    log('info', `Attempting to join room: ${dmConversationId ? 'DM' : 'Channel'} ${roomId} (attempt ${attempt}/${maxJoinAttempts})`);
 
     if (dmConversationId) {
       socket.emit('join-dm', dmConversationId);
@@ -72,12 +92,19 @@ export function useWebSocketMessages({
       log('info', `✅ Successfully emitted join-channel event for room: ${channelId}`);
     }
     hasJoinedRoom.current = true;
-  }, [socket, isConnected, dmConversationId, channelId, log]);
+    joinAttempts.current = 0;
+  }, [socket, dmConversationId, channelId, log]);
 
   // 离开房间
   const leaveRoom = useCallback(() => {
     if (!socket || !hasJoinedRoom.current) {
       return;
+    }
+
+    // 清理重试定时器
+    if (joinRetryTimeout.current) {
+      clearTimeout(joinRetryTimeout.current);
+      joinRetryTimeout.current = null;
     }
 
     if (dmConversationId) {
@@ -89,6 +116,7 @@ export function useWebSocketMessages({
     }
 
     hasJoinedRoom.current = false;
+    joinAttempts.current = 0;
   }, [socket, dmConversationId, channelId]);
 
   // 监听新消息
@@ -208,25 +236,20 @@ export function useWebSocketMessages({
       return;
     }
 
-    // 重置房间状态
+    // 重置房间状态和重试计数器
     hasJoinedRoom.current = false;
+    joinAttempts.current = 0;
+
+    // 清理之前的重试定时器
+    if (joinRetryTimeout.current) {
+      clearTimeout(joinRetryTimeout.current);
+      joinRetryTimeout.current = null;
+    }
 
     // 延迟一点再加入，确保组件完全挂载
     const timer = setTimeout(() => {
       log('info', `⏰ Delayed join room triggered for: ${roomId}`);
-      // 直接在这里执行加入逻辑，不依赖 joinRoom 函数
-      if (socket && isConnected) {
-        if (dmConversationId) {
-          socket.emit('join-dm', dmConversationId);
-          log('info', `✅ Successfully emitted join-dm event for room: ${dmConversationId}`);
-        } else if (channelId) {
-          socket.emit('join-channel', channelId);
-          log('info', `✅ Successfully emitted join-channel event for room: ${channelId}`);
-        }
-        hasJoinedRoom.current = true;
-      } else {
-        log('warn', `Socket not ready when trying to join room ${roomId}`);
-      }
+      joinRoom(1); // 使用带重试的joinRoom函数
     }, 100);
 
     return () => {
@@ -240,14 +263,24 @@ export function useWebSocketMessages({
         }
         hasJoinedRoom.current = false;
       }
+      // 清理重试定时器
+      if (joinRetryTimeout.current) {
+        clearTimeout(joinRetryTimeout.current);
+        joinRetryTimeout.current = null;
+      }
     };
-  }, [dmConversationId, channelId, socket, isConnected, log]);
+  }, [dmConversationId, channelId, socket, joinRoom, log]);
 
   // 组件卸载时清理
   useEffect(() => {
     return () => {
       leaveRoom();
       previousMessageIds.current.clear();
+      // 清理重试定时器
+      if (joinRetryTimeout.current) {
+        clearTimeout(joinRetryTimeout.current);
+        joinRetryTimeout.current = null;
+      }
     };
   }, [leaveRoom]);
 

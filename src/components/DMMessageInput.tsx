@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { Message } from '@/types/message';
 import { useDropzone } from 'react-dropzone';
 import {
   Bold,
@@ -36,7 +37,7 @@ interface DMMessageInputProps {
   dmConversationId?: string;
   members?: TeamMember[]; // 成员列表，默认为空数组
   currentUserId?: string;
-  onMessageSent?: () => void;
+  onMessageSent?: (message?: Message) => void;
 }
 
 interface UploadedFile {
@@ -529,12 +530,14 @@ export default function DMMessageInput({
         throw new Error(errorData.error || 'Failed to send message');
       }
 
+      const responseData = await response.json();
+
       setMessage('');
       setUploadedFiles(prev => {
         prev.forEach(f => URL.revokeObjectURL(f.preview));
         return [];
       });
-      onMessageSent?.();
+      onMessageSent?.(responseData);
 
       // 重新聚焦到输入框
       setTimeout(() => {

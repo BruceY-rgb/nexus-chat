@@ -314,7 +314,7 @@ export default function DirectMessages({
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="搜索团队成员..."
+          placeholder="Search members..."
           className="w-full px-3 py-1.5 bg-white/10 text-white text-sm rounded border-none outline-none placeholder-white/50"
           autoFocus
         />

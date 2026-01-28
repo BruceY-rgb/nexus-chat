@@ -327,10 +327,27 @@ export default function DashboardPage() {
         throw new Error(error.error || 'Failed to leave channel');
       }
 
-      console.log('✅ Successfully left channel:', channelId);
+      const data = await response.json();
+      console.log('✅ Successfully left channel:', data);
 
-      // 3. API success, update frontend state
-      setJoinedChannels(prev => prev.filter(id => id !== channelId));
+      // 3. Handle different scenarios based on API response
+      if (data.channelDeleted) {
+        // Channel was deleted because user was the last member
+        alert(data.message || 'The channel has been deleted because you were the last member.');
+        // Remove the channel from the list entirely
+        setChannels(prevChannels => prevChannels.filter(c => c.id !== channelId));
+        setJoinedChannels(prev => prev.filter(id => id !== channelId));
+      } else if (data.ownershipTransferred) {
+        // Ownership was transferred to another member
+        alert(data.message || 'You left the channel. Ownership has been transferred to another member.');
+        // Update frontend state - just remove from joined channels
+        setJoinedChannels(prev => prev.filter(id => id !== channelId));
+      } else {
+        // Normal leave
+        console.log('✅ Successfully left channel:', channelId);
+        // Update frontend state
+        setJoinedChannels(prev => prev.filter(id => id !== channelId));
+      }
 
       // 4. If the left channel is the currently selected channel, switch to another channel
       if (selectedChannel === channelId) {

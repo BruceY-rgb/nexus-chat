@@ -244,9 +244,9 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
     const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
     if (diffInDays === 0) {
-      return '今天';
+      return 'Today';
     } else if (diffInDays === 1) {
-      return '昨天';
+      return 'Yesterday';
     } else if (diffInDays < 7) {
       return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
     } else {
@@ -336,10 +336,10 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
               </svg>
             </div>
             <h3 className="text-lg font-semibold text-text-primary mb-1">
-              还没有消息
+              There are no messages yet
             </h3>
             <p className="text-text-secondary">
-              发送第一条消息开始对话吧！
+              Start the conversation by sending the first message!
             </p>
           </div>
         </div>

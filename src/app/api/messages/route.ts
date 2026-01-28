@@ -137,56 +137,109 @@ export async function POST(request: NextRequest) {
     // 解析消息中的 @提及（只有当有内容时才解析）
     const mentions = hasContent ? parseMentions(content) : [];
 
-    // 创建消息
-    const message = await prisma.message.create({
-      data: {
-        content: hasContent ? content.trim() : '', // 如果没有内容，设为空字符串
-        userId: currentUserId,
-        channelId: channelId || null,
-        dmConversationId: dmConversationId || null,
-        messageType: attachments && attachments.length > 0 ? 'image' : 'text'
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            displayName: true,
-            avatarUrl: true,
-            realName: true
-          }
+    // 使用事务创建消息和附件，确保数据一致性
+    const message = await prisma.$transaction(async (tx) => {
+      // 创建消息
+      const newMessage = await tx.message.create({
+        data: {
+          content: hasContent ? content.trim() : '', // 如果没有内容，设为空字符串
+          userId: currentUserId,
+          channelId: channelId || null,
+          dmConversationId: dmConversationId || null,
+          messageType: attachments && attachments.length > 0 ? (attachments.some((att: any) => att.mimeType?.startsWith('image/')) ? 'image' : 'file') : 'text'
         },
-        channel: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        dmConversation: {
-          select: {
-            id: true
+        include: {
+          user: {
+            select: {
+              id: true,
+              displayName: true,
+              avatarUrl: true,
+              realName: true
+            }
+          },
+          channel: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          dmConversation: {
+            select: {
+              id: true
+            }
           }
         }
-      }
-    });
-
-    // 如果有附件，创建附件记录
-    if (attachments && attachments.length > 0) {
-      const attachmentData = attachments.map((attachment: any) => ({
-        messageId: message.id,
-        fileName: attachment.originalName || attachment.fileName,
-        filePath: attachment.fileUrl,
-        fileSize: attachment.fileSize.toString(),
-        mimeType: attachment.mimeType,
-        s3Key: attachment.s3Key,
-        s3Bucket: attachment.s3Bucket,
-        thumbnailUrl: attachment.thumbnailUrl || null
-      }));
-
-      await prisma.attachment.createMany({
-        data: attachmentData
       });
 
-      console.log(`📎 Created ${attachments.length} attachments for message ${message.id}`);
+      // 如果有附件，创建附件记录
+      if (attachments && attachments.length > 0) {
+        const attachmentData = attachments.map((attachment: any) => ({
+          messageId: newMessage.id,
+          fileName: attachment.originalName || attachment.fileName,
+          filePath: attachment.fileUrl,
+          fileSize: attachment.fileSize.toString(),
+          mimeType: attachment.mimeType,
+          s3Key: attachment.s3Key,
+          s3Bucket: attachment.s3Bucket,
+          thumbnailUrl: attachment.thumbnailUrl || null
+        }));
+
+        await tx.attachment.createMany({
+          data: attachmentData
+        });
+
+        console.log(`📎 Created ${attachments.length} attachments for message ${newMessage.id}`);
+      }
+
+      // 重新查询包含附件的完整消息
+      const fullMessage = await tx.message.findUnique({
+        where: {
+          id: newMessage.id
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              displayName: true,
+              avatarUrl: true,
+              realName: true
+            }
+          },
+          channel: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          dmConversation: {
+            select: {
+              id: true
+            }
+          },
+          attachments: true,
+          mentions: {
+            include: {
+              mentionedUser: {
+                select: {
+                  id: true,
+                  displayName: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      return fullMessage;
+    });
+
+    // 检查消息是否创建成功
+    if (!message) {
+      console.error('❌ [API] Message creation failed or returned null');
+      return NextResponse.json(
+        { error: 'Failed to create message' },
+        { status: 500 }
+      );
     }
 
     // 如果有提及，创建提及记录和通知
@@ -294,63 +347,43 @@ export async function POST(request: NextRequest) {
       if (typeof globalIo !== 'undefined') {
         console.log(`✅ [API] WebSocket instance found:`, !!globalIo);
         const ioInstance = globalIo as SocketIOServer;
-        console.log(`🚀 [API] Broadcasting new message via WebSocket:`, {
+
+        // 记录完整的消息信息和附件详情
+        const messageInfo: any = {
           messageId: message.id,
           content: message.content?.substring(0, 50),
           fromUser: currentUserId,
           channelId,
           dmConversationId,
+          hasAttachments: !!(message.attachments && message.attachments.length > 0),
+          attachmentCount: message.attachments?.length || 0,
           timestamp: new Date().toISOString()
-        });
+        };
+
+        if (message.attachments && message.attachments.length > 0) {
+          messageInfo.attachments = message.attachments.map(att => ({
+            id: att.id,
+            fileName: att.fileName,
+            mimeType: att.mimeType,
+            fileSize: att.fileSize,
+            filePath: att.filePath
+          }));
+        }
+
+        console.log(`🚀 [API] Broadcasting new message via WebSocket:`, messageInfo);
 
         if (channelId) {
           const channelRoom = `channel:${channelId}`;
           console.log(`📡 [API] Broadcasting to channel room: ${channelRoom}`);
+          console.log(`📨 [API] Message payload includes attachments:`, message.attachments);
           ioInstance.to(channelRoom).emit('new-message', message);
           console.log(`✅ [API] Message broadcasted to channel room successfully`);
-
-          // 广播未读计数更新
-          const channelMembers = await prisma.channelMember.findMany({
-            where: { channelId },
-            select: { userId: true, unreadCount: true }
-          });
-
-          channelMembers.forEach(member => {
-            // 排除发送者本人
-            if (member.userId !== currentUserId) {
-              ioInstance.to(`user:${member.userId}`).emit('unread-count-update', {
-                channelId,
-                unreadCount: member.unreadCount
-              });
-            }
-          });
         } else if (dmConversationId) {
           const dmRoom = `dm:${dmConversationId}`;
           console.log(`📡 [API] Broadcasting to DM room: ${dmRoom}`);
+          console.log(`📨 [API] Message payload includes attachments:`, message.attachments);
           ioInstance.to(dmRoom).emit('new-message', message);
           console.log(`✅ [API] Message broadcasted to DM room successfully`);
-
-          // 广播未读计数更新
-          const dmMembers = await prisma.dMConversationMember.findMany({
-            where: { conversationId: dmConversationId },
-            select: { userId: true, unreadCount: true }
-          });
-
-          dmMembers.forEach(member => {
-            // 排除发送者本人
-            if (member.userId !== currentUserId) {
-              ioInstance.to(`user:${member.userId}`).emit('unread-count-update', {
-                dmConversationId,
-                unreadCount: member.unreadCount
-              });
-
-              // 通知活跃对话列表更新（新消息可能使对话出现在列表中）
-              ioInstance.to(`user:${member.userId}`).emit('active-conversations-update', {
-                dmConversationId,
-                lastMessageAt: new Date()
-              });
-            }
-          });
         }
 
         console.log(`📡 [API] WebSocket broadcast completed for message: ${message.id}`);
