@@ -1,93 +1,154 @@
+# # =====================================================
+# # 生产环境部署配置
+# # 用于部署到Linux服务器
+# # =====================================================
+
+# version: '3.8'
+
+# services:
+#   # PostgreSQL数据库
+#   db:
+#     image: postgres:15-alpine
+#     container_name: slack_db
+#     restart: unless-stopped
+#     environment:
+#       POSTGRES_USER: ${DB_USER:-yangsmac}
+#       POSTGRES_PASSWORD: ${DB_PASSWORD}
+#       POSTGRES_DB: ${DB_NAME:-slack_chat}
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+#     ports:
+#       - "5432:5432"
+#     networks:
+#       - dokploy-network
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-yangsmac}"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+#   # Next.js应用
+#   app:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     container_name: slack_app
+#     restart: unless-stopped
+#     entrypoint: /bin/sh /app/docker-entrypoint.sh
+#     command: ["node", "server.js"]
+#     environment:
+#       NODE_ENV: production
+#       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@dokploy-postgres:5432/${DB_NAME}?schema=public
+#       DB_HOST: db
+#       DB_PORT: 5432
+#       DB_USER: ${DB_USER:-yangsmac}
+#       DB_PASSWORD: ${DB_PASSWORD}
+#       DB_NAME: ${DB_NAME:-slack_chat}
+#       JWT_SECRET: ${JWT_SECRET}
+#       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+#       RESEND_API_KEY: ${RESEND_API_KEY}
+#       EMAIL_FROM: ${EMAIL_FROM}
+#       EMAIL_REPLY_TO: ${EMAIL_REPLY_TO}
+#       APP_NAME: ${APP_NAME:-Slack聊天应用}
+#       SESSION_SECRET: ${SESSION_SECRET}
+#       OSS_REGION: ${OSS_REGION}
+#       OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID}
+#       OSS_ACCESS_KEY_SECRET: ${OSS_ACCESS_KEY_SECRET}
+#       OSS_BUCKET: ${OSS_BUCKET}
+#       OSS_ENDPOINT: ${OSS_ENDPOINT}
+#       PORT: 3000
+#       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+#       WEBSOCKET_PORT: 3001
+#       ENABLE_FILE_UPLOAD: ${ENABLE_FILE_UPLOAD:-true}
+#       ENABLE_SEARCH: ${ENABLE_SEARCH:-true}
+#       ENABLE_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS:-true}
+#       ENABLE_EMAIL_NOTIFICATIONS: ${ENABLE_EMAIL_NOTIFICATIONS:-false}
+#       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+#       ALLOWED_FILE_TYPES: ${ALLOWED_FILE_TYPES:-image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain}
+#       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+#       RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+#       LOG_LEVEL: ${LOG_LEVEL:-info}
+#       LOG_FORMAT: ${LOG_FORMAT:-dev}
+#     ports:
+#       - "3000:3000"
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#     networks:
+#       - dokploy-network
+#     healthcheck:
+#       test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 3
+
+#   # Nginx反向代理
+#   nginx:
+#     image: nginx:alpine
+#     container_name: slack_nginx
+#     restart: unless-stopped
+#     ports:
+#       - "80:80"
+#       - "443:443"
+#     volumes:
+#       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+#       - ./nginx/conf.d:/etc/nginx/conf.d:ro
+#       - ./ssl:/etc/nginx/ssl:ro
+#     depends_on:
+#       - app
+#     networks:
+#       - slack_network
+
+# volumes:
+#   postgres_data:
+#     driver: local
+
+# networks:
+#   dokploy-network:
+#     external: true  # 告诉 Docker 使用 Dokploy 已经创建好的网络
+
+
 # =====================================================
-# 生产环境部署配置
-# 用于部署到Linux服务器
+# 适配 Dokploy (Docker Swarm) 的生产环境配置
 # =====================================================
 
 version: '3.8'
 
 services:
-  # PostgreSQL数据库
-  db:
-    image: postgres:15-alpine
-    container_name: slack_db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${DB_USER:-yangsmac}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME:-slack_chat}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5432:5432"
-    networks:
-      - slack_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-yangsmac}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Next.js应用
+  # Next.js 应用服务
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: slack_app
-    restart: unless-stopped
-    entrypoint: /bin/sh /app/docker-entrypoint.sh
-    command: ["node", "server.js"]
+    restart: always
+    # Dokploy 模式下建议通过面板配置环境变量，或保留以下映射
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD}@db:5432/${DB_NAME:-slack_chat}?schema=public
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: ${DB_USER:-yangsmac}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME:-slack_chat}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      EMAIL_FROM: ${EMAIL_FROM}
-      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO}
-      APP_NAME: ${APP_NAME:-Slack聊天应用}
-      SESSION_SECRET: ${SESSION_SECRET}
-      OSS_REGION: ${OSS_REGION}
-      OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID}
-      OSS_ACCESS_KEY_SECRET: ${OSS_ACCESS_KEY_SECRET}
-      OSS_BUCKET: ${OSS_BUCKET}
-      OSS_ENDPOINT: ${OSS_ENDPOINT}
-      PORT: 3000
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
-      WEBSOCKET_PORT: 3001
-      ENABLE_FILE_UPLOAD: ${ENABLE_FILE_UPLOAD:-true}
-      ENABLE_SEARCH: ${ENABLE_SEARCH:-true}
-      ENABLE_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS:-true}
-      ENABLE_EMAIL_NOTIFICATIONS: ${ENABLE_EMAIL_NOTIFICATIONS:-false}
-      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
-      ALLOWED_FILE_TYPES: ${ALLOWED_FILE_TYPES:-image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain}
-      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
-      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      LOG_FORMAT: ${LOG_FORMAT:-dev}
+      - NODE_ENV=production
+      # 注意：主机名已从 db 改为 dokploy-postgres
+      - DATABASE_URL=postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD}@dokploy-postgres:5432/${DB_NAME:-slack_chat}?schema=public
+      - DB_HOST=dokploy-postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-yangsmac}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-slack_chat}
+      - JWT_SECRET=${JWT_SECRET}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+      - PORT=3000
+      - WEBSOCKET_PORT=3001
     ports:
       - "3000:3000"
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
-      - slack_network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - dokploy-network
+    # 确保应用在数据库就绪后启动（Swarm模式下 depends_on 仅作参考）
+    deploy:
+      restart_policy:
+        condition: on-failure
 
-  # Nginx反向代理
+  # Nginx 反向代理
   nginx:
     image: nginx:alpine
-    container_name: slack_nginx
-    restart: unless-stopped
+    restart: always
     ports:
       - "80:80"
       - "443:443"
@@ -95,15 +156,10 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - app
     networks:
-      - slack_network
+      - dokploy-network
 
-volumes:
-  postgres_data:
-    driver: local
-
+# 关键：连接到 Dokploy 已有的网络
 networks:
-  slack_network:
-    driver: bridge
+  dokploy-network:
+    external: true
