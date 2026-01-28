@@ -539,10 +539,19 @@ export default function DMMessageInput({
       });
       onMessageSent?.(responseData);
 
-      // 重新聚焦到输入框
-      setTimeout(() => {
-        textareaRef.current?.focus();
-      }, 0);
+      // 重新聚焦到输入框 - 等待 textarea 启用后聚焦
+      const attemptFocus = (attempts = 0) => {
+        setTimeout(() => {
+          if (textareaRef.current && !textareaRef.current.disabled) {
+            textareaRef.current.focus();
+          } else if (attempts < 10) {
+            // 最多重试10次，每次延迟50ms
+            attemptFocus(attempts + 1);
+          }
+        }, 50); // 每次重试间隔 50ms
+      };
+
+      attemptFocus();
     } catch (error) {
       console.error('Error sending message:', error);
       alert('Failed to send message. Please try again.');

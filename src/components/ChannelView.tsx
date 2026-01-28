@@ -10,7 +10,6 @@ import MessageList, { MessageListRef } from './MessageList';
 import DMMessageInput from './DMMessageInput';
 import SearchMessagesModal from './SearchMessagesModal';
 import { useWebSocketMessages } from '@/hooks/useWebSocketMessages';
-import { useSocket } from '@/hooks/useSocket';
 
 interface ChannelViewProps {
   channel: Channel;
@@ -51,48 +50,28 @@ export default function ChannelView({
 
   // WebSocket 消息监听
   const handleNewMessage = (newMessage: Message) => {
-    console.log('📨 [ChannelView] 🔥 CRITICAL: New message received via WebSocket!', {
-      messageId: newMessage.id,
-      content: newMessage.content?.substring(0, 50),
-      fromUser: newMessage.userId,
-      channelId: newMessage.channelId,
-      expectedChannelId: channel?.id,
-      timestamp: new Date().toISOString()
-    });
 
     // 立即尝试更新 UI
     setMessages(prev => {
-      console.log(`📨 [ChannelView] Current message count: ${prev.length}`);
-
       // 防止重复消息
       if (prev.some(msg => msg.id === newMessage.id)) {
-        console.log('⚠️ [ChannelView] Duplicate message detected, ignoring:', newMessage.id);
         return prev;
       }
 
       const updated = [...prev, newMessage];
-      console.log(`✅ [ChannelView] Message added to state. New count: ${updated.length}`);
 
       // 自动滚动到底部（仅当用户已在底部时）
       if (isAtBottomRef.current) {
-        console.log('📜 [ChannelView] User is at bottom, auto-scrolling to new message');
         setTimeout(() => {
           const messagesEndElement = document.querySelector('#messages-end-ref');
           if (messagesEndElement) {
-            console.log('📜 [ChannelView] Auto-scroll triggered');
             messagesEndElement.scrollIntoView({ behavior: 'smooth' });
-          } else {
-            console.log('⚠️ [ChannelView] Scroll anchor element not found');
           }
         }, 100);
-      } else {
-        console.log('📜 [ChannelView] User is not at bottom, skipping auto-scroll');
       }
 
       return updated;
     });
-
-    console.log('✅ [ChannelView] Message processing completed');
   };
 
   // 监听 URL 中的 messageId 参数，实现深度联动
@@ -103,7 +82,6 @@ export default function ChannelView({
     const messageId = urlParams.get('messageId');
 
     if (messageId) {
-      console.log('🔍 ChannelView: Found messageId in URL, highlighting:', messageId);
       messageListRef.current.highlightMessage(messageId);
 
       // 清除 URL 中的 messageId 参数，避免刷新时重复高亮
@@ -205,27 +183,25 @@ export default function ChannelView({
     fetchMessages();
   }, [isJoined, channel?.id]);
 
-  // WebSocket 消息监听
+  // WebSocket 消息监听 - 修复版本：减少依赖变化
   useWebSocketMessages({
     channelId: channel?.id,
     currentUserId: user?.id || '',
-    onNewMessage: handleNewMessage
+    onNewMessage: useCallback((message: Message) => {
+      handleNewMessage(message);
+    }, [handleNewMessage])
   });
 
   const handleMessageSent = useCallback((message?: Message) => {
     // 如果收到了消息对象，进行乐观更新
     if (message) {
-      console.log('✅ [ChannelView] Message sent successfully, performing optimistic update:', message.id);
       setMessages(prev => {
         // 防止重复
         if (prev.some(msg => msg.id === message.id)) {
-          console.log('⚠️ [ChannelView] Duplicate message in optimistic update, ignoring:', message.id);
           return prev;
         }
         return [...prev, message];
       });
-    } else {
-      console.log('✅ [ChannelView] Message sent via API, WebSocket will handle real-time update');
     }
   }, []);
 

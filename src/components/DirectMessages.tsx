@@ -475,7 +475,7 @@ export default function DirectMessages({
       {/* Empty state */}
       {displayConversations.length === 0 && !isSearching && !searchQuery && !isLoading && (
         <div className="px-3 py-2 text-white/50 text-sm">
-          暂无私聊
+          No direct messages yet. 
         </div>
       )}
 

@@ -40,6 +40,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { socket, isConnected, connectionStatus, joinChannel, leaveChannel, joinDM, leaveDM, sendTypingStart, sendTypingStop } = useSocket();
 
   // 自动滚动到底部
@@ -54,6 +55,16 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
     }, 100);
     return () => clearTimeout(timer);
   }, [messages, scrollToBottom]);
+
+  // 组件挂载后自动聚焦
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // 加载历史消息
   const loadMessages = useCallback(async () => {
@@ -183,8 +194,18 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
         throw new Error('Failed to send message');
       }
 
+      // 先清空输入框
       setNewMessage('');
+
+      // 停止打字指示器
       sendTypingStop({ channelId, dmConversationId });
+
+      // 强制回焦：在下一个事件循环中自动聚焦
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 0);
     } catch (error) {
       console.error('Error sending message:', error);
       alert('发送消息失败，请重试');
@@ -194,7 +215,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
   };
 
   // 处理输入变化（带打字指示器）
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setNewMessage(value);
 
@@ -215,8 +236,8 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
     }, 3000);
   };
 
-  // 处理按键事件
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  // 处理按键事件（Enter发送，Shift+Enter换行）
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -296,21 +317,23 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
       {/* 输入框 - 固定不滚动 */}
       <div className="flex-shrink-0 p-4 border-t bg-white">
         <div className="flex space-x-2">
-          <input
-            type="text"
+          <textarea
+            ref={inputRef}
             value={newMessage}
             onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder={isConnected ? "输入消息..." : "连接中..."}
             disabled={!isConnected || isSending}
-            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+            rows={1}
+            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 resize-none overflow-hidden"
+            style={{ minHeight: '40px' }}
           />
           <button
             onClick={sendMessage}
             disabled={!newMessage.trim() || !isConnected || isSending}
             className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            {isSending ? '发送中...' : '发送'}
+            {isSending ? 'sending...' : 'Send'}
           </button>
         </div>
       </div>

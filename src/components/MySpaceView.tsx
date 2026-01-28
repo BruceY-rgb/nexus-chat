@@ -216,7 +216,7 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
                     d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <p className="text-sm">暂无最近活动</p>
+                <p className="text-sm">No recent activity</p>
               </div>
             )}
           </div>

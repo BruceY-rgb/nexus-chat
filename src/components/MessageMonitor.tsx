@@ -154,7 +154,7 @@ export default function MessageMonitor({
       >
         {logs.length === 0 ? (
           <div className="text-center text-gray-400 py-8">
-            暂无日志
+            No logs yet.
           </div>
         ) : (
           logs.map((log) => (

@@ -35,6 +35,14 @@ export function useWebSocketMessages({
   const maxJoinAttempts = 3;
   const joinRetryTimeout = useRef<NodeJS.Timeout | null>(null);
 
+  // 使用 useRef 存储回调函数，避免依赖数组变化
+  const onNewMessageRef = useRef(onNewMessage);
+
+  // 安全的更新回调函数引用
+  useEffect(() => {
+    onNewMessageRef.current = onNewMessage;
+  }, [onNewMessage]);
+
   // 调试信息
   const [debugInfo] = useState<WebSocketDebugInfo>({
     isConnected: false,
@@ -42,17 +50,17 @@ export function useWebSocketMessages({
     connectionErrors: []
   });
 
-  // 调试日志函数
+  // 调试日志函数 - 优化版本：减少依赖变化
   const log = useCallback((level: 'info' | 'warn' | 'error', message: string, data?: any) => {
     const timestamp = new Date().toISOString();
     const logMessage = `[${timestamp}] [WebSocket] ${message}`;
     console[level](logMessage, data);
-  }, []);
+  }, []); // 空依赖数组，确保函数引用稳定
 
   // 防止重复初始化的保护机制
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // 加入房间（带重试机制）
+  // 加入房间（带重试机制）- 优化版本：减少依赖变化
   const joinRoom = useCallback((attempt = 1) => {
     const roomId = dmConversationId || channelId;
     if (!roomId) {
@@ -93,9 +101,9 @@ export function useWebSocketMessages({
     }
     hasJoinedRoom.current = true;
     joinAttempts.current = 0;
-  }, [socket, dmConversationId, channelId, log]);
+  }, [dmConversationId, channelId, log]); // 移除 socket 依赖，使用 useRef 访问
 
-  // 离开房间
+  // 离开房间 - 优化版本：减少依赖变化
   const leaveRoom = useCallback(() => {
     if (!socket || !hasJoinedRoom.current) {
       return;
@@ -117,7 +125,7 @@ export function useWebSocketMessages({
 
     hasJoinedRoom.current = false;
     joinAttempts.current = 0;
-  }, [socket, dmConversationId, channelId]);
+  }, [dmConversationId, channelId]); // 移除 socket 依赖
 
   // 监听新消息
   useEffect(() => {
@@ -172,10 +180,10 @@ export function useWebSocketMessages({
         fromUser: message.userId
       });
 
-      // 调用回调函数
-      if (onNewMessage) {
+      // 调用回调函数 - 使用 ref 避免依赖变化
+      if (onNewMessageRef.current) {
         log('info', `Calling onNewMessage callback`);
-        onNewMessage(message);
+        onNewMessageRef.current(message);
       } else {
         log('warn', 'No onNewMessage callback provided');
       }
@@ -193,8 +201,8 @@ export function useWebSocketMessages({
 
       log('info', `📝 Message updated:`, updatedMessage);
 
-      if (onNewMessage) {
-        onNewMessage({ ...updatedMessage, _isUpdate: true } as Message & { _isUpdate: true });
+      if (onNewMessageRef.current) {
+        onNewMessageRef.current({ ...updatedMessage, _isUpdate: true } as Message & { _isUpdate: true });
       }
     };
 
@@ -219,9 +227,9 @@ export function useWebSocketMessages({
       socket.off('message-deleted', handleMessageDeleted);
       log('info', '✅ Socket event listeners cleaned up');
     };
-  }, [socket, isConnected, dmConversationId, channelId, onNewMessage, log]);
+  }, [socket, isConnected, dmConversationId, channelId]); // 移除 onNewMessage 和 log 依赖
 
-  // 当房间ID变化时，重新加入房间
+  // 当房间ID变化时，重新加入房间 - 优化版本：减少依赖变化
   useEffect(() => {
     const roomId = dmConversationId || channelId;
     log('info', `🔄 Room ID changed, preparing to join:`, {
@@ -269,7 +277,7 @@ export function useWebSocketMessages({
         joinRetryTimeout.current = null;
       }
     };
-  }, [dmConversationId, channelId, socket, joinRoom, log]);
+  }, [dmConversationId, channelId]); // 只依赖房间ID，大幅减少重新挂载
 
   // 组件卸载时清理
   useEffect(() => {

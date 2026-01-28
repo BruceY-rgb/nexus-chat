@@ -162,7 +162,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
 
   const handleDownload = () => {
     if (fileUrlError) {
-      alert('文件暂时无法访问，请稍后重试');
+      alert('Document URL is not accessible.');
       return;
     }
 
