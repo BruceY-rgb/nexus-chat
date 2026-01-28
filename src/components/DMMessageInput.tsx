@@ -322,7 +322,7 @@ export default function DMMessageInput({
   });
 
   /**
-   * 计算光标位置 - 动态跟随版
+   * 计算光标位置 - 优化版（完整复制所有影响渲染的样式）
    */
   const getCaretCoordinates = (textarea: HTMLTextAreaElement, position: number) => {
     const div = document.createElement('div');
@@ -340,9 +340,27 @@ export default function DMMessageInput({
     div.style.wordBreak = 'break-word';
     div.style.overflow = 'hidden';
     div.style.width = textarea.clientWidth + 'px';
+
+    // 复制所有影响文本渲染的关键属性
     div.style.fontSize = style.fontSize;
     div.style.fontFamily = style.fontFamily;
     div.style.lineHeight = style.lineHeight;
+    div.style.letterSpacing = style.letterSpacing || '0';
+    div.style.fontWeight = style.fontWeight;
+    div.style.fontStyle = style.fontStyle;
+    div.style.textAlign = style.textAlign;
+    div.style.textTransform = style.textTransform;
+    div.style.textIndent = style.textIndent;
+    div.style.paddingLeft = style.paddingLeft;
+    div.style.paddingRight = style.paddingRight;
+    div.style.borderLeftWidth = style.borderLeftWidth;
+    div.style.borderRightWidth = style.borderRightWidth;
+
+    // 添加关键渲染属性，消除浏览器差异
+    div.style.textRendering = 'optimizeLegibility';
+    div.style.fontVariantLigatures = 'none';
+    (div.style as any).WebkitFontSmoothing = 'antialiased';
+    (div.style as any).MozOsxFontSmoothing = 'grayscale';
 
     // 获取光标前的文本
     const textBeforeCaret = textarea.value.substring(0, position);
@@ -353,6 +371,9 @@ export default function DMMessageInput({
     // 创建span标记光标位置
     const span = document.createElement('span');
     span.textContent = ' ';
+    span.style.display = 'inline-block';
+    span.style.width = '0';
+    span.style.height = style.lineHeight;
     div.appendChild(span);
 
     // 将测量div放到和textarea相同的位置
@@ -622,6 +643,10 @@ export default function DMMessageInput({
             <span
               key={index}
               className="inline-block px-1.5 py-0.5 mx-0.5 rounded-full font-medium bg-[#1164A3]/20 text-[#3B82F6] border border-[#3B82F6]/30"
+              style={{
+                textRendering: 'optimizeLegibility',
+                fontVariantLigatures: 'none'
+              }}
             >
               @{displayName}
             </span>
@@ -629,7 +654,13 @@ export default function DMMessageInput({
         } else {
           // 未匹配的普通文本
           return (
-            <span key={index}>
+            <span
+              key={index}
+              style={{
+                textRendering: 'optimizeLegibility',
+                fontVariantLigatures: 'none'
+              }}
+            >
               @{displayName}
             </span>
           );
@@ -663,15 +694,27 @@ export default function DMMessageInput({
               fontSize: '1.25rem',
               verticalAlign: 'middle',
               lineHeight: '1.2',
-              fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'
+              fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif',
+              textRendering: 'optimizeLegibility',
+              fontVariantLigatures: 'none'
             }}
           >
             {char}
           </span>
         );
       }
-      // 普通文本字符
-      return <span key={index}>{char}</span>;
+      // 普通文本字符：使用与输入框一致的字体
+      return (
+        <span
+          key={index}
+          style={{
+            textRendering: 'optimizeLegibility',
+            fontVariantLigatures: 'none'
+          }}
+        >
+          {char}
+        </span>
+      );
     });
   };
 
@@ -861,8 +904,20 @@ export default function DMMessageInput({
   const imageFiles = uploadedFiles.filter(f => f.file.type.startsWith('image/'));
 
   return (
-    <div className="flex-shrink-0 bg-[#313235] border-t border-[#3A3A3D] sticky bottom-0">
-      <div className="rounded-lg overflow-hidden">
+    <div
+      className="flex-shrink-0 bg-[#313235] border-t border-[#3A3A3D] sticky bottom-0"
+      style={{
+        transform: 'none',
+        willChange: 'auto'
+      }}
+    >
+      <div
+        className="rounded-lg overflow-hidden"
+        style={{
+          transform: 'none',
+          willChange: 'auto'
+        }}
+      >
         {/* 顶部格式化工具栏 */}
         <div className="flex items-center gap-1 px-3 py-2.5 border-b border-[#3A3A3D] bg-[#313235]">
           {/* 格式化按钮组 */}
@@ -1047,7 +1102,14 @@ export default function DMMessageInput({
           </div>
 
           {/* 主输入框 */}
-          <div className="flex-1 relative" style={{ overflow: 'visible' }}>
+          <div
+            className="flex-1 relative"
+            style={{
+              overflow: 'visible',
+              transform: 'none',
+              willChange: 'auto'
+            }}
+          >
             {/* Placeholder 显示层 */}
             {!message && (
               <div className="absolute inset-0 px-4 py-4 text-white/40 pointer-events-none">
@@ -1064,10 +1126,22 @@ export default function DMMessageInput({
               style={{
                 minHeight: '52px',
                 maxHeight: '200px',
-                lineHeight: '1.5'
+                lineHeight: '1.5',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                fontSize: '14px',
+                textRendering: 'optimizeLegibility',
+                fontVariantLigatures: 'none'
               }}
             >
-              <div className="text-sm" style={{ lineHeight: '1.5' }}>
+              <div
+                className="text-sm"
+                style={{
+                  lineHeight: '1.5',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                  textRendering: 'optimizeLegibility',
+                  fontVariantLigatures: 'none'
+                }}
+              >
                 {renderFormattedMessage()}
               </div>
             </div>
@@ -1086,7 +1160,12 @@ export default function DMMessageInput({
                 minHeight: '52px',
                 maxHeight: '200px',
                 lineHeight: '1.5',
-                caretColor: 'white'
+                caretColor: 'white',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                fontSize: '14px',
+                textRendering: 'optimizeLegibility',
+                fontVariantLigatures: 'none',
+                letterSpacing: '0'
               }}
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
