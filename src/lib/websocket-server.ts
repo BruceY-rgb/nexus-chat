@@ -77,12 +77,8 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
     pingTimeout: 60000,
     pingInterval: 25000,
     // 生产环境优化配置
-    // 允许在 HTTPS 下使用 WSS
-    secure: true,
-    // 允许升级连接
+    // 允许从轮询升级到 WebSocket
     allowUpgrades: true,
-    // 压缩设置（生产环境建议启用）
-    compression: true,
     // 传输配置
     upgradeTimeout: 10000,
     // 连接超时
@@ -96,30 +92,70 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth.token;
+      const clientInfo = {
+        id: socket.id,
+        ip: socket.handshake.address,
+        userAgent: socket.handshake.headers['user-agent']
+      };
+
+      console.log(`🔐 [Auth] New connection attempt:`, clientInfo);
 
       if (!token) {
+        console.error(`❌ [Auth] Authentication failed - No token provided:`, clientInfo);
         return next(new Error('Authentication error: No token provided'));
       }
 
       const decoded = verifyToken(token);
 
       if (!decoded) {
+        console.error(`❌ [Auth] Authentication failed - Invalid token:`, {
+          ...clientInfo,
+          tokenPreview: token.substring(0, 20) + '...',
+          tokenLength: token.length
+        });
         return next(new Error('Authentication error: Invalid token'));
       }
 
       // 将用户信息附加到 socket
       socket.data.userId = decoded.userId;
 
+      console.log(`✅ [Auth] Authentication successful:`, {
+        ...clientInfo,
+        userId: decoded.userId
+      });
+
       next();
     } catch (error) {
-      console.error('WebSocket auth error:', error);
+      console.error(`❌ [Auth] Authentication error:`, {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        socketId: socket.id
+      });
       next(new Error('Authentication error'));
     }
   });
 
   io.on('connection', (socket: Socket) => {
     const userId = socket.data.userId;
-    console.log(`User ${userId} connected with socket ${socket.id}`);
+    const connectionInfo = {
+      socketId: socket.id,
+      userId,
+      ip: socket.handshake.address,
+      userAgent: socket.handshake.headers['user-agent'],
+      transport: socket.conn.transport.name
+    };
+
+    console.log(`✅ [Connection] User connected:`, connectionInfo);
+
+    // 错误事件监听
+    socket.on('error', (error) => {
+      console.error(`❌ [Socket Error] Socket error:`, {
+        socketId: socket.id,
+        userId,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined
+      });
+    });
 
     // 初始化用户连接信息
     if (!connectedUsers.has(userId)) {
@@ -301,14 +337,31 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
     });
 
     // 断开连接
-    socket.on('disconnect', () => {
-      console.log(`User ${userId} disconnected`);
+    socket.on('disconnect', (reason) => {
+      const disconnectInfo = {
+        socketId: socket.id,
+        userId,
+        reason,
+        timestamp: new Date().toISOString()
+      };
 
-      // 更新用户在线状态
-      updateUserPresence(userId, false);
+      console.log(`❌ [Disconnect] User disconnected:`, disconnectInfo);
 
-      // 清理用户信息
-      connectedUsers.delete(userId);
+      try {
+        // 更新用户在线状态
+        updateUserPresence(userId, false);
+
+        // 清理用户信息
+        connectedUsers.delete(userId);
+
+        console.log(`🧹 [Cleanup] User ${userId} data cleaned up`);
+      } catch (error) {
+        console.error(`❌ [Disconnect] Error during cleanup:`, {
+          userId,
+          socketId: socket.id,
+          error: error instanceof Error ? error.message : error
+        });
+      }
     });
   });
 
