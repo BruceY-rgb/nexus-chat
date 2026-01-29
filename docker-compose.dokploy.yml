@@ -27,12 +27,12 @@ services:
       - "traefik.enable=true"
 
       # HTTP 路由
-      - "traefik.http.routers.slack-app-http.rule=Host(`72.62.252.67`)"
+      - "traefik.http.routers.slack-app-http.rule=Host(`slack-chat.ontuotu.com`)"
       - "traefik.http.routers.slack-app-http.entrypoints=web"
       - "traefik.http.routers.slack-app-http.middlewares=redirect-to-https"
 
       # HTTPS 路由
-      - "traefik.http.routers.slack-app.rule=Host(`72.62.252.67`)"
+      - "traefik.http.routers.slack-app.rule=Host(`slack-chat.ontuotu.com`)"
       - "traefik.http.routers.slack-app.entrypoints=websecure"
       - "traefik.http.routers.slack-app.tls=true"
 

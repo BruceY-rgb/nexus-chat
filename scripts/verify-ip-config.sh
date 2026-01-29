@@ -1,16 +1,17 @@
 #!/bin/bash
 
 # IP 配置验证脚本
-# 用于验证所有配置文件中的 IP 地址是否正确更新为 72.62.252.67
+# 用于验证所有配置文件中的域名是否正确更新为 slack-chat.ontuotu.com
 
 echo "================================================"
 echo "🔍 IP 地址配置验证脚本"
 echo "================================================"
 echo ""
 
-# 设置正确的 IP 地址
-CORRECT_IP="72.62.252.67"
+# 设置正确的域名
+CORRECT_DOMAIN="slack-chat.ontuotu.com"
 OLD_IP="118.31.62.122"
+OLD_IP2="72.62.252.67"
 
 # 计数器
 PASS_COUNT=0
@@ -30,16 +31,16 @@ check_file() {
         return 1
     fi
 
-    if grep -q "$CORRECT_IP" "$file"; then
-        echo "✅ 正确 (包含 $CORRECT_IP)"
+    if grep -q "$CORRECT_DOMAIN" "$file"; then
+        echo "✅ 正确 (包含 $CORRECT_DOMAIN)"
         ((PASS_COUNT++))
         return 0
-    elif grep -q "$OLD_IP" "$file"; then
-        echo "⚠️  仍使用旧 IP ($OLD_IP)"
+    elif grep -q "$OLD_IP" "$file" || grep -q "$OLD_IP2" "$file"; then
+        echo "⚠️  仍使用旧 IP ($OLD_IP 或 $OLD_IP2)"
         ((FAIL_COUNT++))
         return 1
     else
-        echo "⚠️  未找到 IP 地址"
+        echo "⚠️  未找到域名"
         ((FAIL_COUNT++))
         return 1
     fi
@@ -53,7 +54,7 @@ check_file "nginx/conf.d/default.conf" "server_name" "Nginx 配置文件"
 
 # 检查 docker-compose.dokploy.yml
 if [ -f "docker-compose.dokploy.yml" ]; then
-    check_file "docker-compose.dokploy.yml" "Host.*72.62.252.67" "Dokploy 配置"
+    check_file "docker-compose.dokploy.yml" "Host.*slack-chat.ontuotu.com" "Dokploy 配置"
 else
     echo "检查 Dokploy 配置... ℹ️  文件不存在 (docker-compose.dokploy.yml)"
 fi
@@ -67,11 +68,11 @@ echo "❌ 失败: $FAIL_COUNT"
 echo ""
 
 if [ $FAIL_COUNT -eq 0 ]; then
-    echo "🎉 所有检查通过！IP 地址配置正确。"
+    echo "🎉 所有检查通过！域名配置正确。"
     echo ""
     echo "下一步操作："
     echo "1. 重启服务: docker-compose restart"
-    echo "2. 测试访问: http://72.62.252.67"
+    echo "2. 测试访问: http://slack-chat.ontuotu.com"
     echo "3. 查看调试指南: cat DEBUGGING-GUIDE.md"
     exit 0
 else
@@ -79,7 +80,7 @@ else
     echo ""
     echo "解决方案："
     echo "1. 手动更新失败的文件"
-    echo "2. 运行: ./scripts/update-ip.sh 72.62.252.67"
+    echo "2. 运行: ./scripts/update-domain.sh slack-chat.ontuotu.com"
     echo "3. 重新构建: npm run build"
     exit 1
 fi
