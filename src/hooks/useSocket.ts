@@ -3,16 +3,40 @@ import { io, Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 import { ConnectionStatus } from '@/types/database';
 
-// 获取 WebSocket 连接的 URL
+// 获取 WebSocket 连接的 URL - 修复混合内容错误
 const getWebSocketUrl = () => {
   // 优先使用环境变量 NEXT_PUBLIC_APP_URL
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
   // 如果是 https 连接，WebSocket 也应该使用 wss
-  const protocol = appUrl.startsWith('https') ? 'https' : 'http';
-  const url = appUrl.startsWith('http') ? appUrl : `${protocol}://${appUrl}`;
+  // 确保返回正确的 WebSocket URL (ws:// 或 wss://)
+  let wsUrl: string;
 
-  return url;
+  if (appUrl.startsWith('https://')) {
+    // HTTPS 页面必须使用 WSS
+    wsUrl = appUrl.replace(/^https:/, 'wss:');
+  } else if (appUrl.startsWith('http://')) {
+    // HTTP 页面使用 WS
+    wsUrl = appUrl.replace(/^http:/, 'ws:');
+  } else {
+    // 如果没有协议，根据环境判断
+    const isProduction = process.env.NODE_ENV === 'production';
+    const protocol = isProduction ? 'wss' : 'ws';
+    wsUrl = `${protocol}://${appUrl}`;
+  }
+
+  // 添加 socket.io 路径
+  if (!wsUrl.endsWith('/socket.io')) {
+    wsUrl = `${wsUrl}/socket.io`;
+  }
+
+  console.log('🔌 [getWebSocketUrl] Generated WebSocket URL:', {
+    originalUrl: appUrl,
+    wsUrl,
+    protocol: wsUrl.split('://')[0]
+  });
+
+  return wsUrl;
 };
 
 interface UseSocketReturn {
@@ -99,7 +123,19 @@ export function useSocket(): UseSocketReturn {
       // 添加超时配置
       timeout: 20000,
       // 强制使用 websocket 传输（可选）
-      forceNew: true
+      forceNew: true,
+      // 强制安全连接（HTTPS 环境下自动使用 WSS）
+      secure: true,
+      // 如果使用自签名证书，允许不验证证书
+      rejectUnauthorized: false,
+      // 启用自动连接
+      autoConnect: false,
+      // 增强的连接参数
+      upgrade: true,
+      rememberUpgrade: true,
+      // 强制使用 HTTP/1.1 如果需要
+      // 注意：生产环境下建议配置正确的 SSL 证书
+      // 而不是使用 rejectUnauthorized: false
     });
 
     // Connection successful
@@ -186,7 +222,7 @@ export function useSocket(): UseSocketReturn {
     }, 500);
   }, [disconnect, connect]);
 
-  // 自动连接 - 修复循环依赖
+  // 自动连接 - 修复循环依赖和死循环问题
   useEffect(() => {
     const token = getToken();
     console.log(`🔌 [useSocket] Auto-connect check:`, {
@@ -195,16 +231,18 @@ export function useSocket(): UseSocketReturn {
       isConnecting: isConnecting.current,
       hasSocket: !!socket,
       socketId: socket?.id,
+      isSocketConnected: socket?.connected,
       userId: user?.id
     });
 
     // 只有在有token和用户，且当前未连接且未在连接中时才连接
+    // 关键修复：使用 socket?.connected 状态而非整个 socket 对象
     if (token && user && !socket?.connected && !isConnecting.current) {
       console.log(`🔌 [useSocket] Starting connection...`);
       // 使用setTimeout避免在渲染阶段直接调用connect
       const timeoutId = setTimeout(() => {
         connect();
-      }, 0);
+      }, 100); // 增加延迟避免立即重连
 
       return () => clearTimeout(timeoutId);
     }
@@ -212,18 +250,34 @@ export function useSocket(): UseSocketReturn {
     return () => {
       if (reconnectInterval.current) {
         clearInterval(reconnectInterval.current);
+        reconnectInterval.current = null;
       }
     };
-  }, [user, socket?.connected, connect, getToken]); // 使用socket?.connected而不是整个socket
+  }, [user, getToken]); // 关键修复：移除 socket?.connected 和 connect 依赖，避免循环触发
 
-  // 清理
+  // 清理 - 改进的清理逻辑，防止内存泄漏
   useEffect(() => {
     return () => {
+      console.log('🔌 [useSocket] Cleaning up socket connection');
       if (socket) {
-        socket.close();
+        // 移除所有事件监听器
+        socket.removeAllListeners();
+        // 断开连接
+        socket.disconnect();
+        // 设置为 null
+        setSocket(null);
+      }
+      // 重置状态
+      setIsConnected(false);
+      setConnectionStatus('disconnected');
+      isConnecting.current = false;
+      // 清理重连定时器
+      if (reconnectInterval.current) {
+        clearInterval(reconnectInterval.current);
+        reconnectInterval.current = null;
       }
     };
-  }, [socket]);
+  }, []); // 空依赖数组，只在组件卸载时执行一次
 
   // Channel operations
   const joinChannel = useCallback((channelId: string) => {

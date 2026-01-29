@@ -75,7 +75,18 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
     transports: ['websocket', 'polling'],
     // 添加 ping 超时配置
     pingTimeout: 60000,
-    pingInterval: 25000
+    pingInterval: 25000,
+    // 生产环境优化配置
+    // 允许在 HTTPS 下使用 WSS
+    secure: true,
+    // 允许升级连接
+    allowUpgrades: true,
+    // 压缩设置（生产环境建议启用）
+    compression: true,
+    // 传输配置
+    upgradeTimeout: 10000,
+    // 连接超时
+    connectTimeout: 20000
   }) as ExtendedSocketIOServer;
 
   // 存储在线用户信息

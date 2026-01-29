@@ -13,10 +13,36 @@
 const io = require('socket.io-client');
 const readline = require('readline');
 
-// 获取服务器 URL
+// 获取服务器 URL - 支持 HTTPS/WSS
 const getServerUrl = () => {
   const url = process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000';
-  return url.startsWith('http') ? url : `http://${url}`;
+  let serverUrl: string;
+
+  if (url.startsWith('https://')) {
+    // HTTPS 页面必须使用 WSS
+    serverUrl = url.replace(/^https:/, 'wss:');
+  } else if (url.startsWith('http://')) {
+    // HTTP 页面使用 WS
+    serverUrl = url.replace(/^http:/, 'ws:');
+  } else {
+    // 如果没有协议，根据环境判断
+    const isProduction = process.env.NODE_ENV === 'production';
+    const protocol = isProduction ? 'wss' : 'ws';
+    serverUrl = `${protocol}://${url}`;
+  }
+
+  // 添加 socket.io 路径
+  if (!serverUrl.endsWith('/socket.io')) {
+    serverUrl = `${serverUrl}/socket.io`;
+  }
+
+  console.log(`🔌 生成 WebSocket URL:`, {
+    originalUrl: url,
+    wsUrl: serverUrl,
+    protocol: serverUrl.split('://')[0]
+  });
+
+  return serverUrl;
 };
 
 const rl = readline.createInterface({
@@ -90,12 +116,33 @@ async function testConnection(token) {
     logStep('1', '测试 WebSocket 连接...');
 
     const options = {
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+      timeout: 20000,
+      // 强制安全连接（HTTPS 环境下自动使用 WSS）
+      secure: true,
+      // 如果使用自签名证书，允许不验证证书
+      rejectUnauthorized: false,
+      // 启用自动连接
+      autoConnect: true,
+      // 增强的连接参数
+      upgrade: true,
+      rememberUpgrade: true
     };
 
     if (token) {
       options.auth = { token };
     }
+
+    console.log(`📡 连接选项:`, {
+      url: WS_URL,
+      transports: options.transports,
+      secure: options.secure,
+      reconnection: options.reconnection
+    });
 
     const socket = io(WS_URL, options);
 
