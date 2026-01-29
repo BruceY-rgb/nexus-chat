@@ -36,13 +36,18 @@ services:
       - "traefik.http.routers.slack-app.entrypoints=websecure"
       - "traefik.http.routers.slack-app.tls=true"
 
-      # WebSocket 支持
+      # WebSocket 支持 - 修复配置
       - "traefik.http.services.slack-app.loadbalancer.server.port=3000"
-      - "traefik.http.middlewares.slack-websocket.headers.customrequestheaders.Upgrade=upgrade"
-      - "traefik.http.middlewares.slack-websocket.headers.customrequestheaders.Connection=keep-alive"
+      # 正确的 WebSocket 升级头配置
+      - "traefik.http.middlewares.slack-websocket.headers.customrequestheaders.Upgrade=websocket"
+      - "traefik.http.middlewares.slack-websocket.headers.customrequestheaders.Connection=upgrade"
 
       # 应用中间件
       - "traefik.http.routers.slack-app.middlewares=slack-websocket"
+
+      # 额外的 WebSocket 支持配置
+      - "traefik.http.middlewares.slack-websocket.headers.customresponseheaders.Upgrade=websocket"
+      - "traefik.http.middlewares.slack-websocket.headers.customresponseheaders.Connection=upgrade"
 
     networks:
       - dokploy-network

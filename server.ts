@@ -10,7 +10,8 @@ declare global {
 }
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = '127.0.0.1';
+// 修复：在容器化环境中必须监听 0.0.0.0 才能接受外部连接
+const hostname = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
 const port = 3000;
 
 const app = next({ dev, hostname, port });
