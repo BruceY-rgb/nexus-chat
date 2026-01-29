@@ -3,6 +3,18 @@ import { io, Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 import { ConnectionStatus } from '@/types/database';
 
+// 获取 WebSocket 连接的 URL
+const getWebSocketUrl = () => {
+  // 优先使用环境变量 NEXT_PUBLIC_APP_URL
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+  // 如果是 https 连接，WebSocket 也应该使用 wss
+  const protocol = appUrl.startsWith('https') ? 'https' : 'http';
+  const url = appUrl.startsWith('http') ? appUrl : `${protocol}://${appUrl}`;
+
+  return url;
+};
+
 interface UseSocketReturn {
   socket: Socket | null;
   isConnected: boolean;
@@ -68,15 +80,26 @@ export function useSocket(): UseSocketReturn {
     }
 
     isConnecting.current = true;
-    console.log('🔌 [connect] Connecting to WebSocket server...');
 
-    const socketInstance = io('http://127.0.0.1:3000', {
+    // 获取 WebSocket 连接 URL
+    const wsUrl = getWebSocketUrl();
+    console.log('🔌 [connect] Connecting to WebSocket server:', {
+      wsUrl,
+      environment: process.env.NODE_ENV,
+      appUrl: process.env.NEXT_PUBLIC_APP_URL
+    });
+
+    const socketInstance = io(wsUrl, {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: maxReconnectAttempts
+      reconnectionAttempts: maxReconnectAttempts,
+      // 添加超时配置
+      timeout: 20000,
+      // 强制使用 websocket 传输（可选）
+      forceNew: true
     });
 
     // Connection successful

@@ -27,7 +27,7 @@ show_header() {
 }
 
 # 服务器配置
-SERVER_IP="118.31.62.122"
+SERVER_IP="72.62.252.67"
 # ❗ 需要确认正确的用户名（通常为 root 或 ubuntu）
 SERVER_USER="root"
 PROJECT_PATH="/Users/yangsmac/Desktop/Slack/slack-chat"

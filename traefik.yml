@@ -1,0 +1,51 @@
+# Traefik v3.x 配置文件
+# 用于 WebSocket 和反向代理
+
+api:
+  dashboard: true
+  insecure: true  # 仅开发环境，生产环境应使用安全配置
+
+# 定义入口点
+entryPoints:
+  # HTTP 入口点 - 自动重定向到 HTTPS
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entrypoint:
+          to: websecure
+          scheme: https
+
+  # HTTPS 入口点
+  websecure:
+    address: ":443"
+
+# 启用 Docker 提供程序
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: dokploy-network  # 使用 Dokploy 的网络
+
+# 启用文件提供程序（用于静态配置）
+providers:
+  file:
+    filename: /etc/traefik/traefik.yml
+    watch: true
+
+# 日志配置
+log:
+  level: INFO
+  filePath: "/var/log/traefik/traefik.log"
+
+# 访问日志
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+
+# 全局配置
+global:
+  sendAnonymousUsage: false
+
+---
+# 动态配置文件示例 - 创建单独文件
+# 这个文件应该保存为 traefik-dynamic.yml

@@ -1,0 +1,54 @@
+# Traefik 反向代理配置
+# 用于 Dokploy/Docker Swarm 部署
+# 使用方法：
+# 1. 将此文件作为 traefik 的 docker-compose.yml 部署
+# 2. 或将配置集成到现有的 Traefik 实例中
+
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik-dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - traefik-logs:/var/log/traefik
+    networks:
+      - dokploy-network
+    labels:
+      # 启用 Traefik
+      - "traefik.enable=true"
+
+      # HTTP 入口点
+      - "traefik.http.entrypoints.web.address=:80"
+      - "traefik.http.entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "traefik.http.entrypoints.web.http.redirections.entrypoint.scheme=https"
+
+      # HTTPS 入口点
+      - "traefik.http.entrypoints.websecure.address=:443"
+
+      # Dashboard
+      - "traefik.http.api.dashboard=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.ontuotu.com`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+
+      # 日志
+      - "traefik.log.level=INFO"
+      - "traefik.accesslog=true"
+
+volumes:
+  traefik-logs:
+    driver: local
+
+networks:
+  dokploy-network:
+    external: true

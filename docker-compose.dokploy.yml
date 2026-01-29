@@ -1,0 +1,52 @@
+# Dokploy Traefik 配置
+# 适用于 Dokploy 环境
+
+version: '3.8'
+
+services:
+  app:
+    image: IMAGE_PLACEHOLDER
+    container_name: slack_app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@dokploy-postgres:5432/${DB_NAME}?schema=public
+      DB_HOST: dokploy-postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      PORT: 3000
+      WEBSOCKET_PORT: 3001
+      # 其他环境变量...
+    # Dokploy Traefik 标签
+    labels:
+      # 启用 Traefik
+      - "traefik.enable=true"
+
+      # HTTP 路由
+      - "traefik.http.routers.slack-app-http.rule=Host(`72.62.252.67`)"
+      - "traefik.http.routers.slack-app-http.entrypoints=web"
+      - "traefik.http.routers.slack-app-http.middlewares=redirect-to-https"
+
+      # HTTPS 路由
+      - "traefik.http.routers.slack-app.rule=Host(`72.62.252.67`)"
+      - "traefik.http.routers.slack-app.entrypoints=websecure"
+      - "traefik.http.routers.slack-app.tls=true"
+
+      # WebSocket 支持
+      - "traefik.http.services.slack-app.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.slack-websocket.headers.customrequestheaders.Upgrade=upgrade"
+      - "traefik.http.middlewares.slack-websocket.headers.customrequestheaders.Connection=keep-alive"
+
+      # 应用中间件
+      - "traefik.http.routers.slack-app.middlewares=slack-websocket"
+
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true

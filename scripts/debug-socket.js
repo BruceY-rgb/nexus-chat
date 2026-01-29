@@ -13,15 +13,22 @@
 const io = require('socket.io-client');
 const readline = require('readline');
 
+// 获取服务器 URL
+const getServerUrl = () => {
+  const url = process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000';
+  return url.startsWith('http') ? url : `http://${url}`;
+};
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-const WS_URL = 'http://127.0.0.1:3000';
+const WS_URL = getServerUrl();
 
 console.log('\n🔍 Socket 通信调试工具\n');
-console.log('请选择调试方式：');
+console.log(`📡 服务器地址: ${WS_URL}`);
+console.log('\n请选择调试方式：');
 console.log('1. 手动输入 token');
 console.log('2. 从环境变量获取 (DEBUG_TOKEN)');
 console.log('3. 从本地存储获取');

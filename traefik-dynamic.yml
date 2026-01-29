@@ -1,0 +1,62 @@
+# Traefik 动态配置文件
+# 用于定义中间件和服务
+
+# 中间件定义
+http:
+  middlewares:
+    # WebSocket 支持中间件
+    websocket-support:
+      headers:
+        customRequestHeaders:
+          Upgrade: "upgrade"
+          Connection: "keep-alive"
+
+    # 压缩中间件
+    compress:
+      compression: {}
+
+    # 安全头中间件
+    security-headers:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowOriginList:
+          - "https://www.ontuotu.com"
+          - "https://ontuotu.com"
+        accessControlMaxAge: 100
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+        referrerPolicy: "strict-origin-when-cross-origin"
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+        stsPreload: true
+
+    # CORS 中间件
+    cors-headers:
+      headers:
+        accessControlAllowCredentials: true
+        accessControlAllowHeaders:
+          - "Content-Type"
+          - "Authorization"
+          - "Cookie"
+          - "X-Requested-With"
+        accessControlAllowMethods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "DELETE"
+          - "OPTIONS"
+        accessControlAllowOriginList:
+          - "https://www.ontuotu.com"
+          - "https://ontuotu.com"
+        accessControlMaxAge: 86400
+
+# TCP 配置（用于 WebSocket）
+tcp:
+  serversTransitions:
+    # 如果需要 TCP 代理，可以在这里配置
+    passHostHeader: true

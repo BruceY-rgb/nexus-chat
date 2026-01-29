@@ -20,13 +20,62 @@ interface ConnectedUser {
 }
 
 export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
+  // 动态获取允许的域名
+  const getAllowedOrigins = () => {
+    const origins = [
+      "http://127.0.0.1:3000",
+      "http://localhost:3000",
+      "http://localhost:3001",
+    ];
+
+    // 添加生产环境域名
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (appUrl) {
+      // 添加完整的 URL
+      origins.push(appUrl);
+
+      // 从 URL 中提取域名并添加
+      try {
+        const url = new URL(appUrl.startsWith('http') ? appUrl : `http://${appUrl}`);
+        origins.push(url.origin);
+
+        // 如果是 https，也允许 http 版本（反向代理场景）
+        if (url.protocol === 'https:') {
+          origins.push(`http://${url.host}`);
+        }
+      } catch (e) {
+        console.warn('Invalid NEXT_PUBLIC_APP_URL:', appUrl);
+      }
+    }
+
+    // 添加常见生产域名（如果环境变量未设置）
+    const prodDomains = [
+      "https://www.ontuotu.com",
+      "https://ontuotu.com",
+      "http://www.ontuotu.com",
+      "http://ontuotu.com"
+    ];
+
+    prodDomains.forEach(domain => {
+      if (!origins.includes(domain)) {
+        origins.push(domain);
+      }
+    });
+
+    return origins;
+  };
+
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: ["http://127.0.0.1:3000", "http://localhost:3000"],
+      origin: getAllowedOrigins(),
       credentials: true,
-      methods: ["GET", "POST"]
+      methods: ["GET", "POST"],
+      allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
     },
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    // 添加 ping 超时配置
+    pingTimeout: 60000,
+    pingInterval: 25000
   }) as ExtendedSocketIOServer;
 
   // 存储在线用户信息
