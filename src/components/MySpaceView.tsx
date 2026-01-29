@@ -56,7 +56,7 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
           <div className="text-center py-8 mb-8">
             <div className="relative inline-block mb-6">
               <img
-                src={member.avatarUrl || '/default-avatar.png'}
+                src={member.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${member.displayName || member.id}&size=96`}
                 alt={member.displayName}
                 className="w-24 h-24 rounded-lg shadow-lg"
               />
@@ -185,7 +185,7 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
                 {messages.slice(0, 5).map((message) => (
                   <div key={message.id} className="flex items-start gap-3 p-3 bg-background-component rounded-lg">
                     <img
-                      src={message.user.avatarUrl || '/default-avatar.png'}
+                      src={message.user.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${message.user.displayName || message.user.id}&size=32`}
                       alt={message.user.displayName}
                       className="w-8 h-8 rounded-sm"
                     />

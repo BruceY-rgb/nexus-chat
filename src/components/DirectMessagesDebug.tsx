@@ -101,7 +101,7 @@ export default function DirectMessagesDebug({
               {/* Avatar with status indicator */}
               <div className="relative flex-shrink-0">
                 <img
-                  src={member.avatarUrl || '/default-avatar.png'}
+                  src={member.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${member.displayName || member.id}&size=24`}
                   alt={member.displayName}
                   className="w-5 h-5 rounded-sm"
                   style={{ borderRadius: '4px' }}

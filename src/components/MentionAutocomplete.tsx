@@ -250,13 +250,13 @@ export default function MentionAutocomplete({
         >
           <div className="relative flex-shrink-0">
             <img
-              src={member.avatarUrl || '/default-avatar.png'}
+              src={member.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${member.displayName || member.id}&size=32`}
               alt={member.displayName}
               className="w-8 h-8 rounded-md flex-shrink-0"
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
-                if (img.src !== '/default-avatar.png') {
-                  img.src = '/default-avatar.png';
+                if (!img.src.includes('api.dicebear.com')) {
+                  img.src = `https://api.dicebear.com/7.x/identicon/png?seed=${member.displayName || member.id}&size=32`;
                 }
               }}
             />

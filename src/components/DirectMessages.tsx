@@ -352,14 +352,14 @@ export default function DirectMessages({
                   {/* Avatar with status indicator */}
                   <div className="relative flex-shrink-0">
                     <img
-                      src={user.avatarUrl || '/default-avatar.png'}
+                      src={user.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${user.displayName || user.id}&size=24`}
                       alt={user.displayName}
                       className="w-5 h-5 rounded-sm"
                       style={{ borderRadius: '4px' }}
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
-                        if (img.src !== '/default-avatar.png') {
-                          img.src = '/default-avatar.png';
+                        if (!img.src.includes('api.dicebear.com')) {
+                          img.src = `https://api.dicebear.com/7.x/identicon/png?seed=${user.displayName || user.id}&size=24`;
                         }
                       }}
                     />
@@ -433,14 +433,14 @@ export default function DirectMessages({
                 {/* Avatar with status indicator */}
                 <div className="relative flex-shrink-0">
                   <img
-                    src={otherUser.avatarUrl || '/default-avatar.png'}
+                    src={otherUser.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${otherUser.displayName || otherUser.id}&size=24`}
                     alt={otherUser.displayName}
                     className="w-5 h-5 rounded-sm"
                     style={{ borderRadius: '4px' }}
                     onError={(e) => {
                       const img = e.target as HTMLImageElement;
-                      if (img.src !== '/default-avatar.png') {
-                        img.src = '/default-avatar.png';
+                      if (!img.src.includes('api.dicebear.com')) {
+                        img.src = `https://api.dicebear.com/7.x/identicon/png?seed=${otherUser.displayName || otherUser.id}&size=24`;
                       }
                     }}
                   />

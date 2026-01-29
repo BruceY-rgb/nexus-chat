@@ -173,7 +173,7 @@ export default function NewDirectMessageModal({
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
                     <img
-                      src={member.avatarUrl || '/default-avatar.png'}
+                      src={member.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${member.displayName || member.id}&size=32`}
                       alt={member.displayName}
                       className="w-8 h-8 rounded-sm"
                       style={{ borderRadius: '4px' }}

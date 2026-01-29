@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { User } from 'lucide-react';
+import { getAvatarUrl, AvatarStyle } from '@/lib/avatar';
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string;
@@ -9,6 +10,14 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   fallback?: string;
   online?: boolean;
+  // 新增：用户信息，用于生成默认头像
+  user?: {
+    id: string;
+    displayName?: string | null;
+    email?: string;
+  };
+  // 新增：头像风格
+  avatarStyle?: AvatarStyle;
 }
 
 const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
@@ -19,6 +28,8 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
       size = 'md',
       fallback,
       online,
+      user,
+      avatarStyle = 'identicon',
       className = '',
       ...props
     },
@@ -33,6 +44,15 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
       '2xl': 'w-32 h-32 text-4xl',
     };
 
+    const sizeMap = {
+      xs: 24,
+      sm: 32,
+      md: 40,
+      lg: 64,
+      xl: 96,
+      '2xl': 128,
+    };
+
     const getInitials = (name: string) => {
       return name
         .split(' ')
@@ -43,6 +63,16 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
     };
 
     const displayText = fallback || alt || 'U';
+
+    // 计算实际尺寸（像素）
+    const actualSize = sizeMap[size];
+
+    // 确定头像 URL
+    const avatarUrl = src
+      ? src
+      : user
+      ? getAvatarUrl(null, user, actualSize, avatarStyle)
+      : null;
 
     return (
       <div
@@ -56,11 +86,23 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
         ].join(' ')}
         {...props}
       >
-        {src ? (
+        {avatarUrl ? (
           <img
-            src={src}
+            src={avatarUrl}
             alt={alt}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              // 如果图片加载失败，显示文字头像
+              const img = e.target as HTMLImageElement;
+              img.style.display = 'none';
+              const parent = img.parentElement;
+              if (parent) {
+                const span = document.createElement('span');
+                span.className = 'font-medium text-text-secondary';
+                span.textContent = displayText.length > 2 ? getInitials(displayText) : displayText;
+                parent.appendChild(span);
+              }
+            }}
           />
         ) : (
           <span className="font-medium text-text-secondary">

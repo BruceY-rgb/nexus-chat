@@ -397,7 +397,7 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
                       {/* 头像 */}
                       {showAvatar ? (
                         <img
-                          src={message.user.avatarUrl || '/default-avatar.png'}
+                          src={message.user.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${message.user.displayName || message.user.id}&size=40`}
                           alt={message.user.displayName}
                           className="w-10 h-10 rounded-sm flex-shrink-0"
                         />

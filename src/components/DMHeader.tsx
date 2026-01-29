@@ -100,14 +100,14 @@ export default function DMHeader({
         <div className="flex items-center gap-3">
           <div className="relative">
             <img
-              src={member.avatarUrl || '/default-avatar.png'}
+              src={member.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${member.displayName || member.id}&size=40`}
               alt={displayName}
               className="w-9 h-9 rounded-sm"
               style={{ borderRadius: '4px' }}
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
-                if (img.src !== '/default-avatar.png') {
-                  img.src = '/default-avatar.png';
+                if (!img.src.includes('api.dicebear.com')) {
+                  img.src = `https://api.dicebear.com/7.x/identicon/png?seed=${member.displayName || member.id}&size=40`;
                 }
               }}
             />
