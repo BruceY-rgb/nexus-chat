@@ -48,7 +48,23 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
       }
     }
 
-    // 添加常见生产域名（如果环境变量未设置）
+    // 添加 Slack 相关的生产域名（支持 Nginx 反向代理）
+    const slackDomains = [
+      "https://slack.rlenv.data4o.ai",
+      "http://slack.rlenv.data4o.ai",
+      "https://www.rlenv.data4o.ai",
+      "http://www.rlenv.data4o.ai",
+      "https://rlenv.data4o.ai",
+      "http://rlenv.data4o.ai",
+    ];
+
+    slackDomains.forEach(domain => {
+      if (!origins.includes(domain)) {
+        origins.push(domain);
+      }
+    });
+
+    // 添加其他常见生产域名（如果环境变量未设置）
     const prodDomains = [
       "https://instagram.rlenv.data4o.ai",
       "http://instagram.rlenv.data4o.ai"
@@ -60,27 +76,70 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
       }
     });
 
+    console.log('🔍 [CORS] Allowed origins:', origins);
     return origins;
   };
 
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: getAllowedOrigins(),
+      // 使用函数动态验证 Origin，支持反向代理
+      origin: function (origin, callback) {
+        // 允许没有 Origin 的请求（移动应用等）
+        if (!origin) return callback(null, true);
+
+        const allowedOrigins = getAllowedOrigins();
+
+        // 检查 Origin 是否在允许列表中
+        if (allowedOrigins.includes(origin)) {
+          console.log('✅ [CORS] Origin allowed:', origin);
+          return callback(null, true);
+        }
+
+        // 对于 Nginx 反向代理场景，检查是否是来自已知域名的子域名
+        try {
+          const originUrl = new URL(origin);
+          const originHostname = originUrl.hostname;
+
+          // 检查是否是 *.rlenv.data4o.ai 的子域名
+          if (originHostname.endsWith('.rlenv.data4o.ai') || originHostname === 'rlenv.data4o.ai') {
+            console.log('✅ [CORS] Subdomain allowed:', origin);
+            return callback(null, true);
+          }
+
+          // 检查是否是 localhost（开发环境）
+          if (originHostname === 'localhost' || originHostname === '127.0.0.1') {
+            console.log('✅ [CORS] Localhost allowed:', origin);
+            return callback(null, true);
+          }
+        } catch (e) {
+          console.warn('⚠️ [CORS] Invalid origin format:', origin);
+        }
+
+        // 拒绝未知来源
+        console.error('❌ [CORS] Origin not allowed:', origin);
+        return callback(new Error('Not allowed by CORS'), false);
+      },
       credentials: true,
       methods: ["GET", "POST"],
-      allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
+      allowedHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With"]
     },
     transports: ['websocket', 'polling'],
-    // 添加 ping 超时配置
-    pingTimeout: 60000,
-    pingInterval: 25000,
+    // 明确指定 Socket.io 路径（避免与其他应用冲突）
+    // 默认是 /socket.io，这里明确指定以增强可读性
+    path: '/socket.io',
+
+    // 添加 ping 超时配置（适合反向代理环境）
+    pingTimeout: 60000,      // 60秒无活动后断开
+    pingInterval: 25000,     // 25秒发送一次 ping
+
     // 生产环境优化配置
-    // 允许从轮询升级到 WebSocket
-    allowUpgrades: true,
-    // 传输配置
-    upgradeTimeout: 10000,
-    // 连接超时
-    connectTimeout: 20000
+    allowUpgrades: true,     // 允许从轮询升级到 WebSocket
+    upgradeTimeout: 10000,   // 10秒升级超时
+    connectTimeout: 20000,   // 20秒连接超时
+
+    // 适配反向代理的额外配置
+    // 允许更多请求头
+    allowEIO3: true,         // 兼容 Engine.IO v3 客户端
   }) as ExtendedSocketIOServer;
 
   // 存储在线用户信息
