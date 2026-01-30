@@ -14,6 +14,14 @@ const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
 const port = 3000;
 
+// 添加调试日志
+console.log('🔍 Debug - Environment Check:', {
+  NODE_ENV: process.env.NODE_ENV,
+  isProduction: process.env.NODE_ENV === 'production',
+  hostname,
+  dev
+});
+
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 

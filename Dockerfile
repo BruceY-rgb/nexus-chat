@@ -18,8 +18,11 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 
-# 安装全部依赖，但不跑 postinstall
+# 安装全部依赖，包括 tsx（用于生产环境启动）
 RUN npm ci --ignore-scripts
+
+# 安装 tsx 到全局（或者作为依赖安装）
+RUN npm install tsx --save-dev
 
 # 生成 Prisma Client
 RUN npx prisma generate
@@ -43,6 +46,7 @@ COPY --from=base /app/.next/standalone ./
 COPY --from=base /app/.next/static ./.next/static
 COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/prisma ./prisma
+COPY --from=base /app/server.ts ./server.ts
 
 USER nextjs
 
@@ -50,4 +54,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV NODE_ENV=production
 
-CMD ["node", "server.js"]
+# 使用 tsx 运行 server.ts
+CMD ["npx", "tsx", "server.ts"]
