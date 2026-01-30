@@ -97,7 +97,7 @@ OSS_BUCKET=q-and-a-chatbot
 OSS_ENDPOINT=https://oss-cn-hangzhou.aliyuncs.com
 
 NODE_ENV=production
-NEXT_PUBLIC_APP_URL=https://www.ontuotu.com
+NEXT_PUBLIC_APP_URL=https://instagram.rlenv.data4o.ai
 WEBSOCKET_PORT=3001
 
 ENABLE_FILE_UPLOAD=true
@@ -157,7 +157,7 @@ echo "   应用: http://localhost:3000"
 echo "   数据库: localhost:5432"
 echo ""
 echo -e "${YELLOW}⚠️  重要提醒:${NC}"
-echo "1. 配置域名解析: www.ontuotu.com -> 服务器IP"
+echo "1. 配置域名解析: instagram.rlenv.data4o.ai -> 服务器IP"
 echo "2. 运行SSL证书配置: sudo bash scripts/init-ssl.sh"
 echo "3. 防火墙开放端口: 80, 443"
 echo ""

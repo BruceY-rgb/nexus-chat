@@ -50,10 +50,8 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
 
     // 添加常见生产域名（如果环境变量未设置）
     const prodDomains = [
-      "https://www.ontuotu.com",
-      "https://ontuotu.com",
-      "http://www.ontuotu.com",
-      "http://ontuotu.com"
+      "https://instagram.rlenv.data4o.ai",
+      "http://instagram.rlenv.data4o.ai"
     ];
 
     prodDomains.forEach(domain => {

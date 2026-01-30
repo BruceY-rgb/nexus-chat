@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # IP 配置验证脚本
-# 用于验证所有配置文件中的域名是否正确更新为 slack-chat.ontuotu.com
+# 用于验证所有配置文件中的域名是否正确更新为 instagram.rlenv.data4o.ai
 
 echo "================================================"
 echo "🔍 IP 地址配置验证脚本"
@@ -9,7 +9,7 @@ echo "================================================"
 echo ""
 
 # 设置正确的域名
-CORRECT_DOMAIN="slack-chat.ontuotu.com"
+CORRECT_DOMAIN="instagram.rlenv.data4o.ai"
 OLD_IP="118.31.62.122"
 OLD_IP2="72.62.252.67"
 
@@ -54,7 +54,7 @@ check_file "nginx/conf.d/default.conf" "server_name" "Nginx 配置文件"
 
 # 检查 docker-compose.dokploy.yml
 if [ -f "docker-compose.dokploy.yml" ]; then
-    check_file "docker-compose.dokploy.yml" "Host.*slack-chat.ontuotu.com" "Dokploy 配置"
+    check_file "docker-compose.dokploy.yml" "Host.*instagram.rlenv.data4o.ai" "Dokploy 配置"
 else
     echo "检查 Dokploy 配置... ℹ️  文件不存在 (docker-compose.dokploy.yml)"
 fi
@@ -72,7 +72,7 @@ if [ $FAIL_COUNT -eq 0 ]; then
     echo ""
     echo "下一步操作："
     echo "1. 重启服务: docker-compose restart"
-    echo "2. 测试访问: http://slack-chat.ontuotu.com"
+    echo "2. 测试访问: https://instagram.rlenv.data4o.ai"
     echo "3. 查看调试指南: cat DEBUGGING-GUIDE.md"
     exit 0
 else
@@ -80,7 +80,7 @@ else
     echo ""
     echo "解决方案："
     echo "1. 手动更新失败的文件"
-    echo "2. 运行: ./scripts/update-domain.sh slack-chat.ontuotu.com"
+    echo "2. 运行: ./scripts/update-domain.sh instagram.rlenv.data4o.ai"
     echo "3. 重新构建: npm run build"
     exit 1
 fi

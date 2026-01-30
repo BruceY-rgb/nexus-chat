@@ -7,7 +7,7 @@ set -e
 echo "🔒 开始配置SSL证书..."
 
 # 检查域名是否解析到当前服务器IP
-DOMAIN="www.ontuotu.com"
+DOMAIN="instagram.rlenv.data4o.ai"
 SERVER_IP=$(curl -s ifconfig.me)
 
 echo "📍 当前服务器IP: $SERVER_IP"
@@ -43,11 +43,10 @@ echo "📜 申请Let's Encrypt证书..."
 certbot certonly \
     --standalone \
     --preferred-challenges http \
-    --email admin@ontuotu.com \
+    --email admin@rlenv.data4o.ai \
     --agree-tos \
     --no-eff-email \
-    -d $DOMAIN \
-    -d ontuotu.com
+    -d $DOMAIN
 
 # 复制证书到项目目录
 echo "📂 复制证书文件..."
@@ -62,7 +61,7 @@ cat > ssl/renew-ssl.sh << 'EOF'
 #!/bin/bash
 # SSL证书续期脚本
 
-DOMAIN="www.ontuotu.com"
+DOMAIN="instagram.rlenv.data4o.ai"
 
 # 停止nginx
 docker-compose stop nginx
@@ -99,6 +98,6 @@ echo ""
 echo "✅ SSL证书配置完成！"
 echo "📝 证书位置: ./ssl/"
 echo "🔄 自动续期: 已设置crontab任务"
-echo "🌐 访问地址: https://www.ontuotu.com"
+echo "🌐 访问地址: https://instagram.rlenv.data4o.ai"
 echo ""
 echo "📌 手动续期命令: ./ssl/renew-ssl.sh"

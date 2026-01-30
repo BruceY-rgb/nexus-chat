@@ -25,8 +25,7 @@ http:
           - DELETE
           - OPTIONS
         accessControlAllowOriginList:
-          - "https://www.ontuotu.com"
-          - "https://ontuotu.com"
+          - "https://instagram.rlenv.data4o.ai"
         accessControlMaxAge: 100
         hostsProxyHeaders:
           - "X-Forwarded-Host"
@@ -51,8 +50,7 @@ http:
           - "DELETE"
           - "OPTIONS"
         accessControlAllowOriginList:
-          - "https://www.ontuotu.com"
-          - "https://ontuotu.com"
+          - "https://instagram.rlenv.data4o.ai"
         accessControlMaxAge: 86400
 
 # TCP 配置（用于 WebSocket）
