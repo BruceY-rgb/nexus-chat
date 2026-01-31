@@ -50,12 +50,12 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
 
     // 添加 Slack 相关的生产域名（支持 Nginx 反向代理）
     const slackDomains = [
-      "https://slack.rlenv.data4o.ai",
-      "http://slack.rlenv.data4o.ai",
-      "https://www.rlenv.data4o.ai",
-      "http://www.rlenv.data4o.ai",
-      "https://rlenv.data4o.ai",
-      "http://rlenv.data4o.ai",
+      "https://slack-chat.ontuotu.com",
+      "http://slack-chat.ontuotu.com",
+      "https://www.ontuotu.com",
+      "http://www.ontuotu.com",
+      "https://ontuotu.com",
+      "http://ontuotu.com",
     ];
 
     slackDomains.forEach(domain => {
