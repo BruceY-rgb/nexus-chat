@@ -50,6 +50,8 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
 
     // 添加常见生产域名（如果环境变量未设置）
     const prodDomains = [
+      "https://slack-chat.ontuotu.com",
+      "http://slack-chat.ontuotu.com",
       "https://www.ontuotu.com",
       "https://ontuotu.com",
       "http://www.ontuotu.com",
