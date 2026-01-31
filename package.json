@@ -15,11 +15,15 @@
     "db:migrate": "bash scripts/migrate.sh",
     "db:reset": "bash scripts/reset-db.sh",
     "db:seed": "tsx scripts/seed.ts",
+    "db:seed:enhanced": "tsx scripts/seed-enhanced.ts",
+    "db:seed:quick": "tsx scripts/quick-seed.ts",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:pull": "prisma db pull",
-    "db:view": "prisma migrate status"
+    "db:view": "prisma migrate status",
+    "deploy:seed": "npm run db:seed:quick",
+    "deploy:setup": "npm run db:generate && npm run db:migrate && npm run deploy:seed"
   },
   "keywords": [
     "chat",
