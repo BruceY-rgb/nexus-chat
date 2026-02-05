@@ -7,6 +7,8 @@ interface UseWebSocketMessagesProps {
   channelId?: string;
   currentUserId: string;
   onNewMessage?: (message: Message) => void;
+  onMessageUpdated?: (message: Message) => void;
+  onMessageDeleted?: (data: { id: string; channelId?: string; dmConversationId?: string; isDeleted: boolean; deletedAt?: string }) => void;
   isAtBottom?: boolean;
   shouldAutoScroll?: boolean;
 }
@@ -25,6 +27,8 @@ export function useWebSocketMessages({
   channelId,
   currentUserId,
   onNewMessage,
+  onMessageUpdated,
+  onMessageDeleted,
   isAtBottom = true,
   shouldAutoScroll = true
 }: UseWebSocketMessagesProps) {
@@ -37,11 +41,21 @@ export function useWebSocketMessages({
 
   // 使用 useRef 存储回调函数，避免依赖数组变化
   const onNewMessageRef = useRef(onNewMessage);
+  const onMessageUpdatedRef = useRef(onMessageUpdated);
+  const onMessageDeletedRef = useRef(onMessageDeleted);
 
   // 安全的更新回调函数引用
   useEffect(() => {
     onNewMessageRef.current = onNewMessage;
   }, [onNewMessage]);
+
+  useEffect(() => {
+    onMessageUpdatedRef.current = onMessageUpdated;
+  }, [onMessageUpdated]);
+
+  useEffect(() => {
+    onMessageDeletedRef.current = onMessageDeleted;
+  }, [onMessageDeleted]);
 
   // 调试信息
   const [debugInfo] = useState<WebSocketDebugInfo>({
@@ -201,15 +215,19 @@ export function useWebSocketMessages({
 
       log('info', `📝 Message updated:`, updatedMessage);
 
-      if (onNewMessageRef.current) {
-        onNewMessageRef.current({ ...updatedMessage, _isUpdate: true } as Message & { _isUpdate: true });
+      if (onMessageUpdatedRef.current) {
+        onMessageUpdatedRef.current(updatedMessage);
       }
     };
 
     // 监听消息删除
-    const handleMessageDeleted = (data: { messageId: string }) => {
-      const { messageId } = data;
-      log('info', `🗑️ Message deleted:`, messageId);
+    const handleMessageDeleted = (deleteData: { id: string; channelId?: string; dmConversationId?: string; isDeleted: boolean; deletedAt?: string }) => {
+      const { id } = deleteData;
+      log('info', `🗑️ Message deleted:`, deleteData);
+
+      if (onMessageDeletedRef.current) {
+        onMessageDeletedRef.current(deleteData);
+      }
     };
 
     // 注册事件监听器

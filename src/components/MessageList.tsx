@@ -6,6 +6,8 @@ import { Message } from '@/types/message';
 import { format, formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import MessageRenderer from './MessageRenderer';
+import MessageActions from './MessageActions';
+import MessageEditor from './MessageEditor';
 import { useReadProgress } from '@/hooks/useReadProgress';
 
 interface MessageListProps {
@@ -16,6 +18,8 @@ interface MessageListProps {
   channelId?: string;
   dmConversationId?: string;
   onScrollPositionChange?: (isAtBottom: boolean) => void;
+  onEditMessage?: (messageId: string, content: string) => Promise<void>;
+  onDeleteMessage?: (messageId: string) => Promise<void>;
 }
 
 export interface MessageListRef {
@@ -29,22 +33,50 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
   className = '',
   channelId,
   dmConversationId,
-  onScrollPositionChange
+  onScrollPositionChange,
+  onEditMessage,
+  onDeleteMessage
 }, ref) => {
   const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const [showReadIndicator, setShowReadIndicator] = useState<string | null>(null);
+  const [showReadIndicator] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 
   // 使用阅读进度 Hook - 移除onScrollToMessage回调，避免与组件内高亮逻辑冲突
-  const { readPosition, isLoading: isLoadingReadPosition, reportReadProgress } = useReadProgress({
+  const { reportReadProgress } = useReadProgress({
     channelId,
     dmConversationId,
     messages,
     messageRefs
   });
+
+  // 处理编辑消息
+  const handleEditMessage = async (messageId: string, content: string) => {
+    if (onEditMessage) {
+      await onEditMessage(messageId, content);
+      setEditingMessageId(null); // 退出编辑模式
+    }
+  };
+
+  // 处理删除消息
+  const handleDeleteMessage = async (messageId: string) => {
+    if (onDeleteMessage) {
+      await onDeleteMessage(messageId);
+    }
+  };
+
+  // 开始编辑消息
+  const startEditing = (message: Message) => {
+    setEditingMessageId(message.id);
+  };
+
+  // 取消编辑
+  const cancelEditing = () => {
+    setEditingMessageId(null);
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -307,7 +339,7 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
             <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-text-secondary mt-4">加载消息中...</p>
+            <p className="text-text-secondary mt-4">Loading messages...</p>
           </div>
         </div>
       </div>
@@ -356,7 +388,7 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
       style={{ scrollbarGutter: 'stable' }}
       id="messages-scroll-container"
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full">
         {Object.entries(messageGroups).map(([dateKey, dayMessages]) => (
           <div key={dateKey}>
             {/* 日期分割线 */}
@@ -388,61 +420,96 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
                       ref={(el) => {
                         messageRefs.current[message.id] = el;
                       }}
-                      className={`flex items-start gap-3 transition-all duration-200 ${
+                      className={`message-row w-full relative group transition-all duration-200 hover:bg-slate-800/50 hover:z-[50] ${
                         isHighlighted ? 'bg-yellow-200/70 rounded-lg shadow-md animate-pulse' : ''
-                      } ${
-                        isOwnMessage ? 'flex-row-reverse' : ''
                       }`}
                     >
-                      {/* 头像 */}
-                      {showAvatar ? (
-                        <img
-                          src={message.user.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${message.user.displayName || message.user.id}&size=40`}
-                          alt={message.user.displayName}
-                          className="w-10 h-10 rounded-sm flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-10 flex-shrink-0" />
-                      )}
+                      {/* 🧠 智能对侧悬停工具栏 - 脱离内容容器，悬浮在行级别 */}
+                      <MessageActions
+                        message={message}
+                        currentUserId={currentUserId}
+                        isOwnMessage={isOwnMessage}
+                        onEdit={startEditing}
+                        onDelete={handleDeleteMessage}
+                        containerRef={scrollContainerRef}
+                      />
 
-                      {/* 消息内容 */}
-                      <div className={`flex-1 ${isOwnMessage ? 'text-right' : ''}`}>
-                        {/* 用户名和时间（仅在需要时显示） */}
-                        {showAvatar && (
-                          <div className={`flex items-baseline gap-2 mb-1 ${
-                            isOwnMessage ? 'justify-end' : ''
-                          }`}>
-                            <span className="font-semibold text-text-primary text-sm">
-                              {message.user.displayName}
-                            </span>
-                            <span className="text-xs text-text-tertiary">
-                              {formatMessageTime(message.createdAt)}
-                            </span>
-                          </div>
+                      {/* 头像 + 消息内容容器 */}
+                      <div className={`flex w-full items-start gap-3 ${
+                        isOwnMessage ? 'flex-row-reverse' : ''
+                      }`}>
+                        {/* 头像 */}
+                        {showAvatar ? (
+                          <img
+                            src={message.user.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${message.user.displayName || message.user.id}&size=40`}
+                            alt={message.user.displayName}
+                            className="w-10 h-10 rounded-sm flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 flex-shrink-0" />
                         )}
 
-                        {/* 消息气泡 */}
-                        <div
-                          className={`inline-block max-w-[85%] px-4 py-2 rounded-lg ${
-                            isOwnMessage
-                              ? 'bg-primary text-white'
-                              : 'bg-background-component text-text-primary'
-                          }`}
-                        >
-                          <div className={isOwnMessage ? 'text-white' : 'text-text-primary'}>
-                            <MessageRenderer
-                              message={message}
-                              currentUserId={currentUserId}
-                            />
+                        {/* 消息内容 */}
+                        <div className={`flex-1 ${isOwnMessage ? 'text-right' : ''}`}>
+                          {/* 用户名和时间（仅在需要时显示） */}
+                          {showAvatar && (
+                            <div className={`flex items-baseline gap-2 mb-1 ${
+                              isOwnMessage ? 'justify-end' : ''
+                            }`}>
+                              <span className="font-semibold text-text-primary text-sm">
+                                {message.user.displayName}
+                              </span>
+                              <span className="text-xs text-text-tertiary">
+                                {formatMessageTime(message.createdAt)}
+                              </span>
+                              {/* Edited indicator */}
+                              {message.isEdited && !message.isDeleted && (
+                                <span className="text-xs text-text-tertiary italic">
+                                  (edited)
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* 消息气泡 */}
+                          <div
+                            className={`relative inline-block max-w-[85%] px-4 py-2 rounded-lg ${
+                              isOwnMessage
+                                ? 'bg-primary text-white'
+                                : 'bg-background-component text-text-primary'
+                            } ${
+                              message.isDeleted ? 'opacity-50 italic' : ''
+                            }`}
+                          >
+                            {/* 消息内容 */}
+                            {editingMessageId === message.id ? (
+                              <MessageEditor
+                                message={message}
+                                onSave={handleEditMessage}
+                                onCancel={cancelEditing}
+                                className="mt-1"
+                              />
+                            ) : message.isDeleted ? (
+                              <div className={`italic ${isOwnMessage ? 'text-white' : 'text-text-tertiary'}`}>
+                                This message was deleted
+                              </div>
+                            ) : (
+                              <div className={isOwnMessage ? 'text-white' : 'text-text-primary'}>
+                                <MessageRenderer
+                                  message={message}
+                                  currentUserId={currentUserId}
+                                />
+                              </div>
+                            )}
                           </div>
+
+                          {/* 回复指示器 */}
+                          {message.parentMessageId && (
+                            <div className="mt-1 text-xs text-text-tertiary">
+                              已回复
+                            </div>
+                          )}
                         </div>
-
-                        {/* 回复指示器 */}
-                        {message.parentMessageId && (
-                          <div className="mt-1 text-xs text-text-tertiary">
-                            已回复
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>

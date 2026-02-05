@@ -122,7 +122,7 @@ export default function ChannelView({
 
   const handleClearMessages = async () => {
     if (!channel?.id) return;
-    if (!window.confirm('确定要清空所有聊天记录吗？此操作不可撤销。')) {
+    if (!window.confirm('Are you sure you want to clear all chat history? This action cannot be undone.')) {
       return;
     }
 
@@ -142,7 +142,7 @@ export default function ChannelView({
         alert('Clear messages failed, please try again');
       }
     } catch (error) {
-      console.error('清空消息错误:', error);
+      console.error('Error clearing messages:', error);
       alert('Clear messages failed, please try again');
     } finally {
       setIsClearing(false);
@@ -183,13 +183,87 @@ export default function ChannelView({
     fetchMessages();
   }, [isJoined, channel?.id]);
 
+  // 处理消息编辑
+  const handleEditMessage = async (messageId: string, content: string) => {
+    try {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to edit message');
+      }
+
+      const updatedMessage = await response.json();
+
+      // 乐观更新本地消息列表
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId ? updatedMessage : msg
+      ));
+
+      console.log('✅ Channel message edited successfully:', messageId);
+    } catch (error) {
+      console.error('❌ Failed to edit channel message:', error);
+      throw error;
+    }
+  };
+
+  // 处理消息删除
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete message');
+      }
+
+      const result = await response.json();
+
+      // 乐观更新本地消息列表（标记为已删除）
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId
+          ? { ...msg, isDeleted: true, deletedAt: result.data.deletedAt }
+          : msg
+      ));
+
+      console.log('✅ Channel message deleted successfully:', messageId);
+    } catch (error) {
+      console.error('❌ Failed to delete channel message:', error);
+      throw error;
+    }
+  };
+
+  // 处理消息更新（来自WebSocket）
+  const handleMessageUpdated = (updatedMessage: Message) => {
+    setMessages(prev => prev.map(msg =>
+      msg.id === updatedMessage.id ? updatedMessage : msg
+    ));
+  };
+
+  // 处理消息删除（来自WebSocket）
+  const handleMessageDeleted = (deleteData: { id: string; channelId?: string; dmConversationId?: string; isDeleted: boolean; deletedAt?: string }) => {
+    setMessages(prev => prev.map(msg =>
+      msg.id === deleteData.id
+        ? { ...msg, isDeleted: true, deletedAt: deleteData.deletedAt }
+        : msg
+    ));
+  };
+
   // WebSocket 消息监听 - 修复版本：减少依赖变化
   useWebSocketMessages({
     channelId: channel?.id,
     currentUserId: user?.id || '',
     onNewMessage: useCallback((message: Message) => {
       handleNewMessage(message);
-    }, [handleNewMessage])
+    }, [handleNewMessage]),
+    onMessageUpdated: handleMessageUpdated,
+    onMessageDeleted: handleMessageDeleted
   });
 
   const handleMessageSent = useCallback((message?: Message) => {
@@ -451,6 +525,8 @@ export default function ChannelView({
                   className="h-full w-full"
                   channelId={channel?.id}
                   onScrollPositionChange={handleScrollPositionChange}
+                  onEditMessage={handleEditMessage}
+                  onDeleteMessage={handleDeleteMessage}
                 />
               </div>
 

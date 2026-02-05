@@ -174,13 +174,87 @@ export default function DirectMessageView({
     fetchConversation();
   }, [member.id, isOwnSpace]);
 
+  // 处理消息编辑
+  const handleEditMessage = async (messageId: string, content: string) => {
+    try {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to edit message');
+      }
+
+      const updatedMessage = await response.json();
+
+      // 乐观更新本地消息列表
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId ? updatedMessage : msg
+      ));
+
+      console.log('✅ Message edited successfully:', messageId);
+    } catch (error) {
+      console.error('❌ Failed to edit message:', error);
+      throw error;
+    }
+  };
+
+  // 处理消息删除
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete message');
+      }
+
+      const result = await response.json();
+
+      // 乐观更新本地消息列表（标记为已删除）
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId
+          ? { ...msg, isDeleted: true, deletedAt: result.data.deletedAt }
+          : msg
+      ));
+
+      console.log('✅ Message deleted successfully:', messageId);
+    } catch (error) {
+      console.error('❌ Failed to delete message:', error);
+      throw error;
+    }
+  };
+
+  // 处理消息更新（来自WebSocket）
+  const handleMessageUpdated = (updatedMessage: Message) => {
+    setMessages(prev => prev.map(msg =>
+      msg.id === updatedMessage.id ? updatedMessage : msg
+    ));
+  };
+
+  // 处理消息删除（来自WebSocket）
+  const handleMessageDeleted = (deleteData: { id: string; channelId?: string; dmConversationId?: string; isDeleted: boolean; deletedAt?: string }) => {
+    setMessages(prev => prev.map(msg =>
+      msg.id === deleteData.id
+        ? { ...msg, isDeleted: true, deletedAt: deleteData.deletedAt }
+        : msg
+    ));
+  };
+
   // WebSocket 消息监听
   // 只有当 conversation 加载完成后才开始监听，确保使用真实的房间ID
   const shouldUseWebSocket = !isOwnSpace && conversation && !conversation.id.startsWith('self-');
   useWebSocketMessages({
     dmConversationId: shouldUseWebSocket ? conversation.id : undefined,
     currentUserId,
-    onNewMessage: handleNewMessage
+    onNewMessage: handleNewMessage,
+    onMessageUpdated: handleMessageUpdated,
+    onMessageDeleted: handleMessageDeleted
   });
 
   // 记录 WebSocket 状态
@@ -244,6 +318,8 @@ export default function DirectMessageView({
                 className="h-full w-full"
                 dmConversationId={conversation?.id && !conversation.id.startsWith('self-') ? conversation.id : undefined}
                 onScrollPositionChange={handleScrollPositionChange}
+                onEditMessage={handleEditMessage}
+                onDeleteMessage={handleDeleteMessage}
               />
             </div>
 
