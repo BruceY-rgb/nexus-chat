@@ -186,7 +186,7 @@ const propsAreEqual = (
     prevMessage.id !== nextMessage.id ||
     prevMessage.content !== nextMessage.content ||
     prevMessage.isEdited !== nextMessage.isEdited ||
-    prevMessage.isDeleted !== nextProps.isDeleted ||
+    prevMessage.isDeleted !== nextMessage.isDeleted ||
     prevMessage.updatedAt !== nextMessage.updatedAt ||
     prevMessage.user.id !== nextMessage.user.id ||
     prevMessage.user.displayName !== nextMessage.user.displayName ||
