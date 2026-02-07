@@ -141,12 +141,12 @@ export function useWebSocketMessages({
     joinAttempts.current = 0;
   }, [dmConversationId, channelId]); // 移除 socket 依赖
 
-  // 监听新消息
+  // 监听新消息 - 修复版本：只依赖 socket 实例，避免频繁重新挂载
   useEffect(() => {
-    log('info', `Setting up message listeners. Socket: ${!!socket}, Connected: ${isConnected}`);
+    log('info', `Setting up message listeners. Socket: ${!!socket}`);
 
-    if (!socket || !isConnected) {
-      log('warn', 'Socket not ready, message listeners not set up');
+    if (!socket) {
+      log('warn', 'Socket not available, message listeners not set up');
       return;
     }
 
@@ -245,7 +245,7 @@ export function useWebSocketMessages({
       socket.off('message-deleted', handleMessageDeleted);
       log('info', '✅ Socket event listeners cleaned up');
     };
-  }, [socket, isConnected, dmConversationId, channelId]); // 移除 onNewMessage 和 log 依赖
+  }, [socket, dmConversationId, channelId]); // 关键修复：移除 isConnected 依赖，只依赖 socket 和房间ID
 
   // 当房间ID变化时，重新加入房间 - 优化版本：减少依赖变化
   useEffect(() => {

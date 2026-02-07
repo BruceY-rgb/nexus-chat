@@ -32,6 +32,7 @@ model User {
   mentions             MessageMention[]
   messageReads         MessageRead[]
   messages             Message[]
+  reactions            MessageReaction[]
   notificationSettings NotificationSettings?
   notifications        Notification[]
   invitedTeamMembers   TeamMember[]           @relation("TeamMemberInvitedBy")
@@ -153,6 +154,7 @@ model Message {
   attachments      Attachment[]
   mentions         MessageMention[]
   reads            MessageRead[]
+  reactions        MessageReaction[]
   channel          Channel?         @relation(fields: [channelId], references: [id], onDelete: Cascade)
   dmConversation   DMConversation?  @relation(fields: [dmConversationId], references: [id], onDelete: Cascade)
   parentMessage    Message?         @relation("MessageReplies", fields: [parentMessageId], references: [id])
@@ -184,6 +186,19 @@ model MessageRead {
 
   @@unique([messageId, userId])
   @@map("message_reads")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String   @map("message_id")
+  userId    String   @map("user_id")
+  emoji     String   @map("emoji")
+  createdAt DateTime @default(now()) @map("created_at")
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@map("message_reactions")
 }
 
 model Attachment {

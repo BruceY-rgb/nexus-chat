@@ -30,11 +30,14 @@ export async function GET(request: NextRequest) {
       if (typeof (global as any).io !== 'undefined') {
         const io = (global as any).io;
         // 防御性检查：确保 io 实例有效
-        if (io && typeof io === 'object' && io.engine && io.nsps) {
+        if (io && typeof io === 'object' && io.engine) {
           healthCheck.checks.websocket = 'available';
           healthCheck.websocket = {
             connectedClients: io.engine.clientsCount,
-            namespaces: Object.keys(io.nsps).length
+            namespaces: io._nsps ? Object.keys(io._nsps).length : 0,
+            hasEngine: !!io.engine,
+            hasNsps: !!io._nsps,
+            hasNspsLegacy: !!io.nsps
           };
         } else {
           healthCheck.checks.websocket = 'not-initialized';

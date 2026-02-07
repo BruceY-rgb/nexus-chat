@@ -20,6 +20,7 @@ export interface Message {
   attachments?: Attachment[];
   mentions?: MessageMention[];
   reads?: MessageRead[];
+  reactions?: MessageReaction[];
   parentMessage?: Message;
   replies?: Message[];
 }
@@ -54,6 +55,18 @@ export interface MessageRead {
   messageId: string;
   userId: string;
   readAt: string;
+}
+
+export interface MessageReaction {
+  id: string;
+  messageId: string;
+  userId: string;
+  emoji: string;
+  createdAt: string;
+  user: {
+    id: string;
+    displayName: string;
+  };
 }
 
 export interface DMConversation {

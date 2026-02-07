@@ -1,13 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Message } from '@/types/message';
 import { format, formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import MessageRenderer from './MessageRenderer';
-import MessageActions from './MessageActions';
-import MessageEditor from './MessageEditor';
+import MessageItem from './MessageItem';
 import { useReadProgress } from '@/hooks/useReadProgress';
 
 interface MessageListProps {
@@ -53,42 +51,42 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
     messageRefs
   });
 
-  // 处理编辑消息
-  const handleEditMessage = async (messageId: string, content: string) => {
+  // 处理编辑消息 - 使用 useCallback 优化
+  const handleEditMessage = useCallback(async (messageId: string, content: string) => {
     if (onEditMessage) {
       await onEditMessage(messageId, content);
       setEditingMessageId(null); // 退出编辑模式
     }
-  };
+  }, [onEditMessage]);
 
-  // 处理删除消息
-  const handleDeleteMessage = async (messageId: string) => {
+  // 处理删除消息 - 使用 useCallback 优化
+  const handleDeleteMessage = useCallback(async (messageId: string) => {
     if (onDeleteMessage) {
       await onDeleteMessage(messageId);
     }
-  };
+  }, [onDeleteMessage]);
 
-  // 开始编辑消息
-  const startEditing = (message: Message) => {
+  // 开始编辑消息 - 使用 useCallback 优化
+  const startEditing = useCallback((message: Message) => {
     setEditingMessageId(message.id);
-  };
+  }, []);
 
-  // 取消编辑
-  const cancelEditing = () => {
+  // 取消编辑 - 使用 useCallback 优化
+  const cancelEditing = useCallback(() => {
     setEditingMessageId(null);
-  };
+  }, []);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
-  const scrollToMessage = (messageId: string) => {
+  const scrollToMessage = useCallback((messageId: string) => {
     const messageElement = messageRefs.current[messageId];
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       // 滚动定位通过 highlightedMessageId 状态控制视觉效果，无需直接操作 classList
     }
-  };
+  }, [messageRefs]);
 
   // 使用 useImperativeHandle 暴露 highlightMessage 方法
   useImperativeHandle(ref, () => ({
@@ -234,7 +232,8 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
     };
   }, [searchParams]);
 
-  const formatMessageTime = (dateString: string | null | undefined) => {
+  // 格式化消息时间 - 使用 useCallback 优化
+  const formatMessageTime = useCallback((dateString: string | null | undefined) => {
     // 容错处理：如果日期字符串无效，返回 '--'
     if (!dateString || typeof dateString !== 'string') {
       return '--';
@@ -257,9 +256,10 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
     } else {
       return format(date, 'yyyy/MM/dd HH:mm', { locale: zhCN });
     }
-  };
+  }, []);
 
-  const formatMessageDate = (dateString: string | null | undefined) => {
+  // 格式化消息日期 - 使用 useCallback 优化
+  const formatMessageDate = useCallback((dateString: string | null | undefined) => {
     // 容错处理：如果日期字符串无效，返回默认日期
     if (!dateString || typeof dateString !== 'string') {
       return '未知日期';
@@ -284,9 +284,10 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
     } else {
       return format(date, 'yyyy年MM月dd日', { locale: zhCN });
     }
-  };
+  }, []);
 
-  const groupMessagesByDate = (messages: Message[]) => {
+  // 按日期分组消息 - 使用 useMemo 优化，避免每次渲染都重新计算
+  const messageGroups = useMemo(() => {
     const groups: { [key: string]: Message[] } = {};
 
     // 使用 Set 来跟踪已经警告过的无效消息，避免重复日志
@@ -331,7 +332,7 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
     });
 
     return groups;
-  };
+  }, [messages]);
 
   if (isLoading) {
     return (
@@ -379,8 +380,6 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
     );
   }
 
-  const messageGroups = groupMessagesByDate(messages);
-
   return (
     <div
       ref={scrollContainerRef}
@@ -406,113 +405,23 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
                 const isHighlighted = message.id === highlightedMessageId;
 
                 return (
-                  <div key={message.id}>
-                    {/* 阅读指示器 */}
-                    {showReadIndicator === message.id && (
-                      <div className="flex items-center justify-center my-4 animate-fade-in">
-                        <div className="bg-blue-500/90 text-white px-4 py-1 rounded-full text-xs font-medium shadow-lg">
-                          上次阅读到这里
-                        </div>
-                      </div>
-                    )}
-
-                    <div
-                      ref={(el) => {
-                        messageRefs.current[message.id] = el;
-                      }}
-                      className={`message-row w-full relative group transition-all duration-200 hover:bg-slate-800/50 hover:z-[50] ${
-                        isHighlighted ? 'bg-yellow-200/70 rounded-lg shadow-md animate-pulse' : ''
-                      }`}
-                    >
-                      {/* 🧠 智能对侧悬停工具栏 - 脱离内容容器，悬浮在行级别 */}
-                      <MessageActions
-                        message={message}
-                        currentUserId={currentUserId}
-                        isOwnMessage={isOwnMessage}
-                        onEdit={startEditing}
-                        onDelete={handleDeleteMessage}
-                        containerRef={scrollContainerRef}
-                      />
-
-                      {/* 头像 + 消息内容容器 */}
-                      <div className={`flex w-full items-start gap-3 ${
-                        isOwnMessage ? 'flex-row-reverse' : ''
-                      }`}>
-                        {/* 头像 */}
-                        {showAvatar ? (
-                          <img
-                            src={message.user.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${message.user.displayName || message.user.id}&size=40`}
-                            alt={message.user.displayName}
-                            className="w-10 h-10 rounded-sm flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-10 flex-shrink-0" />
-                        )}
-
-                        {/* 消息内容 */}
-                        <div className={`flex-1 ${isOwnMessage ? 'text-right' : ''}`}>
-                          {/* 用户名和时间（仅在需要时显示） */}
-                          {showAvatar && (
-                            <div className={`flex items-baseline gap-2 mb-1 ${
-                              isOwnMessage ? 'justify-end' : ''
-                            }`}>
-                              <span className="font-semibold text-text-primary text-sm">
-                                {message.user.displayName}
-                              </span>
-                              <span className="text-xs text-text-tertiary">
-                                {formatMessageTime(message.createdAt)}
-                              </span>
-                              {/* Edited indicator */}
-                              {message.isEdited && !message.isDeleted && (
-                                <span className="text-xs text-text-tertiary italic">
-                                  (edited)
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          {/* 消息气泡 */}
-                          <div
-                            className={`relative inline-block max-w-[85%] px-4 py-2 rounded-lg ${
-                              isOwnMessage
-                                ? 'bg-primary text-white'
-                                : 'bg-background-component text-text-primary'
-                            } ${
-                              message.isDeleted ? 'opacity-50 italic' : ''
-                            }`}
-                          >
-                            {/* 消息内容 */}
-                            {editingMessageId === message.id ? (
-                              <MessageEditor
-                                message={message}
-                                onSave={handleEditMessage}
-                                onCancel={cancelEditing}
-                                className="mt-1"
-                              />
-                            ) : message.isDeleted ? (
-                              <div className={`italic ${isOwnMessage ? 'text-white' : 'text-text-tertiary'}`}>
-                                This message was deleted
-                              </div>
-                            ) : (
-                              <div className={isOwnMessage ? 'text-white' : 'text-text-primary'}>
-                                <MessageRenderer
-                                  message={message}
-                                  currentUserId={currentUserId}
-                                />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* 回复指示器 */}
-                          {message.parentMessageId && (
-                            <div className="mt-1 text-xs text-text-tertiary">
-                              已回复
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <MessageItem
+                    key={message.id}
+                    message={message}
+                    currentUserId={currentUserId}
+                    isOwnMessage={isOwnMessage}
+                    showAvatar={showAvatar}
+                    isHighlighted={isHighlighted}
+                    showReadIndicator={showReadIndicator}
+                    editingMessageId={editingMessageId}
+                    onStartEditing={startEditing}
+                    onSaveEdit={handleEditMessage}
+                    onCancelEdit={cancelEditing}
+                    onDeleteMessage={handleDeleteMessage}
+                    formatMessageTime={formatMessageTime}
+                    messageRefs={messageRefs}
+                    scrollContainerRef={scrollContainerRef}
+                  />
                 );
               })}
             </div>

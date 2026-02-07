@@ -64,10 +64,14 @@ export function useSocket(): UseSocketReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const { user } = useAuth();
+
+  // 使用 useRef 持久化 Socket 实例，防止重复创建
+  const socketRef = useRef<Socket | null>(null);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
   const reconnectInterval = useRef<NodeJS.Timeout | null>(null);
   const isConnecting = useRef(false);
+  const shouldCleanup = useRef(false);
 
   // 获取 token 从 cookie (ws_token 供 WebSocket 使用)
   const getToken = useCallback(() => {
@@ -83,8 +87,8 @@ export function useSocket(): UseSocketReturn {
   }, []);
 
   const connect = useCallback(() => {
-    // 防止重复连接
-    if (isConnecting.current || socket?.connected) {
+    // 防止重复连接 - 使用 socketRef 检查
+    if (isConnecting.current || socketRef.current?.connected) {
       console.log(`🔌 [connect] Already connected or connecting, skipping`);
       return;
     }
@@ -94,7 +98,7 @@ export function useSocket(): UseSocketReturn {
       hasToken: !!token,
       hasUser: !!user,
       userId: user?.id,
-      existingSocket: !!socket,
+      existingSocket: !!socketRef.current,
       tokenLength: token ? token.length : 0
     });
 
@@ -195,23 +199,27 @@ export function useSocket(): UseSocketReturn {
       isConnecting.current = false;
     });
 
+    // 同时更新 state 和 ref
+    socketRef.current = socketInstance;
     setSocket(socketInstance);
     console.log(`✅ [connect] Socket instance created and set to state:`, {
       socketId: socketInstance.id,
       connected: socketInstance.connected
     });
-  }, [user, getToken, socket]);
+  }, [user?.id, getToken]); // 修复依赖：只依赖 user?.id，避免循环
 
   const disconnect = useCallback(() => {
-    if (socket) {
+    if (socketRef.current) {
       console.log('🔌 Manually disconnecting WebSocket');
       isConnecting.current = false;
-      socket.disconnect();
+      shouldCleanup.current = true; // 标记需要清理
+      socketRef.current.disconnect();
+      socketRef.current = null;
       setSocket(null);
       setIsConnected(false);
       setConnectionStatus('disconnected');
     }
-  }, [socket]);
+  }, []); // 修复依赖：空依赖数组
 
   // 强制重新连接
   const forceReconnect = useCallback(() => {
@@ -229,15 +237,15 @@ export function useSocket(): UseSocketReturn {
       hasToken: !!token,
       hasUser: !!user,
       isConnecting: isConnecting.current,
-      hasSocket: !!socket,
-      socketId: socket?.id,
-      isSocketConnected: socket?.connected,
+      hasSocketRef: !!socketRef.current,
+      socketId: socketRef.current?.id,
+      isSocketConnected: socketRef.current?.connected,
       userId: user?.id
     });
 
     // 只有在有token和用户，且当前未连接且未在连接中时才连接
-    // 关键修复：使用 socket?.connected 状态而非整个 socket 对象
-    if (token && user && !socket?.connected && !isConnecting.current) {
+    // 关键修复：使用 socketRef.current?.connected 状态
+    if (token && user && !socketRef.current?.connected && !isConnecting.current) {
       console.log(`🔌 [useSocket] Starting connection...`);
       // 使用setTimeout避免在渲染阶段直接调用connect
       const timeoutId = setTimeout(() => {
@@ -253,74 +261,86 @@ export function useSocket(): UseSocketReturn {
         reconnectInterval.current = null;
       }
     };
-  }, [user, getToken]); // 关键修复：移除 socket?.connected 和 connect 依赖，避免循环触发
+  }, [user?.id, getToken, connect]); // 依赖：user?.id, getToken, connect
 
   // 清理 - 改进的清理逻辑，防止内存泄漏
   useEffect(() => {
     return () => {
-      console.log('🔌 [useSocket] Cleaning up socket connection');
-      if (socket) {
+      console.log('🔌 [useSocket] Cleaning up socket connection', {
+        hasSocket: !!socketRef.current,
+        shouldCleanup: shouldCleanup.current
+      });
+
+      // 只有在明确标记需要清理时才清理
+      if (shouldCleanup.current && socketRef.current) {
+        console.log('🔌 [useSocket] Performing full cleanup');
         // 移除所有事件监听器
-        socket.removeAllListeners();
+        socketRef.current.removeAllListeners();
         // 断开连接
-        socket.disconnect();
+        socketRef.current.disconnect();
+        // 清理引用
+        socketRef.current = null;
         // 设置为 null
         setSocket(null);
-      }
-      // 重置状态
-      setIsConnected(false);
-      setConnectionStatus('disconnected');
-      isConnecting.current = false;
-      // 清理重连定时器
-      if (reconnectInterval.current) {
-        clearInterval(reconnectInterval.current);
-        reconnectInterval.current = null;
+        // 重置状态
+        setIsConnected(false);
+        setConnectionStatus('disconnected');
+        isConnecting.current = false;
+        // 清理重连定时器
+        if (reconnectInterval.current) {
+          clearInterval(reconnectInterval.current);
+          reconnectInterval.current = null;
+        }
+        // 重置清理标记
+        shouldCleanup.current = false;
+      } else {
+        console.log('🔌 [useSocket] Skipping cleanup (socketRef.current:', socketRef.current, ')');
       }
     };
   }, []); // 空依赖数组，只在组件卸载时执行一次
 
-  // Channel operations
+  // Channel operations - 使用 socketRef 避免依赖 socket state
   const joinChannel = useCallback((channelId: string) => {
-    if (socket && isConnected) {
+    if (socketRef.current && isConnected) {
       console.log(`📥 Joining channel: ${channelId}`);
-      socket.emit('join-channel', channelId);
+      socketRef.current.emit('join-channel', channelId);
     }
-  }, [socket, isConnected]);
+  }, [isConnected]); // 只依赖 isConnected
 
   const leaveChannel = useCallback((channelId: string) => {
-    if (socket && isConnected) {
+    if (socketRef.current && isConnected) {
       console.log(`📤 Leaving channel: ${channelId}`);
-      socket.emit('leave-channel', channelId);
+      socketRef.current.emit('leave-channel', channelId);
     }
-  }, [socket, isConnected]);
+  }, [isConnected]); // 只依赖 isConnected
 
   // 私聊操作
   const joinDM = useCallback((conversationId: string) => {
-    if (socket && isConnected) {
+    if (socketRef.current && isConnected) {
       console.log(`📥 Joining DM: ${conversationId}`);
-      socket.emit('join-dm', conversationId);
+      socketRef.current.emit('join-dm', conversationId);
     }
-  }, [socket, isConnected]);
+  }, [isConnected]); // 只依赖 isConnected
 
   const leaveDM = useCallback((conversationId: string) => {
-    if (socket && isConnected) {
+    if (socketRef.current && isConnected) {
       console.log(`📤 Leaving DM: ${conversationId}`);
-      socket.emit('leave-dm', conversationId);
+      socketRef.current.emit('leave-dm', conversationId);
     }
-  }, [socket, isConnected]);
+  }, [isConnected]); // 只依赖 isConnected
 
   // 打字指示器
   const sendTypingStart = useCallback((data: { channelId?: string; dmConversationId?: string }) => {
-    if (socket && isConnected) {
-      socket.emit('typing-start', data);
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('typing-start', data);
     }
-  }, [socket, isConnected]);
+  }, [isConnected]); // 只依赖 isConnected
 
   const sendTypingStop = useCallback((data: { channelId?: string; dmConversationId?: string }) => {
-    if (socket && isConnected) {
-      socket.emit('typing-stop', data);
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('typing-stop', data);
     }
-  }, [socket, isConnected]);
+  }, [isConnected]); // 只依赖 isConnected
 
   // Message read
   const markMessagesAsRead = useCallback((data: {
@@ -328,10 +348,10 @@ export function useSocket(): UseSocketReturn {
     channelId?: string;
     dmConversationId?: string;
   }) => {
-    if (socket && isConnected) {
-      socket.emit('message-read', data);
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit('message-read', data);
     }
-  }, [socket, isConnected]);
+  }, [isConnected]); // 只依赖 isConnected
 
   return {
     socket,

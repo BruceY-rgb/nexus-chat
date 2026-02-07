@@ -44,7 +44,17 @@ app.prepare().then(() => {
   const io = setupWebSocket(httpServer);
 
   // 将 io 实例存储到全局变量，以便 API 路由可以访问
-  global.io = io;
+  (global as any).io = io;
+  (process as any).global = (global as any).io;
+
+  // 添加调试日志
+  console.log('🔧 [Setup] Global io instance set:', {
+    globalExists: typeof (global as any).io !== 'undefined',
+    processExists: typeof (process as any).global !== 'undefined',
+    hasEngine: !!(global as any).io?.engine,
+    hasNsps: !!(global as any).io?.nsps,
+    socketCount: (global as any).io?.engine?.clientsCount
+  });
 
   // 错误处理
   httpServer
