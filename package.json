@@ -17,6 +17,7 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:enhanced": "tsx scripts/seed-enhanced.ts",
     "db:seed:quick": "tsx scripts/quick-seed.ts",
+    "db:seed:large": "tsx scripts/seed-large.ts",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
