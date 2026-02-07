@@ -1066,22 +1066,35 @@ async function main() {
     console.log('💬 Creating DM conversations...');
     const dmConversations = [];
 
-    for (let i = 0; i < SEED_CONFIG.DM_CONVERSATION_COUNT; i++) {
-      const participants = randomSample(createdUsers, 2);
+    // 预先计算所有可能的用户对
+    const allUserPairs: [any, any][] = [];
+    for (let i = 0; i < createdUsers.length; i++) {
+      for (let j = i + 1; j < createdUsers.length; j++) {
+        allUserPairs.push([createdUsers[i], createdUsers[j]]);
+      }
+    }
+
+    // 随机打乱用户对
+    const shuffledPairs = randomSample(allUserPairs, allUserPairs.length);
+
+    // 选择所需数量的用户对
+    const selectedPairs = shuffledPairs.slice(0, SEED_CONFIG.DM_CONVERSATION_COUNT);
+
+    for (const [user1, user2] of selectedPairs) {
       const dmConv = await prisma.dMConversation.create({
         data: {
-          createdById: participants[0].id,
+          createdById: user1.id,
           members: {
             create: [
-              { userId: participants[0].id },
-              { userId: participants[1].id },
+              { userId: user1.id },
+              { userId: user2.id },
             ],
           },
         },
       });
       dmConversations.push(dmConv);
     }
-    console.log(`✅ Created ${dmConversations.length} DM conversations\n`);
+    console.log(`✅ Created ${dmConversations.length} DM conversations (${selectedPairs.length} unique pairs)\n`);
 
     // 生成消息
     const messageGenerator = new MessageGenerator();
