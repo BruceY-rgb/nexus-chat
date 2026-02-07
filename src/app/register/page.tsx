@@ -4,6 +4,9 @@
 // Register page
 // =====================================================
 
+// 强制动态渲染 - 因为这个页面使用了客户端状态管理
+export const dynamic = 'force-dynamic';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';

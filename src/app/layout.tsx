@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   description: 'A real-time chat application',
 };
 
+// 强制动态渲染以避免静态生成问题
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: {

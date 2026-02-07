@@ -1128,8 +1128,16 @@ async function main() {
     // 生成线程回复
     console.log('🧵 Creating thread replies...');
     const threadCount = Math.floor(createdMessages.length * SEED_CONFIG.THREAD_REPLY_PROBABILITY);
-    for (let i = 0; i < threadCount; i++) {
-      const parentMessage = randomChoice(createdMessages.filter(m => !m.parentMessageId));
+
+    // 先查询已创建的消息（它们现在有ID了）
+    const savedMessages = await prisma.message.findMany({
+      where: {
+        parentMessageId: null, // 只选择没有父消息的消息
+      },
+      take: threadCount, // 限制查询数量
+    });
+
+    for (const parentMessage of savedMessages) {
       if (parentMessage) {
         const replyUsers = createdUsers.filter(u => u.id !== parentMessage.userId);
         const replyUser = randomChoice(replyUsers);

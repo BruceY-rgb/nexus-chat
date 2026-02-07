@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 
+// 强制动态渲染 - 因为这个API使用了 cookies
+export const dynamic = 'force-dynamic';
+
 // 获取活跃DM会话列表 API（按最后消息时间排序）
 export async function GET(request: NextRequest) {
   try {

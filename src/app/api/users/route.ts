@@ -4,6 +4,10 @@ import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 
 // 获取用户列表 API
+
+// 强制动态渲染 - 因为这个API使用了 cookies
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('auth_token')?.value;
