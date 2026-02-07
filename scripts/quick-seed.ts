@@ -12,17 +12,37 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+// 环境检测
+const isProduction = process.env.NODE_ENV === 'production';
+const isDokploy = !!process.env.DOKPLOY || !!process.env.DOCKER;
+
+// 设置日志级别
+const logLevel = {
+  showProgress: !isProduction || process.env.SEED_VERBOSE === 'true',
+};
+
+const prisma = new PrismaClient({
+  log: isProduction ? ['error'] : ['query', 'info', 'warn'],
+});
 
 async function seed() {
-  console.log('🌱 开始快速填充Mock数据...\n');
+  // 环境信息日志
+  console.log('🌱 Seeding started (Quick Mode)...');
+  console.log(`📦 Environment: ${isProduction ? 'Production' : 'Development'}${isDokploy ? ' (Dokploy)' : ''}`);
+  console.log(`🕒 Timestamp: ${new Date().toISOString()}`);
+  console.log('─'.repeat(50));
 
   try {
     // 检查是否已有数据
     const userCount = await prisma.user.count();
     if (userCount > 0) {
       console.log(`⚠️  数据库中已有 ${userCount} 个用户，跳过填充`);
+      console.log('✅ Quick seed completed (data already exists)');
       return;
+    }
+
+    if (logLevel.showProgress) {
+      console.log('🌱 开始快速填充Mock数据...\n');
     }
 
     // 创建用户
@@ -139,9 +159,12 @@ async function seed() {
 
   } catch (error) {
     console.error('\n❌ 填充失败:', error);
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'Unknown error');
     throw error;
   } finally {
     await prisma.$disconnect();
+    console.log('🔌 Database disconnected');
+    console.log('✅ Quick seed completed successfully');
   }
 }
 

@@ -8,7 +8,18 @@ import * as bcrypt from 'bcryptjs';
 // 定义消息类型
 type MessageType = 'text' | 'image' | 'file' | 'system';
 
-const prisma = new PrismaClient();
+// 环境检测
+const isProduction = process.env.NODE_ENV === 'production';
+const isDokploy = !!process.env.DOKPLOY || !!process.env.DOCKER;
+
+// 设置日志级别
+const logLevel = {
+  showProgress: !isProduction || process.env.SEED_VERBOSE === 'true',
+};
+
+const prisma = new PrismaClient({
+  log: isProduction ? ['error'] : ['query', 'info', 'warn'],
+});
 
 interface SeedData {
   users: {
@@ -232,9 +243,16 @@ const seedData: SeedData = {
 };
 
 async function main() {
-  console.log('🌱 开始填充数据库...');
+  // 环境信息日志
+  console.log('🌱 Seeding started...');
+  console.log(`📦 Environment: ${isProduction ? 'Production' : 'Development'}${isDokploy ? ' (Dokploy)' : ''}`);
+  console.log(`🕒 Timestamp: ${new Date().toISOString()}`);
+  console.log('─'.repeat(50));
 
   try {
+    if (logLevel.showProgress) {
+      console.log('🌱 开始填充数据库...');
+    }
     // 清空现有数据
     console.log('🧹 清空现有数据...');
     await prisma.notification.deleteMany();
@@ -425,9 +443,12 @@ async function main() {
 
   } catch (error) {
     console.error('❌ 填充数据时出错:', error);
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'Unknown error');
     throw error;
   } finally {
     await prisma.$disconnect();
+    console.log('🔌 Database disconnected');
+    console.log('✅ Seeding completed successfully');
   }
 }
 
