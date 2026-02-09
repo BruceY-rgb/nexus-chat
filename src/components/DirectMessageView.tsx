@@ -8,9 +8,11 @@ import DMTabs from './DMTabs';
 import MySpaceView from './MySpaceView';
 import MessageList, { MessageListRef } from './MessageList';
 import DMMessageInput from './DMMessageInput';
+import ThreadPanel from './ThreadPanel';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useWebSocketMessages } from '@/hooks/useWebSocketMessages';
 import { useSocket } from '@/hooks/useSocket';
+import { useThreadStore } from '@/stores/threadStore';
 
 interface DirectMessageViewProps {
   member: TeamMember;
@@ -29,6 +31,9 @@ export default function DirectMessageView({
   const { markAsRead } = useUnreadCount();
   const { socket, isConnected, connect, connectionStatus } = useSocket();
   const messageListRef = useRef<MessageListRef>(null);
+
+  // 线程状态管理
+  const { setActiveThread, activeThreadId, activeThreadMessage, threadPanelOpen, closeThread } = useThreadStore();
 
   // 用于跟踪是否在消息列表底部
   const isAtBottomRef = useRef(true);
@@ -68,6 +73,26 @@ export default function DirectMessageView({
   const handleScrollPositionChange = (isAtBottom: boolean) => {
     isAtBottomRef.current = isAtBottom;
   };
+
+  // 处理线程回复
+  const handleThreadReply = useCallback((message: Message) => {
+    // 设置活动线程并打开线程面板
+    setActiveThread(message.id, message);
+  }, [setActiveThread]);
+
+  // ESC键关闭线程面板
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && activeThreadId) {
+        setActiveThread(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscKey);
+    return () => {
+      window.removeEventListener('keydown', handleEscKey);
+    };
+  }, [activeThreadId, setActiveThread]);
 
   // WebSocket 消息监听
   const handleNewMessage = (newMessage: Message) => {
@@ -320,8 +345,19 @@ export default function DirectMessageView({
                 onScrollPositionChange={handleScrollPositionChange}
                 onEditMessage={handleEditMessage}
                 onDeleteMessage={handleDeleteMessage}
+                onThreadReply={handleThreadReply}
               />
             </div>
+
+            {/* 线程面板：右侧滑出面板，宽度360px */}
+            {threadPanelOpen && (
+              <ThreadPanel
+                isOpen={threadPanelOpen}
+                onClose={closeThread}
+                threadMessage={activeThreadMessage}
+                currentUserId={currentUserId}
+              />
+            )}
 
             {error && (
               <div className="flex-shrink-0 p-4 bg-red-500/10 text-red-500 text-center">

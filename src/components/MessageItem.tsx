@@ -20,6 +20,7 @@ interface MessageItemProps {
   onSaveEdit: (messageId: string, content: string) => Promise<void>;
   onCancelEdit: () => void;
   onDeleteMessage: (messageId: string) => Promise<void>;
+  onThreadReply: (message: Message) => void;
   formatMessageTime: (dateString: string | null | undefined) => string;
   messageRefs: React.MutableRefObject<{ [key: string]: HTMLDivElement | null }>;
   scrollContainerRef: React.RefObject<HTMLDivElement>;
@@ -41,6 +42,7 @@ function MessageItemBase({
   onSaveEdit,
   onCancelEdit,
   onDeleteMessage,
+  onThreadReply,
   formatMessageTime,
   messageRefs,
   scrollContainerRef
@@ -74,6 +76,7 @@ function MessageItemBase({
           isOwnMessage={isOwnMessage}
           onEdit={onStartEditing}
           onDelete={onDeleteMessage}
+          onThreadReply={onThreadReply}
           containerRef={scrollContainerRef}
         />
 
@@ -102,12 +105,12 @@ function MessageItemBase({
                 <span className="font-semibold text-text-primary text-sm">
                   {message.user.displayName}
                 </span>
-                <span className="text-xs text-text-tertiary">
+                <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
                   {formatMessageTime(message.createdAt)}
                 </span>
                 {/* Edited indicator */}
                 {message.isEdited && !message.isDeleted && (
-                  <span className="text-xs text-text-tertiary italic">
+                  <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
                     (edited)
                   </span>
                 )}
@@ -146,14 +149,14 @@ function MessageItemBase({
               )}
             </div>
 
-            {/* 回复指示器 */}
+            {/* Reply indicator */}
             {message.parentMessageId && (
               <div className="mt-1 text-xs text-text-tertiary">
-                已回复
+                Replied
               </div>
             )}
 
-            {/* 表情反应气泡 */}
+            {/* Reaction badges */}
             <ReactionBadges
               reactions={reactions}
               currentUserId={currentUserId}
@@ -208,6 +211,7 @@ const propsAreEqual = (
     prevProps.onSaveEdit !== nextProps.onSaveEdit ||
     prevProps.onCancelEdit !== nextProps.onCancelEdit ||
     prevProps.onDeleteMessage !== nextProps.onDeleteMessage ||
+    prevProps.onThreadReply !== nextProps.onThreadReply ||
     prevProps.formatMessageTime !== nextProps.formatMessageTime;
 
   // Refs are stable across renders, no need to compare

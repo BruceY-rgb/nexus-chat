@@ -9,6 +9,9 @@ interface ExtendedSocketIOServer extends SocketIOServer {
   broadcastMessageUpdate: (message: any, channelId?: string, dmConversationId?: string) => void;
   broadcastMessageDelete: (messageId: string, channelId?: string, dmConversationId?: string) => void;
   broadcastNewNotification: (notification: any, userId: string) => void;
+  broadcastThreadReply: (reply: any, threadId: string, channelId?: string, dmConversationId?: string) => void;
+  broadcastThreadReplyUpdate: (reply: any, threadId: string, channelId?: string, dmConversationId?: string) => void;
+  broadcastThreadReplyDelete: (replyId: string, threadId: string, channelId?: string, dmConversationId?: string) => void;
 }
 
 // 用户连接信息
@@ -474,6 +477,53 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
   // 公共方法：广播新通知
   io.broadcastNewNotification = (notification: any, userId: string) => {
     io.to(`user:${userId}`).emit('new-notification', notification);
+  };
+
+  // 公共方法：广播线程回复
+  io.broadcastThreadReply = (reply: any, threadId: string, channelId?: string, dmConversationId?: string) => {
+    if (channelId) {
+      io.to(`channel:${channelId}`).emit('thread-reply-created', {
+        threadId,
+        message: reply,
+        replyCount: reply.threadReplyCount || 0
+      });
+    } else if (dmConversationId) {
+      io.to(`dm:${dmConversationId}`).emit('thread-reply-created', {
+        threadId,
+        message: reply,
+        replyCount: reply.threadReplyCount || 0
+      });
+    }
+  };
+
+  // 公共方法：广播线程回复更新
+  io.broadcastThreadReplyUpdate = (reply: any, threadId: string, channelId?: string, dmConversationId?: string) => {
+    if (channelId) {
+      io.to(`channel:${channelId}`).emit('thread-reply-updated', {
+        threadId,
+        message: reply
+      });
+    } else if (dmConversationId) {
+      io.to(`dm:${dmConversationId}`).emit('thread-reply-updated', {
+        threadId,
+        message: reply
+      });
+    }
+  };
+
+  // 公共方法：广播线程回复删除
+  io.broadcastThreadReplyDelete = (replyId: string, threadId: string, channelId?: string, dmConversationId?: string) => {
+    if (channelId) {
+      io.to(`channel:${channelId}`).emit('thread-reply-deleted', {
+        threadId,
+        replyId
+      });
+    } else if (dmConversationId) {
+      io.to(`dm:${dmConversationId}`).emit('thread-reply-deleted', {
+        threadId,
+        replyId
+      });
+    }
   };
 
   console.log('✅ WebSocket server initialized');

@@ -67,6 +67,11 @@
   --font-size-lg: 18px;
   --font-size-xl: 20px;
 
+  /* === 统一文本大小 === */
+  --message-text-size: 14px;     /* 统一消息文本大小 */
+  --emoji-text-size: 14px;      /* 统一Emoji显示大小 */
+  --timestamp-text-size: 14px;   /* 统一时间戳大小 */
+
   /* === 行高规范 === */
   --line-height-tight: 1.25;
   --line-height-normal: 1.5;                /* 消息行高必须为 1.5 */

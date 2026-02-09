@@ -9,10 +9,11 @@ import { parseMentions, extractUsernames } from './mention-parser';
 
 export interface CreateNotificationParams {
   userId: string;
-  type: 'mention' | 'dm' | 'channel_invite' | 'system';
+  type: 'mention' | 'dm' | 'channel_invite' | 'system' | 'thread_reply' | 'thread_mention';
   title: string;
   content?: string;
   relatedMessageId?: string;
+  relatedThreadId?: string;
   relatedChannelId?: string;
   relatedDmConversationId?: string;
 }
@@ -24,6 +25,7 @@ export interface NotificationWithUser {
   title: string;
   content?: string | null;
   relatedMessageId?: string | null;
+  relatedThreadId?: string | null;
   relatedChannelId?: string | null;
   relatedDmConversationId?: string | null;
   isRead: boolean;
@@ -64,6 +66,7 @@ export class NotificationService {
         title: params.title,
         content: params.content,
         relatedMessageId: params.relatedMessageId,
+        relatedThreadId: params.relatedThreadId,
         relatedChannelId: params.relatedChannelId,
         relatedDmConversationId: params.relatedDmConversationId,
       },
@@ -300,6 +303,7 @@ export class NotificationService {
         title: notification.title,
         content: notification.content,
         relatedMessageId: notification.relatedMessageId,
+        relatedThreadId: notification.relatedThreadId,
         relatedChannelId: notification.relatedChannelId,
         relatedDmConversationId: notification.relatedDmConversationId,
         isRead: notification.isRead,
@@ -310,6 +314,127 @@ export class NotificationService {
       console.log(`📡 Broadcasted notification ${notification.id} to user ${notification.userId}`);
     } catch (error) {
       console.error('Error broadcasting notification:', error);
+    }
+  }
+
+  /**
+   * 为线程回复创建通知
+   * 当用户回复线程时，为线程参与者创建通知
+   * @param replyId 回复ID
+   * @param threadId 线程ID（父消息ID）
+   * @param senderId 发送者ID
+   * @param content 回复内容
+   * @param channelId 频道ID（可选）
+   * @param dmConversationId 私聊会话ID（可选）
+   */
+  async createThreadReplyNotification(
+    replyId: string,
+    threadId: string,
+    senderId: string,
+    content: string,
+    channelId?: string,
+    dmConversationId?: string
+  ): Promise<void> {
+    try {
+      // 获取线程的父消息
+      const parentMessage = await prisma.message.findUnique({
+        where: { id: threadId },
+        include: {
+          channel: {
+            select: {
+              id: true,
+              name: true,
+              members: {
+                select: {
+                  userId: true
+                }
+              }
+            }
+          },
+          dmConversation: {
+            select: {
+              id: true,
+              members: {
+                select: {
+                  userId: true
+                }
+              }
+            }
+          },
+          replies: {
+            select: {
+              userId: true
+            },
+            distinct: ['userId']
+          }
+        }
+      });
+
+      if (!parentMessage) {
+        return;
+      }
+
+      // 获取发送者信息
+      const sender = await prisma.user.findUnique({
+        where: { id: senderId },
+        select: {
+          id: true,
+          displayName: true,
+        },
+      });
+
+      if (!sender) {
+        return;
+      }
+
+      // 获取所有线程参与者（父消息作者 + 所有回复者，排除发送者）
+      const participants = new Set<string>();
+
+      // 添加父消息作者
+      if (parentMessage.userId) {
+        participants.add(parentMessage.userId);
+      }
+
+      // 添加所有回复者
+      parentMessage.replies.forEach(reply => {
+        if (reply.userId) {
+          participants.add(reply.userId);
+        }
+      });
+
+      // 移除发送者自己
+      participants.delete(senderId);
+
+      // 为每个参与者创建通知
+      for (const participantId of participants) {
+        let title = `${sender.displayName} replied to your thread`;
+        let notificationContent = content.substring(0, 100);
+
+        // 如果是频道消息，添加频道信息
+        if (parentMessage.channelId) {
+          const channel = parentMessage.channel;
+          if (channel) {
+            title = `${sender.displayName} 在 #${channel.name} 的线程中回复了`;
+          }
+        } else if (parentMessage.dmConversationId) {
+          title = `${sender.displayName} 在线程中回复了你`;
+        }
+
+        await this.createNotification({
+          userId: participantId,
+          type: 'thread_reply',
+          title,
+          content: notificationContent,
+          relatedMessageId: replyId,
+          relatedThreadId: threadId,
+          relatedChannelId: channelId,
+          relatedDmConversationId: dmConversationId,
+        });
+      }
+
+      console.log(`🧵 Created thread reply notifications for thread ${threadId}`);
+    } catch (error) {
+      console.error('Error creating thread reply notification:', error);
     }
   }
 }

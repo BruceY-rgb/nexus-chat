@@ -9,7 +9,9 @@ import { TeamMember } from '@/types';
 import MessageList, { MessageListRef } from './MessageList';
 import DMMessageInput from './DMMessageInput';
 import SearchMessagesModal from './SearchMessagesModal';
+import ThreadPanel from './ThreadPanel';
 import { useWebSocketMessages } from '@/hooks/useWebSocketMessages';
+import { useThreadStore } from '@/stores/threadStore';
 
 interface ChannelViewProps {
   channel: Channel;
@@ -40,6 +42,9 @@ export default function ChannelView({
   const [isClearing, setIsClearing] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
+  // 线程状态管理
+  const { setActiveThread, activeThreadId, activeThreadMessage, threadPanelOpen, closeThread } = useThreadStore();
+
   // 用于跟踪是否在消息列表底部
   const isAtBottomRef = useRef(true);
 
@@ -47,6 +52,12 @@ export default function ChannelView({
   const handleScrollPositionChange = (isAtBottom: boolean) => {
     isAtBottomRef.current = isAtBottom;
   };
+
+  // 处理线程回复
+  const handleThreadReply = useCallback((message: Message) => {
+    // 设置活动线程并打开线程面板
+    setActiveThread(message.id, message);
+  }, [setActiveThread]);
 
   // WebSocket 消息监听
   const handleNewMessage = (newMessage: Message) => {
@@ -89,6 +100,20 @@ export default function ChannelView({
       window.history.replaceState({}, '', newUrl);
     }
   }, [channel?.id]);
+
+  // ESC键关闭线程面板
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && activeThreadId) {
+        setActiveThread(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscKey);
+    return () => {
+      window.removeEventListener('keydown', handleEscKey);
+    };
+  }, [activeThreadId, setActiveThread]);
 
   // 获取频道成员
   useEffect(() => {
@@ -527,8 +552,19 @@ export default function ChannelView({
                   onScrollPositionChange={handleScrollPositionChange}
                   onEditMessage={handleEditMessage}
                   onDeleteMessage={handleDeleteMessage}
+                  onThreadReply={handleThreadReply}
                 />
               </div>
+
+              {/* 线程面板：右侧滑出面板，宽度360px */}
+              {threadPanelOpen && (
+                <ThreadPanel
+                  isOpen={threadPanelOpen}
+                  onClose={closeThread}
+                  threadMessage={activeThreadMessage}
+                  currentUserId={user?.id || ''}
+                />
+              )}
 
               {/* 3. 输入框：使用 flex-shrink-0 确保它被推到最底部，永不上移 */}
               <div className="flex-shrink-0 p-4 bg-background border-t">

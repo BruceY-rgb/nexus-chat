@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Message } from '@/types/message';
+import { TeamMember } from '@/types';
 import MentionToken from './MentionToken';
 import AttachmentCard from './AttachmentCard';
+import MarkdownRenderer from './MarkdownRenderer';
+import { MarkdownProcessor } from '@/lib/markdown';
 import { X } from 'lucide-react';
 
 interface MessageRendererProps {
@@ -152,6 +155,11 @@ export default function MessageRenderer({
     alt: imageAttachments[selectedImageIndex].fileName
   } : null;
 
+  // 智能检测是否使用Markdown渲染
+  const shouldUseMarkdown = useMemo(() => {
+    return MarkdownProcessor.shouldUseMarkdown(message.content || '');
+  }, [message.content]);
+
   // 导航到上一张图片
   const goToPreviousImage = () => {
     if (selectedImageIndex !== null && selectedImageIndex > 0) {
@@ -248,9 +256,9 @@ export default function MessageRenderer({
     const isPureEmoji = text.replace(/\s/g, '').match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})+$/u);
 
     if (isPureEmoji) {
-      // 纯 Emoji 消息：Jumboji 效果
+      // 纯 Emoji 消息：统一14px字体大小
       return (
-        <span style={{ fontSize: '2.5rem', lineHeight: '1.2' }}>
+        <span style={{ fontSize: '14px', lineHeight: '1.5' }}>
           {text}
         </span>
       );
@@ -266,22 +274,26 @@ export default function MessageRenderer({
           if (isEmoji) {
             // 重置正则状态
             emojiRegex.lastIndex = 0;
-            // Emoji 字符：中等尺寸
+            // Emoji 字符：统一14px字体大小
             return (
               <span
                 key={index}
                 style={{
-                  fontSize: '1.5rem',
+                  fontSize: '14px',
                   verticalAlign: 'middle',
-                  lineHeight: '1.2'
+                  lineHeight: '1.5'
                 }}
               >
                 {char}
               </span>
             );
           }
-          // 普通文本字符
-          return <span key={index}>{char}</span>;
+          // 普通文本字符：统一14px字体大小
+          return (
+            <span key={index} style={{ fontSize: '14px', lineHeight: '1.5' }}>
+              {char}
+            </span>
+          );
         })}
       </>
     );
@@ -550,7 +562,16 @@ export default function MessageRenderer({
   return (
     <div className={className}>
       <div className="text-sm whitespace-pre-wrap break-words flex flex-wrap items-center">
-        {renderMessageContent()}
+        {shouldUseMarkdown ? (
+          <MarkdownRenderer
+            content={message.content || ''}
+            members={members as TeamMember[]}
+            currentUserId={currentUserId}
+            className="text-sm"
+          />
+        ) : (
+          renderMessageContent()
+        )}
       </div>
 
       {/* 渲染图片附件 */}

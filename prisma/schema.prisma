@@ -148,6 +148,9 @@ model Message {
   userId           String           @map("user_id")
   isEdited         Boolean          @default(false) @map("is_edited")
   isDeleted        Boolean          @default(false) @map("is_deleted")
+  threadReplyCount Int              @default(0) @map("thread_reply_count")
+  lastReplyAt      DateTime?        @map("last_reply_at")
+  isThreadRoot     Boolean          @default(false) @map("is_thread_root")
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
   deletedAt        DateTime?        @map("deleted_at")
@@ -161,6 +164,8 @@ model Message {
   replies          Message[]        @relation("MessageReplies")
   user             User             @relation(fields: [userId], references: [id])
 
+  @@index([parentMessageId])
+  @@index([isThreadRoot])
   @@map("messages")
 }
 
@@ -225,6 +230,7 @@ model Notification {
   title                   String    @map("title")
   content                 String?   @map("content")
   relatedMessageId        String?   @map("related_message_id")
+  relatedThreadId         String?   @map("related_thread_id")
   relatedChannelId        String?   @map("related_channel_id")
   relatedDmConversationId String?   @map("related_dm_conversation_id")
   isRead                  Boolean   @default(false) @map("is_read")
@@ -232,6 +238,7 @@ model Notification {
   createdAt               DateTime  @default(now()) @map("created_at")
   user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([relatedThreadId])
   @@map("notifications")
 }
 

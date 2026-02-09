@@ -25,10 +25,14 @@ import {
   X,
   Upload,
   Folder,
-  Loader2
+  Loader2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import MentionAutocomplete from './MentionAutocomplete';
 import { TeamMember } from '@/types';
+import { useMarkdownFormatting } from '@/hooks/useMarkdownFormatting';
+import MarkdownRenderer from './MarkdownRenderer';
 
 interface DMMessageInputProps {
   placeholder?: string;
@@ -38,6 +42,8 @@ interface DMMessageInputProps {
   members?: TeamMember[]; // 成员列表，默认为空数组
   currentUserId?: string;
   onMessageSent?: (message?: Message) => void;
+  compact?: boolean; // 简化模式：只显示Emoji、Mention、More Options按钮
+  parentMessageId?: string; // 线程回复的父消息ID
 }
 
 interface UploadedFile {
@@ -56,7 +62,9 @@ export default function DMMessageInput({
   dmConversationId,
   members = [],
   currentUserId,
-  onMessageSent
+  onMessageSent,
+  compact = false,
+  parentMessageId
 }: DMMessageInputProps) {
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -64,6 +72,16 @@ export default function DMMessageInput({
   const [isUploading, setIsUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  // Markdown preview state
+  const [showPreview, setShowPreview] = useState(false);
+
+  // Markdown formatting hook
+  const { insertFormatting, handleShortcut } = useMarkdownFormatting();
+
+  // 光标位置管理
+  const [pendingCursorPosition, setPendingCursorPosition] = useState<number | null>(null);
+  const pendingCursorPositionRef = useRef<number | null>(null);
 
   // Mention autocomplete state
   const [showAutocomplete, setShowAutocomplete] = useState(false);
@@ -79,6 +97,10 @@ export default function DMMessageInput({
   const [showFilePreview, setShowFilePreview] = useState(false);
   const [previewFileIndex, setPreviewFileIndex] = useState(0);
 
+  // More Options dropdown state
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [moreOptionsPosition, setMoreOptionsPosition] = useState({ x: 0, y: 0 });
+
   // 点击外部关闭 Emoji picker
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -92,15 +114,31 @@ export default function DMMessageInput({
           setShowEmojiPicker(false);
         }
       }
+
+      if (showMoreOptions) {
+        const target = event.target as Node;
+        const moreOptionsMenu = document.querySelector('[data-more-options="true"]');
+        const moreOptionsButton = document.querySelector('[data-more-options-button="true"]');
+
+        // 确保菜单存在并且确实点击了外部才关闭
+        if (moreOptionsMenu) {
+          const isClickingMenu = moreOptionsMenu.contains(target);
+          const isClickingButton = moreOptionsButton && moreOptionsButton.contains(target);
+
+          if (!isClickingMenu && !isClickingButton) {
+            setShowMoreOptions(false);
+          }
+        }
+      }
     };
 
-    if (showEmojiPicker) {
+    if (showEmojiPicker || showMoreOptions) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }
-  }, [showEmojiPicker]);
+  }, [showEmojiPicker, showMoreOptions]);
 
   // 同步预览层和textarea的滚动位置
   useEffect(() => {
@@ -143,6 +181,29 @@ export default function DMMessageInput({
 
   // 过滤掉当前用户的成员（使用可选链安全处理）
   const availableMembers = (members || []).filter(member => member.id !== currentUserId);
+
+  /**
+   * 处理Markdown格式化
+   */
+  const handleFormat = useCallback((syntax: string, placeholder?: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const selectionStart = textarea.selectionStart;
+    const selectionEnd = textarea.selectionEnd;
+    const value = message;
+
+    const { value: newValue, cursorPosition } = insertFormatting(
+      { selectionStart, selectionEnd, value },
+      syntax,
+      placeholder
+    );
+
+    // 先更新消息内容
+    setMessage(newValue);
+    // 然后设置待应用的光标位置（使用ref管理）
+    pendingCursorPositionRef.current = cursorPosition;
+  }, [message, insertFormatting]);
 
   /**
    * 处理文件上传（图片）
@@ -532,7 +593,12 @@ export default function DMMessageInput({
           };
         });
 
-      const response = await fetch('/api/messages', {
+      // 根据是否有parentMessageId决定API端点
+      const endpoint = parentMessageId
+        ? `/api/messages/${parentMessageId}/reply`
+        : '/api/messages';
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -686,14 +752,14 @@ export default function DMMessageInput({
       if (isEmoji) {
         // 重置正则状态
         emojiRegex.lastIndex = 0;
-        // Emoji 字符：中等尺寸
+        // Emoji 字符：统一14px字体大小
         return (
           <span
             key={index}
             style={{
-              fontSize: '1.25rem',
+              fontSize: '14px',
               verticalAlign: 'middle',
-              lineHeight: '1.2',
+              lineHeight: '1.5',
               fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif',
               textRendering: 'optimizeLegibility',
               fontVariantLigatures: 'none'
@@ -703,11 +769,13 @@ export default function DMMessageInput({
           </span>
         );
       }
-      // 普通文本字符：使用与输入框一致的字体
+      // 普通文本字符：统一14px字体大小
       return (
         <span
           key={index}
           style={{
+            fontSize: '14px',
+            lineHeight: '1.5',
             textRendering: 'optimizeLegibility',
             fontVariantLigatures: 'none'
           }}
@@ -726,6 +794,38 @@ export default function DMMessageInput({
       }
     }
 
+    // 处理Markdown格式化快捷键
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const selectionStart = textarea.selectionStart;
+      const selectionEnd = textarea.selectionEnd;
+      const value = message;
+
+      // 只调用一次insertFormatting，避免重复计算
+      const formattingResult = insertFormatting(
+        { selectionStart, selectionEnd, value },
+        // 根据快捷键确定语法类型
+        e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c' ? 'codeblock' :
+        e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'q' ? 'quote' :
+        e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'h' ? 'heading1' :
+        e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'l' ? 'ul' :
+        e.ctrlKey && e.key.toLowerCase() === 'b' ? 'bold' :
+        e.ctrlKey && e.key.toLowerCase() === 'i' ? 'italic' :
+        e.ctrlKey && e.key.toLowerCase() === 'k' ? 'link' :
+        e.ctrlKey && e.key.toLowerCase() === 'e' ? 'code' :
+        null // 无格式化
+      );
+
+      if (formattingResult && formattingResult.value !== value) {
+        e.preventDefault();
+        // 更新消息内容和光标位置
+        setMessage(formattingResult.value);
+        // 使用pendingCursorPositionRef而不是setPendingCursorPosition
+        pendingCursorPositionRef.current = formattingResult.cursorPosition;
+        return;
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey && !disabled && !isSending) {
       e.preventDefault();
       handleSend();
@@ -735,7 +835,13 @@ export default function DMMessageInput({
   // 处理输入变化
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
+    const cursorPos = e.target.selectionStart;
+    const prevValue = message;
+
     setMessage(value);
+
+    // 保存光标位置到ref，等待DOM更新后恢复
+    pendingCursorPositionRef.current = cursorPos;
 
     // 检查是否需要显示自动完成
     handleMentionAutocomplete(e.target);
@@ -749,15 +855,17 @@ export default function DMMessageInput({
       const newMessage = `${textBeforeCursor}@`;
       setMessage(newMessage);
 
+      // 保存光标位置到ref
+      pendingCursorPositionRef.current = cursorPos + 1;
+
       // 延迟聚焦以确保光标位置正确
       setTimeout(() => {
         if (textareaRef.current) {
-          const newCursorPos = cursorPos + 1;
           textareaRef.current.focus();
-          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+          // 光标位置将在onInput事件中恢复
           handleMentionAutocomplete(textareaRef.current);
         }
-      }, 50); // 增加延迟确保DOM更新完成
+      }, 0); // 减少延迟时间，使用0ms
     }
   };
 
@@ -828,17 +936,51 @@ export default function DMMessageInput({
       const newMessage = `${textBeforeCursor}${emoji}${textAfterCursor}`;
       setMessage(newMessage);
 
+      // 使用Array.from正确计算Emoji字符数（处理多字节Emoji）
+      const emojiCharCount = Array.from(emoji).length;
+
+      // 保存光标位置到ref
+      pendingCursorPositionRef.current = cursorPos + emojiCharCount;
+
       // 重新聚焦并设置光标位置
       setTimeout(() => {
         if (textareaRef.current) {
-          const newCursorPos = cursorPos + emoji.length;
           textareaRef.current.focus();
-          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+          // 光标位置将在onInput事件中恢复
         }
       }, 0);
     }
 
     setShowEmojiPicker(false);
+  };
+
+  // 处理 More Options 按钮点击
+  const handleMoreOptionsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const button = e.currentTarget as HTMLButtonElement;
+    const buttonRect = button.getBoundingClientRect();
+
+    // 计算下拉菜单位置 - 在按钮下方显示
+    let x = buttonRect.left;
+    let y = buttonRect.bottom + 8;
+
+    // 确保位置在可见区域内
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const menuWidth = 320; // 256px + padding
+    const menuHeight = 400; // 估算高度
+
+    if (x + menuWidth > viewportWidth - 20) {
+      x = viewportWidth - menuWidth - 20;
+    }
+    if (y + menuHeight > viewportHeight - 20) {
+      y = buttonRect.top - menuHeight - 8; // 在按钮上方显示
+    }
+
+    setMoreOptionsPosition({ x, y });
+    setShowMoreOptions(true);
   };
 
   // 常用emoji列表
@@ -918,188 +1060,226 @@ export default function DMMessageInput({
           willChange: 'auto'
         }}
       >
-        {/* 顶部格式化工具栏 */}
-        <div className="flex items-center gap-1 px-3 py-2.5 border-b border-[#3A3A3D] bg-[#313235]">
-          {/* 格式化按钮组 */}
-          <button
-            className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
-            title="Bold (Ctrl+B)"
-            disabled={disabled || isSending}
-          >
-            <Bold size={18} className="text-white/60" />
-          </button>
-          <button
-            className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
-            title="Italic (Ctrl+I)"
-            disabled={disabled || isSending}
-          >
-            <Italic size={18} className="text-white/60" />
-          </button>
-          <button
-            className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
-            title="Underline (Ctrl+U)"
-            disabled={disabled || isSending}
-          >
-            <Underline size={18} className="text-white/60" />
-          </button>
-          <button
-            className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
-            title="Strikethrough"
-            disabled={disabled || isSending}
-          >
-            <Strikethrough size={18} className="text-white/60" />
-          </button>
-
-          {/* 分隔线 */}
-          <div className="w-px h-5 bg-[#3A3A3D] mx-0.5" />
-
-          <button
-            className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
-            title="Link"
-            disabled={disabled || isSending}
-          >
-            <Link size={18} className="text-white/60" />
-          </button>
-          <button
-            className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
-            title="Ordered List"
-            disabled={disabled || isSending}
-          >
-            <List size={18} className="text-white/60" />
-          </button>
-          <button
-            className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
-            title="Quote"
-            disabled={disabled || isSending}
-          >
-            <Quote size={18} className="text-white/60" />
-          </button>
-
-          {/* 分隔线 */}
-          <div className="w-px h-5 bg-[#3A3A3D] mx-0.5" />
-
-          <button
-            className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
-            title="Code"
-            disabled={disabled || isSending}
-          >
-            <Code size={18} className="text-white/60" />
-          </button>
-          <button
-            className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
-            title="Code Block"
-            disabled={disabled || isSending}
-          >
-            <Square size={18} className="text-white/60" />
-          </button>
-        </div>
-
-        {/* 输入区域 */}
-        <div className="flex items-end gap-2 p-4">
-          {/* 左侧功能区 */}
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {/* 图片上传 */}
+        {/* 完整模式：顶部格式化工具栏 */}
+        {!compact && (
+          <div className="flex items-center gap-1 px-3 py-2.5 border-b border-[#3A3A3D] bg-[#313235]">
+            {/* 格式化按钮组 */}
             <button
-              className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-              title="Upload images"
-              disabled={disabled || isSending || isUploading}
-              onClick={() => document.getElementById('image-upload-input')?.click()}
+              className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
+              title="Bold (Ctrl+B)"
+              disabled={disabled || isSending}
+              onClick={() => handleFormat('bold')}
             >
-              {isUploading ? (
-                <Loader2 size={18} className="text-white/60 animate-spin" />
-              ) : (
-                <ImageIcon size={18} className="text-white/60" />
-              )}
+              <Bold size={18} className="text-white/60" />
+            </button>
+            <button
+              className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
+              title="Italic (Ctrl+I)"
+              disabled={disabled || isSending}
+              onClick={() => handleFormat('italic')}
+            >
+              <Italic size={18} className="text-white/60" />
+            </button>
+            <button
+              className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
+              title="Underline (Ctrl+U)"
+              disabled={disabled || isSending}
+              onClick={() => handleFormat('underline')}
+            >
+              <Underline size={18} className="text-white/60" />
+            </button>
+            <button
+              className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
+              title="Strikethrough"
+              disabled={disabled || isSending}
+              onClick={() => handleFormat('strikethrough')}
+            >
+              <Strikethrough size={18} className="text-white/60" />
             </button>
 
-            {/* 文件传输 */}
+            {/* 分隔线 */}
+            <div className="w-px h-5 bg-[#3A3A3D] mx-0.5" />
+
             <button
-              className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-              title="File transfer"
+              className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
+              title="Link (Ctrl+K)"
               disabled={disabled || isSending}
-              onClick={() => document.getElementById('file-transfer-input')?.click()}
+              onClick={() => handleFormat('link')}
             >
-              <Folder size={18} className="text-white/60" />
+              <Link size={18} className="text-white/60" />
+            </button>
+            <button
+              className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
+              title="Ordered List"
+              disabled={disabled || isSending}
+              onClick={() => handleFormat('ol')}
+            >
+              <List size={18} className="text-white/60" />
+            </button>
+            <button
+              className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
+              title="Quote (Ctrl+Shift+Q)"
+              disabled={disabled || isSending}
+              onClick={() => handleFormat('quote')}
+            >
+              <Quote size={18} className="text-white/60" />
             </button>
 
-            {/* 隐藏的图片文件输入框 */}
-            <input
-              id="image-upload-input"
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                handleFileUpload(files);
-                // 清空输入框，允许重复选择同一文件
-                e.currentTarget.value = '';
-              }}
-            />
+            {/* 分隔线 */}
+            <div className="w-px h-5 bg-[#3A3A3D] mx-0.5" />
 
-            {/* 隐藏的文件传输输入框 */}
-            <input
-              id="file-transfer-input"
-              type="file"
-              accept=".xls,.xlsx,.doc,.docx,.ppt,.pptx,.zip,.pdf,.txt"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                handleFileTransfer(files);
-                // 清空输入框，允许重复选择同一文件
-                e.currentTarget.value = '';
-              }}
-            />
-
-            {/* 格式化选项 */}
             <button
-              className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-              title="Formatting"
+              className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
+              title="Inline Code (Ctrl+E)"
               disabled={disabled || isSending}
+              onClick={() => handleFormat('code')}
             >
-              <Type size={18} className="text-white/60" />
+              <Code size={18} className="text-white/60" />
+            </button>
+            <button
+              className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
+              title="Code Block (Ctrl+Shift+C)"
+              disabled={disabled || isSending}
+              onClick={() => handleFormat('codeblock', 'javascript')}
+            >
+              <Square size={18} className="text-white/60" />
             </button>
 
-            {/* 表情 */}
-            <button
-              data-emoji-button="true"
-              className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-              title="Add emoji"
-              disabled={disabled || isSending}
-              onClick={handleEmojiButtonClick}
-            >
-              <Smile size={18} className="text-white/60" />
-            </button>
+            {/* 分隔线 */}
+            <div className="w-px h-5 bg-[#3A3A3D] mx-0.5" />
 
-            {/* 提及 */}
+            {/* 预览按钮 */}
             <button
-              className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-              title="Mention someone"
+              className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
+              title={showPreview ? 'Hide Preview' : 'Show Preview'}
               disabled={disabled || isSending}
-              onClick={handleAtButtonClick}
+              onClick={() => setShowPreview(!showPreview)}
             >
-              <AtSign size={18} className="text-white/60" />
-            </button>
-
-            {/* 麦克风 */}
-            <button
-              className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-              title="Voice message"
-              disabled={disabled || isSending}
-            >
-              <Mic size={18} className="text-white/60" />
-            </button>
-
-            {/* 更多操作 */}
-            <button
-              className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-              title="More options"
-              disabled={disabled || isSending}
-            >
-              <MoreHorizontal size={18} className="text-white/60" />
+              {showPreview ? <EyeOff size={18} className="text-white/60" /> : <Eye size={18} className="text-white/60" />}
             </button>
           </div>
+        )}
+
+        {/* 预览层 */}
+        {showPreview && !compact && (
+          <div className="max-h-64 overflow-y-auto bg-gray-900 border-t border-[#3A3A3D] p-4">
+            <div className="text-sm text-gray-300 mb-2 font-medium">Preview</div>
+            <MarkdownRenderer
+              content={message}
+              members={members}
+              currentUserId={currentUserId || ''}
+              className="text-sm"
+            />
+          </div>
+        )}
+
+        {/* Input Area */}
+        <div className="flex items-end gap-2 p-4">
+          {/* 完整模式：左侧功能区（完整版） */}
+          {!compact && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* 图片上传 */}
+              <button
+                className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
+                title="Upload images"
+                disabled={disabled || isSending || isUploading}
+                onClick={() => document.getElementById('image-upload-input')?.click()}
+              >
+                {isUploading ? (
+                  <Loader2 size={18} className="text-white/60 animate-spin" />
+                ) : (
+                  <ImageIcon size={18} className="text-white/60" />
+                )}
+              </button>
+
+              {/* 文件传输 */}
+              <button
+                className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
+                title="File transfer"
+                disabled={disabled || isSending}
+                onClick={() => document.getElementById('file-transfer-input')?.click()}
+              >
+                <Folder size={18} className="text-white/60" />
+              </button>
+
+              {/* 格式化选项 */}
+              <button
+                className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
+                title="Formatting"
+                disabled={disabled || isSending}
+              >
+                <Type size={18} className="text-white/60" />
+              </button>
+
+              {/* Emoji */}
+              <button
+                data-emoji-button="true"
+                className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
+                title="Add emoji"
+                disabled={disabled || isSending}
+                onClick={handleEmojiButtonClick}
+              >
+                <Smile size={18} className="text-white/60" />
+              </button>
+
+              {/* Mention */}
+              <button
+                className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
+                title="Mention someone"
+                disabled={disabled || isSending}
+                onClick={handleAtButtonClick}
+              >
+                <AtSign size={18} className="text-white/60" />
+              </button>
+
+              {/* 麦克风 */}
+              <button
+                className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
+                title="Voice message"
+                disabled={disabled || isSending}
+              >
+                <Mic size={18} className="text-white/60" />
+              </button>
+            </div>
+          )}
+
+          {/* 简化模式：左侧功能区（简化版） */}
+          {compact && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Emoji */}
+              <button
+                data-emoji-button="true"
+                className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
+                title="Add emoji"
+                disabled={disabled || isSending}
+                onClick={handleEmojiButtonClick}
+              >
+                <Smile size={18} className="text-white/60" />
+              </button>
+
+              {/* Mention */}
+              <button
+                className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
+                title="Mention someone"
+                disabled={disabled || isSending}
+                onClick={handleAtButtonClick}
+              >
+                <AtSign size={18} className="text-white/60" />
+              </button>
+
+              {/* More Options */}
+              <button
+                type="button"
+                data-more-options-button="true"
+                className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
+                title="More options"
+                disabled={disabled || isSending}
+                onClick={handleMoreOptionsClick}
+              >
+                <MoreHorizontal size={18} className="text-white/60" />
+              </button>
+            </div>
+          )}
 
           {/* 主输入框 */}
           <div
@@ -1113,7 +1293,7 @@ export default function DMMessageInput({
             {/* Placeholder 显示层 */}
             {!message && (
               <div className="absolute inset-0 px-4 py-4 text-white/40 pointer-events-none">
-                <div className="text-sm" style={{ lineHeight: '1.5' }}>
+                <div style={{ fontSize: '14px', lineHeight: '1.5', letterSpacing: '0' }}>
                   {placeholder}
                 </div>
               </div>
@@ -1122,24 +1302,34 @@ export default function DMMessageInput({
             {/* 格式化预览层 */}
             <div
               ref={previewRef}
-              className="absolute inset-0 px-4 py-4 text-white pointer-events-none whitespace-pre-wrap break-words overflow-y-auto"
+              className="absolute inset-0 px-4 py-4 text-white pointer-events-none overflow-y-auto"
               style={{
                 minHeight: '52px',
                 maxHeight: '200px',
                 lineHeight: '1.5',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                 fontSize: '14px',
+                letterSpacing: '0',
                 textRendering: 'optimizeLegibility',
-                fontVariantLigatures: 'none'
+                fontVariantLigatures: 'none',
+                fontVariantNumeric: 'normal', // 禁用tabular-nums，确保数字宽度一致
+                fontFeatureSettings: 'normal', // 禁用字体特性
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
               }}
             >
               <div
-                className="text-sm"
                 style={{
+                  fontSize: '14px',
                   lineHeight: '1.5',
                   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                  letterSpacing: '0',
                   textRendering: 'optimizeLegibility',
-                  fontVariantLigatures: 'none'
+                  fontVariantLigatures: 'none',
+                  fontVariantNumeric: 'normal',
+                  fontFeatureSettings: 'normal',
+                  whiteSpace: 'inherit',
+                  wordBreak: 'inherit'
                 }}
               >
                 {renderFormattedMessage()}
@@ -1165,12 +1355,25 @@ export default function DMMessageInput({
                 fontSize: '14px',
                 textRendering: 'optimizeLegibility',
                 fontVariantLigatures: 'none',
+                fontVariantNumeric: 'normal', // 禁用tabular-nums，确保数字宽度一致
+                fontFeatureSettings: 'normal', // 禁用字体特性
                 letterSpacing: '0'
               }}
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
                 target.style.height = 'auto';
                 target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
+
+                // 恢复光标位置
+                if (pendingCursorPositionRef.current !== null && target === document.activeElement) {
+                  requestAnimationFrame(() => {
+                    target.setSelectionRange(
+                      pendingCursorPositionRef.current!,
+                      pendingCursorPositionRef.current!
+                    );
+                    pendingCursorPositionRef.current = null;
+                  });
+                }
               }}
               onScroll={(e) => {
                 // 标记是否正在同步滚动，防止无限递归
@@ -1414,6 +1617,205 @@ export default function DMMessageInput({
         </div>,
         document.body
       ) : null}
+
+      {/* More Options Dropdown Menu */}
+      {showMoreOptions && (
+        createPortal(
+          <div
+            data-more-options="true"
+            className="bg-[#313235] border border-[#3A3A3D] rounded-lg shadow-xl py-2 w-64"
+            style={{
+              left: moreOptionsPosition.x,
+              top: moreOptionsPosition.y,
+              zIndex: 999999,
+              position: 'fixed',
+              display: 'block',
+              visibility: 'visible',
+              maxWidth: '320px',
+              minWidth: '200px'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Formatting Group */}
+            <div className="px-3 py-1">
+              <div className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1">
+                Formatting
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors text-left"
+                  onClick={() => {
+                    handleFormat('bold');
+                    setShowMoreOptions(false);
+                  }}
+                >
+                  <Bold size={16} className="text-white/60" />
+                  <span className="text-sm text-white/80">Bold</span>
+                </button>
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors text-left"
+                  onClick={() => {
+                    handleFormat('italic');
+                    setShowMoreOptions(false);
+                  }}
+                >
+                  <Italic size={16} className="text-white/60" />
+                  <span className="text-sm text-white/80">Italic</span>
+                </button>
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors text-left"
+                  onClick={() => {
+                    handleFormat('underline');
+                    setShowMoreOptions(false);
+                  }}
+                >
+                  <Underline size={16} className="text-white/60" />
+                  <span className="text-sm text-white/80">Underline</span>
+                </button>
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors text-left"
+                  onClick={() => {
+                    handleFormat('strikethrough');
+                    setShowMoreOptions(false);
+                  }}
+                >
+                  <Strikethrough size={16} className="text-white/60" />
+                  <span className="text-sm text-white/80">Strikethrough</span>
+                </button>
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors text-left"
+                  onClick={() => {
+                    handleFormat('link');
+                    setShowMoreOptions(false);
+                  }}
+                >
+                  <Link size={16} className="text-white/60" />
+                  <span className="text-sm text-white/80">Link</span>
+                </button>
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors text-left"
+                  onClick={() => {
+                    handleFormat('ol');
+                    setShowMoreOptions(false);
+                  }}
+                >
+                  <List size={16} className="text-white/60" />
+                  <span className="text-sm text-white/80">List</span>
+                </button>
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors text-left"
+                  onClick={() => {
+                    handleFormat('quote');
+                    setShowMoreOptions(false);
+                  }}
+                >
+                  <Quote size={16} className="text-white/60" />
+                  <span className="text-sm text-white/80">Quote</span>
+                </button>
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors text-left"
+                  onClick={() => {
+                    handleFormat('code');
+                    setShowMoreOptions(false);
+                  }}
+                >
+                  <Code size={16} className="text-white/60" />
+                  <span className="text-sm text-white/80">Inline Code</span>
+                </button>
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors text-left"
+                  onClick={() => {
+                    handleFormat('codeblock', 'javascript');
+                    setShowMoreOptions(false);
+                  }}
+                >
+                  <Square size={16} className="text-white/60" />
+                  <span className="text-sm text-white/80">Code Block</span>
+                </button>
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors text-left"
+                  onClick={() => {
+                    setShowPreview(!showPreview);
+                    setShowMoreOptions(false);
+                  }}
+                >
+                  {showPreview ? <EyeOff size={16} className="text-white/60" /> : <Eye size={16} className="text-white/60" />}
+                  <span className="text-sm text-white/80">{showPreview ? 'Hide Preview' : 'Preview'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Media Group */}
+            <div className="px-3 py-1 mt-2 border-t border-[#3A3A3D]">
+              <div className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1">
+                Media
+              </div>
+              <div className="space-y-1">
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors w-full text-left"
+                  disabled={disabled || isSending || isUploading}
+                  onClick={() => {
+                    document.getElementById('image-upload-input')?.click();
+                    setShowMoreOptions(false);
+                  }}
+                >
+                  {isUploading ? (
+                    <Loader2 size={16} className="text-white/60 animate-spin" />
+                  ) : (
+                    <ImageIcon size={16} className="text-white/60" />
+                  )}
+                  <span className="text-sm text-white/80">Upload Images</span>
+                </button>
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors w-full text-left"
+                  disabled={disabled || isSending}
+                  onClick={() => {
+                    document.getElementById('file-transfer-input')?.click();
+                    setShowMoreOptions(false);
+                  }}
+                >
+                  <Folder size={16} className="text-white/60" />
+                  <span className="text-sm text-white/80">File Transfer</span>
+                </button>
+                <button
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#3A3A3D] rounded transition-colors w-full text-left"
+                  disabled={disabled || isSending}
+                >
+                  <Mic size={16} className="text-white/60" />
+                  <span className="text-sm text-white/80">Voice Message</span>
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      )}
+
+      {/* Hidden file inputs */}
+      <input
+        id="image-upload-input"
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          const files = Array.from(e.target.files || []);
+          handleFileUpload(files);
+          e.currentTarget.value = '';
+        }}
+      />
+      <input
+        id="file-transfer-input"
+        type="file"
+        accept=".xls,.xlsx,.doc,.docx,.ppt,.pptx,.zip,.pdf,.txt"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          const files = Array.from(e.target.files || []);
+          handleFileTransfer(files);
+          e.currentTarget.value = '';
+        }}
+      />
     </div>
   );
 }

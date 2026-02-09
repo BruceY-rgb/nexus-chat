@@ -27,7 +27,13 @@ export type SocketEventType =
   | 'typing-stop'
   | 'message-read'
   | 'get-online-users'
-  | 'new-notification';
+  | 'new-notification'
+  // 线程相关事件
+  | 'thread-reply-created'
+  | 'thread-reply-updated'
+  | 'thread-reply-deleted'
+  | 'thread-read-status-changed'
+  | 'thread-unread-count-updated';
 
 // WebSocket message events负载
 export interface NewMessagePayload {
@@ -73,10 +79,11 @@ export interface MessageReadPayload {
 // 新通知事件负载
 export interface NewNotificationPayload {
   id: string;
-  type: 'mention' | 'dm' | 'channel_invite' | 'system';
+  type: 'mention' | 'dm' | 'channel_invite' | 'system' | 'thread_reply' | 'thread_mention';
   title: string;
   content?: string;
   relatedMessageId?: string;
+  relatedThreadId?: string;
   relatedChannelId?: string;
   relatedDmConversationId?: string;
   isRead: boolean;
@@ -93,6 +100,37 @@ export interface PresenceUpdatePayload {
   userId: string;
   isOnline: boolean;
   lastSeenAt?: Date | string;
+}
+
+// 线程回复事件负载
+export interface ThreadReplyCreatedPayload {
+  threadId: string;
+  message: NewMessagePayload;
+  replyCount: number;
+}
+
+// 线程回复更新事件负载
+export interface ThreadReplyUpdatedPayload {
+  threadId: string;
+  message: NewMessagePayload;
+}
+
+// 线程回复删除事件负载
+export interface ThreadReplyDeletedPayload {
+  threadId: string;
+  replyId: string;
+}
+
+// 线程已读状态变更事件负载
+export interface ThreadReadStatusChangedPayload {
+  threadId: string;
+  readAt: string;
+  unreadThreadsCount: number;
+}
+
+// 线程未读计数更新事件负载
+export interface ThreadUnreadCountUpdatedPayload {
+  count: number;
 }
 
 // 在线用户列表负载

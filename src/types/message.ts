@@ -8,6 +8,9 @@ export interface Message {
   userId: string;
   isEdited: boolean;
   isDeleted: boolean;
+  threadReplyCount: number;
+  lastReplyAt?: string | null;
+  isThreadRoot: boolean;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;

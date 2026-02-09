@@ -230,11 +230,50 @@ export function useWebSocketMessages({
       }
     };
 
+    // 监听线程回复创建 - 转换为标准的new-message事件
+    const handleThreadReplyCreated = (data: { threadId: string; message: Message; replyCount: number }) => {
+      log('info', `🧵 Thread reply created:`, data);
+
+      // 验证线程回复属于当前房间
+      const isForCurrentRoom =
+        (dmConversationId && data.message.dmConversationId === dmConversationId) ||
+        (channelId && data.message.channelId === channelId);
+
+      if (!isForCurrentRoom) {
+        log('info', `Thread reply ignored - not for current room`);
+        return;
+      }
+
+      // 防止重复消息
+      if (previousMessageIds.current.has(data.message.id)) {
+        log('info', `⚠️ Duplicate thread reply ignored: ${data.message.id}`);
+        return;
+      }
+
+      // 记录消息ID
+      previousMessageIds.current.add(data.message.id);
+
+      // 限制历史记录大小
+      if (previousMessageIds.current.size > 100) {
+        const firstId = previousMessageIds.current.values().next().value;
+        if (firstId) {
+          previousMessageIds.current.delete(firstId);
+        }
+      }
+
+      // 转换为标准的new-message事件并调用回调
+      if (onNewMessageRef.current) {
+        log('info', `Calling onNewMessage callback for thread reply`);
+        onNewMessageRef.current(data.message);
+      }
+    };
+
     // 注册事件监听器
     log('info', 'Registering socket event listeners...');
     socket.on('new-message', handleNewMessage);
     socket.on('message-updated', handleMessageUpdated);
     socket.on('message-deleted', handleMessageDeleted);
+    socket.on('thread-reply-created', handleThreadReplyCreated);
     log('info', '✅ Socket event listeners registered successfully');
 
     // Cleanup function
@@ -243,6 +282,7 @@ export function useWebSocketMessages({
       socket.off('new-message', handleNewMessage);
       socket.off('message-updated', handleMessageUpdated);
       socket.off('message-deleted', handleMessageDeleted);
+      socket.off('thread-reply-created', handleThreadReplyCreated);
       log('info', '✅ Socket event listeners cleaned up');
     };
   }, [socket, dmConversationId, channelId]); // 关键修复：移除 isConnected 依赖，只依赖 socket 和房间ID
