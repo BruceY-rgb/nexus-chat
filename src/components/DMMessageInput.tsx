@@ -801,28 +801,33 @@ export default function DMMessageInput({
       const selectionEnd = textarea.selectionEnd;
       const value = message;
 
-      // 只调用一次insertFormatting，避免重复计算
-      const formattingResult = insertFormatting(
-        { selectionStart, selectionEnd, value },
-        // 根据快捷键确定语法类型
-        e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c' ? 'codeblock' :
-        e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'q' ? 'quote' :
-        e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'h' ? 'heading1' :
-        e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'l' ? 'ul' :
-        e.ctrlKey && e.key.toLowerCase() === 'b' ? 'bold' :
-        e.ctrlKey && e.key.toLowerCase() === 'i' ? 'italic' :
-        e.ctrlKey && e.key.toLowerCase() === 'k' ? 'link' :
-        e.ctrlKey && e.key.toLowerCase() === 'e' ? 'code' :
-        null // 无格式化
-      );
+      // 根据快捷键确定语法类型
+      const syntax =
+        e.ctrlKey && e.shiftKey && e.key?.toLowerCase() === 'c' ? 'codeblock' :
+        e.ctrlKey && e.shiftKey && e.key?.toLowerCase() === 'q' ? 'quote' :
+        e.ctrlKey && e.shiftKey && e.key?.toLowerCase() === 'h' ? 'heading1' :
+        e.ctrlKey && e.shiftKey && e.key?.toLowerCase() === 'l' ? 'ul' :
+        e.ctrlKey && e.key?.toLowerCase() === 'b' ? 'bold' :
+        e.ctrlKey && e.key?.toLowerCase() === 'i' ? 'italic' :
+        e.ctrlKey && e.key?.toLowerCase() === 'k' ? 'link' :
+        e.ctrlKey && e.key?.toLowerCase() === 'e' ? 'code' :
+        null; // 无格式化
 
-      if (formattingResult && formattingResult.value !== value) {
-        e.preventDefault();
-        // 更新消息内容和光标位置
-        setMessage(formattingResult.value);
-        // 使用pendingCursorPositionRef而不是setPendingCursorPosition
-        pendingCursorPositionRef.current = formattingResult.cursorPosition;
-        return;
+      // 只在检测到有效语法时调用insertFormatting
+      if (syntax) {
+        const formattingResult = insertFormatting(
+          { selectionStart, selectionEnd, value },
+          syntax
+        );
+
+        if (formattingResult && formattingResult.value !== value) {
+          e.preventDefault();
+          // 更新消息内容和光标位置
+          setMessage(formattingResult.value);
+          // 使用pendingCursorPositionRef而不是setPendingCursorPosition
+          pendingCursorPositionRef.current = formattingResult.cursorPosition;
+          return;
+        }
       }
     }
 
@@ -836,7 +841,6 @@ export default function DMMessageInput({
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const cursorPos = e.target.selectionStart;
-    const prevValue = message;
 
     setMessage(value);
 
