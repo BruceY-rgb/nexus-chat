@@ -45,8 +45,21 @@ export default function ChannelView({
   // 线程状态管理
   const { setActiveThread, activeThreadId, activeThreadMessage, threadPanelOpen, closeThread } = useThreadStore();
 
+  // 引用消息状态
+  const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
+
   // 用于跟踪是否在消息列表底部
   const isAtBottomRef = useRef(true);
+
+  // 处理引用消息
+  const handleQuote = useCallback((message: Message) => {
+    setQuotedMessage(message);
+  }, []);
+
+  // 清除引用消息
+  const handleClearQuote = useCallback(() => {
+    setQuotedMessage(null);
+  }, []);
 
   // 处理滚动位置变化
   const handleScrollPositionChange = (isAtBottom: boolean) => {
@@ -553,6 +566,7 @@ export default function ChannelView({
                   onEditMessage={handleEditMessage}
                   onDeleteMessage={handleDeleteMessage}
                   onThreadReply={handleThreadReply}
+                  onQuote={handleQuote}
                 />
               </div>
 
@@ -575,6 +589,8 @@ export default function ChannelView({
                   currentUserId={user?.id || ''}
                   members={members}
                   onMessageSent={handleMessageSent}
+                  quotedMessage={quotedMessage}
+                  onClearQuote={handleClearQuote}
                 />
               </div>
             </>

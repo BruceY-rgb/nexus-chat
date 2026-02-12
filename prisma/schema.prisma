@@ -151,6 +151,15 @@ model Message {
   threadReplyCount Int              @default(0) @map("thread_reply_count")
   lastReplyAt      DateTime?        @map("last_reply_at")
   isThreadRoot     Boolean          @default(false) @map("is_thread_root")
+
+  // Quote fields - lightweight message reference
+  quotedContent    String?          @map("quoted_content")
+  quotedUserId     String?          @map("quoted_user_id")
+  quotedUserName   String?          @map("quoted_user_name")
+  quotedAvatarUrl  String?          @map("quoted_avatar_url")
+  quotedAt         DateTime?        @map("quoted_at")
+  isQuotedDeleted  Boolean          @default(false) @map("is_quoted_deleted")
+
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
   deletedAt        DateTime?        @map("deleted_at")

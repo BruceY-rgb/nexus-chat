@@ -14,6 +14,15 @@ export interface Message {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
+
+  // Quote fields - lightweight message reference
+  quotedContent?: string | null;
+  quotedUserId?: string | null;
+  quotedUserName?: string | null;
+  quotedAvatarUrl?: string | null;
+  quotedAt?: string | null;
+  isQuotedDeleted?: boolean;
+
   user: {
     id: string;
     displayName: string;

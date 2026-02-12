@@ -30,6 +30,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import MentionAutocomplete from './MentionAutocomplete';
+import QuoteBlock from './QuoteBlock';
 import { TeamMember } from '@/types';
 import { useMarkdownFormatting } from '@/hooks/useMarkdownFormatting';
 import MarkdownRenderer from './MarkdownRenderer';
@@ -44,6 +45,8 @@ interface DMMessageInputProps {
   onMessageSent?: (message?: Message) => void;
   compact?: boolean; // 简化模式：只显示Emoji、Mention、More Options按钮
   parentMessageId?: string; // 线程回复的父消息ID
+  quotedMessage?: Message | null; // 当前引用的消息
+  onClearQuote?: () => void; // 清除引用回调
 }
 
 interface UploadedFile {
@@ -64,7 +67,9 @@ export default function DMMessageInput({
   currentUserId,
   onMessageSent,
   compact = false,
-  parentMessageId
+  parentMessageId,
+  quotedMessage,
+  onClearQuote
 }: DMMessageInputProps) {
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -608,7 +613,16 @@ export default function DMMessageInput({
           content: messageContent,
           channelId: channelId || null,
           dmConversationId: dmConversationId || null,
-          attachments: attachments.length > 0 ? attachments : undefined
+          attachments: attachments.length > 0 ? attachments : undefined,
+          // Quote data - send snapshot of quoted message
+          quote: quotedMessage ? {
+            messageId: quotedMessage.id,
+            content: quotedMessage.content,
+            userId: quotedMessage.userId,
+            userName: quotedMessage.user?.displayName || 'Unknown',
+            avatarUrl: quotedMessage.user?.avatarUrl,
+            createdAt: quotedMessage.createdAt
+          } : undefined
         })
       });
 
@@ -624,6 +638,8 @@ export default function DMMessageInput({
         prev.forEach(f => URL.revokeObjectURL(f.preview));
         return [];
       });
+      // Clear quote after sending
+      onClearQuote?.();
       onMessageSent?.(responseData);
 
       // 重新聚焦到输入框 - 等待 textarea 启用后聚焦
@@ -1173,6 +1189,21 @@ export default function DMMessageInput({
               members={members}
               currentUserId={currentUserId || ''}
               className="text-sm"
+            />
+          </div>
+        )}
+
+        {/* Quote Block - shown when user is quoting a message */}
+        {quotedMessage && (
+          <div className="px-4 pt-4 pb-2 group">
+            <QuoteBlock
+              content={quotedMessage.content}
+              userName={quotedMessage.user?.displayName || quotedMessage.quotedUserName || 'Unknown'}
+              avatarUrl={quotedMessage.user?.avatarUrl || quotedMessage.quotedAvatarUrl}
+              createdAt={quotedMessage.createdAt || quotedMessage.quotedAt || new Date().toISOString()}
+              isDeleted={quotedMessage.isDeleted}
+              showRemoveButton={true}
+              onRemove={onClearQuote}
             />
           </div>
         )}

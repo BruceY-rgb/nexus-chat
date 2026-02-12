@@ -70,7 +70,10 @@ export async function POST(request: NextRequest) {
     const currentUserId = decoded.userId;
 
     const body = await request.json();
-    const { content, channelId, dmConversationId, attachments } = body;
+    const { content, channelId, dmConversationId, attachments, quote } = body;
+
+    // Quote data structure
+    // quote: { messageId, content, userId, userName, avatarUrl, createdAt }
 
     // 验证：必须有文字内容或附件之一
     const hasContent = content && typeof content === 'string' && content.trim() !== '';
@@ -146,7 +149,14 @@ export async function POST(request: NextRequest) {
           userId: currentUserId,
           channelId: channelId || null,
           dmConversationId: dmConversationId || null,
-          messageType: attachments && attachments.length > 0 ? (attachments.some((att: any) => att.mimeType?.startsWith('image/')) ? 'image' : 'file') : 'text'
+          messageType: attachments && attachments.length > 0 ? (attachments.some((att: any) => att.mimeType?.startsWith('image/')) ? 'image' : 'file') : 'text',
+          // Quote fields - store snapshot of quoted message
+          quotedContent: quote?.content || null,
+          quotedUserId: quote?.userId || null,
+          quotedUserName: quote?.userName || null,
+          quotedAvatarUrl: quote?.avatarUrl || null,
+          quotedAt: quote?.createdAt ? new Date(quote.createdAt) : null,
+          isQuotedDeleted: false
         },
         include: {
           user: {

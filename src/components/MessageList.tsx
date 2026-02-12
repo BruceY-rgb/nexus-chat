@@ -19,6 +19,7 @@ interface MessageListProps {
   onEditMessage?: (messageId: string, content: string) => Promise<void>;
   onDeleteMessage?: (messageId: string) => Promise<void>;
   onThreadReply?: (message: Message) => void;
+  onQuote?: (message: Message) => void;
 }
 
 export interface MessageListRef {
@@ -35,7 +36,8 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
   onScrollPositionChange,
   onEditMessage,
   onDeleteMessage,
-  onThreadReply
+  onThreadReply,
+  onQuote
 }, ref) => {
   const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -421,6 +423,7 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
                     onCancelEdit={cancelEditing}
                     onDeleteMessage={handleDeleteMessage}
                     onThreadReply={onThreadReply || (() => {})}
+                    onQuote={onQuote || (() => {})}
                     formatMessageTime={formatMessageTime}
                     messageRefs={messageRefs}
                     scrollContainerRef={scrollContainerRef}

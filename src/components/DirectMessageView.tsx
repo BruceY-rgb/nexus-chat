@@ -35,6 +35,19 @@ export default function DirectMessageView({
   // 线程状态管理
   const { setActiveThread, activeThreadId, activeThreadMessage, threadPanelOpen, closeThread } = useThreadStore();
 
+  // 引用消息状态
+  const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
+
+  // 处理引用消息
+  const handleQuote = useCallback((message: Message) => {
+    setQuotedMessage(message);
+  }, []);
+
+  // 清除引用消息
+  const handleClearQuote = useCallback(() => {
+    setQuotedMessage(null);
+  }, []);
+
   // 用于跟踪是否在消息列表底部
   const isAtBottomRef = useRef(true);
 
@@ -346,6 +359,7 @@ export default function DirectMessageView({
                 onEditMessage={handleEditMessage}
                 onDeleteMessage={handleDeleteMessage}
                 onThreadReply={handleThreadReply}
+                onQuote={handleQuote}
               />
             </div>
 
@@ -374,6 +388,8 @@ export default function DirectMessageView({
                 currentUserId={currentUserId}
                 members={[member]}
                 onMessageSent={handleMessageSent}
+                quotedMessage={quotedMessage}
+                onClearQuote={handleClearQuote}
               />
             </div>
           </>

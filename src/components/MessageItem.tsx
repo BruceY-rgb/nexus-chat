@@ -5,6 +5,7 @@ import { Message } from '@/types/message';
 import MessageRenderer from './MessageRenderer';
 import MessageActions from './MessageActions';
 import MessageEditor from './MessageEditor';
+import QuoteBlock from './QuoteBlock';
 import ReactionBadges from './ReactionBadges';
 import { useReactions } from '@/hooks/useReactions';
 
@@ -21,6 +22,7 @@ interface MessageItemProps {
   onCancelEdit: () => void;
   onDeleteMessage: (messageId: string) => Promise<void>;
   onThreadReply: (message: Message) => void;
+  onQuote: (message: Message) => void;
   formatMessageTime: (dateString: string | null | undefined) => string;
   messageRefs: React.MutableRefObject<{ [key: string]: HTMLDivElement | null }>;
   scrollContainerRef: React.RefObject<HTMLDivElement>;
@@ -43,6 +45,7 @@ function MessageItemBase({
   onCancelEdit,
   onDeleteMessage,
   onThreadReply,
+  onQuote,
   formatMessageTime,
   messageRefs,
   scrollContainerRef
@@ -77,6 +80,7 @@ function MessageItemBase({
           onEdit={onStartEditing}
           onDelete={onDeleteMessage}
           onThreadReply={onThreadReply}
+          onQuote={onQuote}
           containerRef={scrollContainerRef}
         />
 
@@ -114,6 +118,19 @@ function MessageItemBase({
                     (edited)
                   </span>
                 )}
+              </div>
+            )}
+
+            {/* Quote Block - 显示被引用的消息 */}
+            {(message.quotedContent || message.quotedUserName) && !message.isDeleted && (
+              <div className="mb-2">
+                <QuoteBlock
+                  content={message.quotedContent || ''}
+                  userName={message.quotedUserName || 'Unknown'}
+                  avatarUrl={message.quotedAvatarUrl}
+                  createdAt={message.quotedAt || ''}
+                  isDeleted={message.isQuotedDeleted}
+                />
               </div>
             )}
 

@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { Message } from '@/types/message';
 import { useReactions } from '@/hooks/useReactions';
 import EmojiPicker from './EmojiPicker';
-import { Edit2, Trash2, MoreHorizontal, Smile, MessageSquare } from 'lucide-react';
+import { Edit2, Trash2, MoreHorizontal, Smile, MessageSquare, Quote } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface MessageActionsProps {
@@ -15,6 +15,7 @@ interface MessageActionsProps {
   onEdit: (message: Message) => void;
   onDelete: (messageId: string) => void;
   onThreadReply: (message: Message) => void;
+  onQuote: (message: Message) => void;
   className?: string;
   containerRef?: React.RefObject<HTMLDivElement>;
 }
@@ -26,6 +27,7 @@ export default function MessageActions({
   onEdit,
   onDelete,
   onThreadReply,
+  onQuote,
   className = '',
   containerRef
 }: MessageActionsProps) {
@@ -199,6 +201,20 @@ export default function MessageActions({
               title="Reply in thread"
             >
               <MessageSquare size={14} />
+            </motion.button>
+
+            {/* Quote button */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuote(message);
+              }}
+              className="w-7 h-7 rounded-full bg-gray-800/95 backdrop-blur-md hover:bg-blue-600/80 flex items-center justify-center text-gray-300 hover:text-white transition-all duration-150 border border-gray-500/40 hover:border-blue-400"
+              title="Quote message"
+            >
+              <Quote size={14} />
             </motion.button>
             {/* Reply count badge */}
             {message.threadReplyCount > 0 && (

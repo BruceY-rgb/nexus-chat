@@ -239,6 +239,14 @@ export function useWebSocketMessages({
         (dmConversationId && data.message.dmConversationId === dmConversationId) ||
         (channelId && data.message.channelId === channelId);
 
+      log('info', `🔍 Room validation for thread reply:`, {
+        dmConversationId,
+        channelId,
+        messageDM: data.message.dmConversationId,
+        messageChannel: data.message.channelId,
+        isForCurrentRoom
+      });
+
       if (!isForCurrentRoom) {
         log('info', `Thread reply ignored - not for current room`);
         return;
@@ -263,8 +271,10 @@ export function useWebSocketMessages({
 
       // 转换为标准的new-message事件并调用回调
       if (onNewMessageRef.current) {
-        log('info', `Calling onNewMessage callback for thread reply`);
+        log('info', `✅ Calling onNewMessage callback for thread reply: ${data.message.id}`);
         onNewMessageRef.current(data.message);
+      } else {
+        log('warn', `❌ No onNewMessage callback available for thread reply`);
       }
     };
 

@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 
+// 强制动态渲染，避免静态生成错误
+export const dynamic = 'force-dynamic';
+
 /**
  * 递归遍历对象，将所有 BigInt 和 Date 字段转换为 String
  */
