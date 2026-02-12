@@ -43,6 +43,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
   const isPDF = attachment.mimeType === 'application/pdf';
   const isText = attachment.mimeType.startsWith('text/');
   const isOfficeDoc = /\.(docx|doc|xlsx|xls|pptx|ppt)$/i.test(attachment.fileName);
+  const isVideo = attachment.mimeType.startsWith('video/');
 
   // 检查文件URL可达性
   useEffect(() => {
@@ -422,14 +423,8 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                     <div className="text-white/60 text-sm mb-4">PDF 预览加载失败或超时</div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => window.open(attachment.filePath, '_blank')}
-                        className="px-4 py-2 bg-[#1164A3] text-white rounded hover:bg-[#0D4A7C] transition-colors text-sm"
-                      >
-                        在新标签页打开
-                      </button>
-                      <button
                         onClick={handleDownload}
-                        className="px-4 py-2 bg-[#3A3A3D] text-white rounded hover:bg-[#4A4A4D] transition-colors text-sm"
+                        className="px-4 py-2 bg-[#1164A3] text-white rounded hover:bg-[#0D4A7C] transition-colors text-sm"
                       >
                         下载查看
                       </button>
@@ -438,13 +433,25 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 </div>
               )}
               <iframe
-                src={iframeSrc || ''}
+                src={attachment.filePath}
                 className={`w-full h-full border-0 ${previewLoading || previewError ? 'opacity-0' : 'opacity-100'}`}
-                title={attachment.fileName}
-                referrerPolicy="strict-origin-when-cross-origin"
+                title={`${attachment.fileName} - PDF 预览`}
                 onLoad={handleIframeLoad}
                 onError={handleIframeError}
               />
+            </div>
+          ) : isVideo ? (
+            // 视频预览
+            <div className="w-full h-full flex items-center justify-center bg-black">
+              <video
+                src={attachment.filePath}
+                controls
+                autoPlay
+                className="max-w-full max-h-full"
+                title={attachment.fileName}
+              >
+                您的浏览器不支持视频播放
+              </video>
             </div>
           ) : isText ? (
             // 文本预览 - 修复滚动问题

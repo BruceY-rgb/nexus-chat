@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { X, MessageSquare, GripVertical } from 'lucide-react';
+import { X, MessageSquare } from 'lucide-react';
 import { Message } from '@/types/message';
 import ThreadMessageItem from './ThreadMessageItem';
 import DMMessageInput from './DMMessageInput';
@@ -42,7 +42,8 @@ export default function ThreadPanel({
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging) return;
 
-    const deltaX = e.clientX - dragStartRef.current.x;
+    // 左边缘拖动：向右拖动时面板变宽，向左拖动时面板变窄
+    const deltaX = dragStartRef.current.x - e.clientX;
     const newWidth = Math.max(320, Math.min(600, dragStartRef.current.width + deltaX));
     setPanelWidth(newWidth);
   };
@@ -98,35 +99,30 @@ export default function ThreadPanel({
 
   return (
     <div
-      className="fixed inset-y-0 right-0 bg-white border-l border-gray-200 shadow-lg z-50 flex flex-col"
+      className="fixed inset-y-0 right-0 bg-white shadow-lg z-[70] flex flex-col"
       style={{ width: `${panelWidth}px` }}
+      onClick={(e) => e.stopPropagation()}
     >
+      {/* 左侧拖拽区域 */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 transition-colors"
+        onMouseDown={handleMouseDown}
+        style={{ cursor: isDragging ? 'col-resize' : 'col-resize' }}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-gray-600" />
           <h2 className="text-lg font-semibold text-gray-900">Thread</h2>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Drag handle */}
-          <div
-            onMouseDown={handleMouseDown}
-            className={`p-1 hover:bg-gray-100 rounded cursor-col-resize transition-colors border-l-2 border-transparent hover:border-gray-300 ${
-              isDragging ? 'bg-gray-200 border-gray-400' : ''
-            }`}
-            title="Drag to resize width"
-            style={{ cursor: isDragging ? 'col-resize' : 'col-resize' }}
-          >
-            <GripVertical className="w-4 h-4 text-gray-400" />
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-            aria-label="Close thread panel"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
+        <button
+          onClick={onClose}
+          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="Close thread panel"
+        >
+          <X className="w-5 h-5 text-gray-600" />
+        </button>
       </div>
 
       {/* Thread Root Message */}

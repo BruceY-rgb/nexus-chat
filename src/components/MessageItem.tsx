@@ -68,8 +68,8 @@ function MessageItemBase({
         ref={(el) => {
           messageRefs.current[message.id] = el;
         }}
-        className={`message-row w-full relative group transition-all duration-200 hover:bg-slate-800/50 hover:z-[50] ${
-          isHighlighted ? 'bg-yellow-200/70 rounded-lg shadow-md animate-pulse' : ''
+        className={`message-row w-full relative group transition-all duration-200 hover:bg-slate-800/50 hover:z-[60] ${
+          isHighlighted ? 'bg-yellow-100/50 rounded-lg' : ''
         }`}
       >
         {/* 🧠 智能对侧悬停工具栏 - 脱离内容容器，悬浮在行级别 */}

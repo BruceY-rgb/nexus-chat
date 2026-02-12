@@ -34,7 +34,7 @@ export default function Channels({
     setIsModalOpen(false);
   };
 
-  const handleCreateChannelSubmit = async (channelName: string, description?: string) => {
+  const handleCreateChannelSubmit = async (channelName: string, description?: string, isPrivate?: boolean) => {
     try {
       // 调用实际 API 创建频道
       const response = await fetch('/api/channels', {
@@ -46,7 +46,7 @@ export default function Channels({
         body: JSON.stringify({
           name: channelName,
           description,
-          isPrivate: false
+          isPrivate: isPrivate || false
         })
       });
 

@@ -4,6 +4,7 @@ export interface Channel {
   name: string;
   description?: string;
   type: 'public' | 'private';
+  isPrivate?: boolean; // Database field for private channel
   createdAt: Date;
   ownerId: string;
   memberCount?: number;

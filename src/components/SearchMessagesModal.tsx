@@ -4,6 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Search, X, Hash, MessageSquare } from 'lucide-react';
+import SearchFilterPanel from './SearchFilterPanel';
+
+interface SearchFilters {
+  userId: string | null;
+  startDate: string | null;
+  endDate: string | null;
+}
 
 interface SearchResult {
   id: string;
@@ -47,6 +54,11 @@ export default function SearchMessagesModal({
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [filters, setFilters] = useState<SearchFilters>({
+    userId: null,
+    startDate: null,
+    endDate: null
+  });
   const router = useRouter();
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -64,7 +76,11 @@ export default function SearchMessagesModal({
   // 执行搜索
   useEffect(() => {
     const searchMessages = async () => {
-      if (!debouncedQuery.trim()) {
+      // 检查是否需要执行搜索：有关键词或有过滤条件
+      const hasQuery = debouncedQuery.trim();
+      const hasFilters = filters.userId || filters.startDate || filters.endDate;
+
+      if (!hasQuery && !hasFilters) {
         setResults([]);
         setSelectedIndex(-1);
         return;
@@ -72,10 +88,14 @@ export default function SearchMessagesModal({
 
       try {
         setIsSearching(true);
-        const params = new URLSearchParams({
-          query: debouncedQuery
-        });
+        const params = new URLSearchParams();
 
+        // 只在有搜索关键词时添加query参数
+        if (hasQuery) {
+          params.append('query', debouncedQuery);
+        }
+
+        // 添加搜索范围限制（频道或私聊）
         if (channelId) {
           params.append('channelId', channelId);
         }
@@ -83,7 +103,18 @@ export default function SearchMessagesModal({
           params.append('dmConversationId', dmConversationId);
         }
 
-        const response = await fetch(`/api/messages/context-search?${params.toString()}`, {
+        // 添加过滤参数
+        if (filters.userId) {
+          params.append('userId', filters.userId);
+        }
+        if (filters.startDate) {
+          params.append('startDate', filters.startDate);
+        }
+        if (filters.endDate) {
+          params.append('endDate', filters.endDate);
+        }
+
+        const response = await fetch(`/api/messages/search?${params.toString()}`, {
           credentials: 'include'
         });
 
@@ -93,7 +124,7 @@ export default function SearchMessagesModal({
           setSelectedIndex(-1);
         }
       } catch (error) {
-        console.error('搜索失败:', error);
+        console.error('Search failed:', error);
         setResults([]);
       } finally {
         setIsSearching(false);
@@ -101,7 +132,7 @@ export default function SearchMessagesModal({
     };
 
     searchMessages();
-  }, [debouncedQuery, channelId, dmConversationId]);
+  }, [debouncedQuery, filters]);
 
   // 点击外部关闭弹窗
   useEffect(() => {
@@ -217,6 +248,11 @@ export default function SearchMessagesModal({
     setQuery('');
     setResults([]);
     setSelectedIndex(-1);
+    setFilters({
+      userId: null,
+      startDate: null,
+      endDate: null
+    });
     inputRef.current?.focus();
   };
 
@@ -226,6 +262,11 @@ export default function SearchMessagesModal({
     setQuery('');
     setResults([]);
     setSelectedIndex(-1);
+    setFilters({
+      userId: null,
+      startDate: null,
+      endDate: null
+    });
   };
 
   if (!isOpen) return null;
@@ -290,8 +331,18 @@ export default function SearchMessagesModal({
           </div>
         </div>
 
-        {/* 搜索结果 */}
-        <div className="max-h-96 overflow-y-auto">
+        {/* 主体内容：左侧过滤器 + 右侧搜索结果 */}
+        <div className="flex h-96">
+          {/* 左侧过滤器面板 */}
+          <SearchFilterPanel
+            filters={filters}
+            onFiltersChange={setFilters}
+            contextType={channelId ? 'channel' : dmConversationId ? 'dm' : 'global'}
+            channelId={channelId}
+          />
+
+          {/* 搜索结果 */}
+          <div className="flex-1 overflow-y-auto border-l border-gray-200">
           {isSearching ? (
             <div className="p-8 text-center text-gray-500">
               <div className="inline-block w-5 h-5 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin mr-2" />
@@ -365,6 +416,7 @@ export default function SearchMessagesModal({
               Enter a keyword to search messages
             </div>
           )}
+          </div>
         </div>
 
         {/* 底部提示 */}

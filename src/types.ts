@@ -11,4 +11,5 @@ export interface TeamMember {
   lastReadAt?: Date;
   dmConversationId?: string;
   isStarred?: boolean;
+  role?: string; // Channel member role: owner, admin, member
 }

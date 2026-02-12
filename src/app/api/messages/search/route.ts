@@ -30,9 +30,17 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('query');
 
-    if (!query || query.trim() === '') {
+    // 获取过滤参数
+    const channelId = searchParams.get('channelId');
+    const dmConversationId = searchParams.get('dmConversationId');
+    const userId = searchParams.get('userId');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+
+    // 检查是否需要执行搜索：需要有关键词或有过滤条件
+    if ((!query || query.trim() === '') && !channelId && !dmConversationId && !userId && !startDate && !endDate) {
       return NextResponse.json(
-        { error: '搜索关键词不能为空' },
+        { error: '请提供搜索关键词或过滤条件' },
         { status: 400 }
       );
     }
@@ -53,19 +61,38 @@ export async function GET(request: NextRequest) {
 
     const joinedDmConversationIds = dmMemberships.map(m => m.conversationId);
 
-    // 执行搜索：同时搜索频道消息和 DM 消息
-    const [channelMessages, dmMessages] = await Promise.all([
-      // 搜索频道消息
-      prisma.message.findMany({
+    // 构建时间过滤条件
+    const dateFilter: {
+      gte?: Date;
+      lte?: Date;
+    } = {};
+    if (startDate) {
+      dateFilter.gte = new Date(startDate);
+    }
+    if (endDate) {
+      dateFilter.lte = new Date(endDate);
+    }
+
+    // 构建内容搜索条件（支持无关键词查询）
+    const contentFilter = query ? {
+      content: {
+        contains: query,
+        mode: 'insensitive' as const
+      }
+    } : {};
+
+    // 执行搜索：根据是否有channelId或dmConversationId来决定搜索范围
+    let channelMessages: any[] = [];
+    let dmMessages: any[] = [];
+
+    // 如果指定了channelId，只搜索该频道
+    if (channelId) {
+      channelMessages = await prisma.message.findMany({
         where: {
-          content: {
-            contains: query,
-            mode: 'insensitive'
-          },
-          channelId: {
-            in: joinedChannelIds
-          },
-          dmConversationId: null,
+          ...contentFilter,
+          channelId: channelId,
+          userId: userId || undefined,
+          createdAt: Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
           deletedAt: null
         },
         include: {
@@ -86,19 +113,17 @@ export async function GET(request: NextRequest) {
         orderBy: {
           createdAt: 'desc'
         },
-        take: 50 // 限制返回数量
-      }),
-      // 搜索 DM 消息
-      prisma.message.findMany({
+        take: 50
+      });
+    }
+    // 如果指定了dmConversationId，只搜索该DM对话
+    else if (dmConversationId) {
+      dmMessages = await prisma.message.findMany({
         where: {
-          content: {
-            contains: query,
-            mode: 'insensitive'
-          },
-          dmConversationId: {
-            in: joinedDmConversationIds
-          },
-          channelId: null,
+          ...contentFilter,
+          dmConversationId: dmConversationId,
+          userId: userId || undefined,
+          createdAt: Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
           deletedAt: null
         },
         include: {
@@ -128,9 +153,83 @@ export async function GET(request: NextRequest) {
         orderBy: {
           createdAt: 'desc'
         },
-        take: 50 // 限制返回数量
+        take: 50
+      });
+    }
+    // 否则全局搜索（搜索用户加入的所有频道和DM）
+    else {
+      [channelMessages, dmMessages] = await Promise.all([
+        // 搜索频道消息
+        prisma.message.findMany({
+          where: {
+            ...contentFilter,
+            channelId: { in: joinedChannelIds },
+            userId: userId || undefined,
+            createdAt: Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
+            deletedAt: null
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                displayName: true,
+                avatarUrl: true
+              }
+            },
+            channel: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: 50
+        }),
+        // 搜索 DM 消息
+        prisma.message.findMany({
+          where: {
+            ...contentFilter,
+            dmConversationId: {
+              in: joinedDmConversationIds
+            },
+            userId: userId || undefined,
+            createdAt: Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
+            deletedAt: null
+          },
+        include: {
+          user: {
+            select: {
+              id: true,
+              displayName: true,
+              avatarUrl: true
+            }
+          },
+          dmConversation: {
+            select: {
+              id: true,
+              members: {
+                select: {
+                  user: {
+                    select: {
+                      id: true,
+                      displayName: true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: 50
       })
     ]);
+    }
 
     // 格式化搜索结果
     const formatChannelMessage = (message: any) => ({

@@ -9,6 +9,7 @@ import MySpaceView from './MySpaceView';
 import MessageList, { MessageListRef } from './MessageList';
 import DMMessageInput from './DMMessageInput';
 import ThreadPanel from './ThreadPanel';
+import FileList from './FileList';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useWebSocketMessages } from '@/hooks/useWebSocketMessages';
 import { useSocket } from '@/hooks/useSocket';
@@ -28,6 +29,7 @@ export default function DirectMessageView({
   const [conversation, setConversation] = useState<DMConversation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'messages' | 'canvas' | 'files' | 'shared'>('messages');
   const { markAsRead } = useUnreadCount();
   const { socket, isConnected, connect, connectionStatus } = useSocket();
   const messageListRef = useRef<MessageListRef>(null);
@@ -334,44 +336,63 @@ export default function DirectMessageView({
 
       {/* 2. Tab 导航 - 固定 */}
       <div className="flex-shrink-0">
-        <DMTabs isOwnSpace={isOwnSpace} />
+        <DMTabs
+          isOwnSpace={isOwnSpace}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
       </div>
 
 
       {/* 3. 核心内容区：确保它占据所有剩余高度 */}
       <div className="flex-1 flex flex-col min-h-0">
-        {isOwnSpace ? (
+        {/* 根据activeTab渲染不同内容 */}
+        {activeTab === 'files' && conversation && !conversation.id.startsWith('self-') ? (
+          <div className="flex-1 overflow-hidden">
+            <FileList
+              conversationId={conversation.id}
+              conversationType="dm"
+            />
+          </div>
+        ) : activeTab === 'files' && (!conversation || conversation.id.startsWith('self-')) ? (
+          <div className="flex-1 flex items-center justify-center text-text-secondary">
+            Please select a conversation to view files
+          </div>
+        ) : isOwnSpace ? (
           <div className="flex-1 overflow-y-auto">
             <MySpaceView member={member} currentUserId={currentUserId} />
           </div>
         ) : (
           <>
-            {/* 消息列表：必须设置 flex-1 和 min-h-0 以强制占满空间并支持内部滚动 */}
-            <div className="flex-1 min-h-0 relative">
-              <MessageList
-                ref={messageListRef}
-                messages={messages}
-                currentUserId={currentUserId}
-                isLoading={isLoading}
-                className="h-full w-full"
-                dmConversationId={conversation?.id && !conversation.id.startsWith('self-') ? conversation.id : undefined}
-                onScrollPositionChange={handleScrollPositionChange}
-                onEditMessage={handleEditMessage}
-                onDeleteMessage={handleDeleteMessage}
-                onThreadReply={handleThreadReply}
-                onQuote={handleQuote}
-              />
-            </div>
+            {/* 消息列表和线程面板使用 flex 布局，避免重叠导致事件穿透 */}
+            <div className="flex flex-1 min-h-0">
+              {/* 消息列表：必须设置 flex-1 和 min-h-0 以强制占满空间并支持内部滚动 */}
+              <div className="flex-1 min-h-0 relative">
+                <MessageList
+                  ref={messageListRef}
+                  messages={messages}
+                  currentUserId={currentUserId}
+                  isLoading={isLoading}
+                  className="h-full w-full"
+                  dmConversationId={conversation?.id && !conversation.id.startsWith('self-') ? conversation.id : undefined}
+                  onScrollPositionChange={handleScrollPositionChange}
+                  onEditMessage={handleEditMessage}
+                  onDeleteMessage={handleDeleteMessage}
+                  onThreadReply={handleThreadReply}
+                  onQuote={handleQuote}
+                />
+              </div>
 
-            {/* 线程面板：右侧滑出面板，宽度360px */}
-            {threadPanelOpen && (
-              <ThreadPanel
-                isOpen={threadPanelOpen}
-                onClose={closeThread}
-                threadMessage={activeThreadMessage}
-                currentUserId={currentUserId}
-              />
-            )}
+              {/* 线程面板：右侧滑出面板，宽度360px */}
+              {threadPanelOpen && (
+                <ThreadPanel
+                  isOpen={threadPanelOpen}
+                  onClose={closeThread}
+                  threadMessage={activeThreadMessage}
+                  currentUserId={currentUserId}
+                />
+              )}
+            </div>
 
             {error && (
               <div className="flex-shrink-0 p-4 bg-red-500/10 text-red-500 text-center">

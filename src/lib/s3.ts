@@ -159,11 +159,20 @@ export function validateFileType(mimeType: string): boolean {
 export function canPreviewInline(mimeType: string, fileSize: number): boolean {
   // 支持预览的文件类型
   const previewableTypes = [
+    // 图片
     'image/jpeg',
     'image/png',
     'image/gif',
     'image/webp',
     'image/svg+xml',
+    // 视频
+    'video/mp4',
+    'video/webm',
+    'video/ogg',
+    'video/quicktime',
+    'video/x-msvideo',
+    'video/x-matroska',
+    // 文档
     'application/pdf',
     'text/plain',
     'text/markdown',

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { TeamMember } from '../types';
 import SearchMessagesModal from './SearchMessagesModal';
+import DMNotificationSettingsModal from './DMNotificationSettingsModal';
 
 interface DMHeaderProps {
   member: TeamMember;
@@ -24,8 +25,9 @@ export default function DMHeader({
   const [isStarred, setIsStarred] = useState(member.isStarred || false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
 
-  // 切换星标状态
+  // Toggle starred status
   const handleToggleStar = async () => {
     if (isLoading) return;
 
@@ -45,7 +47,7 @@ export default function DMHeader({
         setIsStarred(data.isStarred);
         setIsSettingsOpen(false);
 
-        // 触发自定义事件，通知 DirectMessages 组件刷新
+        // Dispatch custom event to notify DirectMessages component to refresh
         window.dispatchEvent(new CustomEvent('starred-users-updated'));
       }
     } catch (error) {
@@ -55,9 +57,9 @@ export default function DMHeader({
     }
   };
 
-  // 清空聊天记录
+  // Clear chat history
   const handleClearMessages = async () => {
-    if (!window.confirm('确定要清空所有聊天记录吗？此操作不可撤销。')) {
+    if (!window.confirm('Are you sure you want to clear all chat history? This action cannot be undone.')) {
       return;
     }
 
@@ -71,22 +73,22 @@ export default function DMHeader({
       });
 
       if (response.ok) {
-        alert('聊天记录已清空');
+        alert('Chat history has been cleared');
         setIsSettingsOpen(false);
-        // 刷新页面或触发消息列表刷新
+        // Refresh page or trigger message list refresh
         window.location.reload();
       } else {
         alert('Clear messages failed, please try again');
       }
     } catch (error) {
-      console.error('清空消息错误:', error);
+      console.error('Error clearing messages:', error);
       alert('Clear messages failed, please try again');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 搜索聊天记录
+  // Search chat history
   const handleSearchMessages = () => {
     setIsSearchModalOpen(true);
     setIsSettingsOpen(false);
@@ -94,9 +96,9 @@ export default function DMHeader({
 
   return (
     <div className="flex-shrink-0 bg-background-secondary border-b border-border">
-      {/* 主标题栏 */}
+      {/* Main header */}
       <div className="flex items-center justify-between px-4 py-3">
-        {/* 左侧 - 头像和名称 */}
+        {/* Left side - Avatar and name */}
         <div className="flex items-center gap-3">
           <div className="relative">
             <img
@@ -111,7 +113,7 @@ export default function DMHeader({
                 }
               }}
             />
-            {/* 在线状态指示器 */}
+            {/* Online status indicator */}
             {!isOwnSpace && (
               <span
                 className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full border-2 border-white ${
@@ -132,9 +134,9 @@ export default function DMHeader({
           </div>
         </div>
 
-        {/* 右侧 - 搜索和设置按钮 */}
+        {/* Right side - Search and settings buttons */}
         <div className="flex items-center gap-2">
-          {/* 搜索按钮 */}
+          {/* Search button */}
           <button
             onClick={() => setIsSearchModalOpen(true)}
             className="p-2 hover:bg-background-tertiary rounded-full transition-colors"
@@ -184,15 +186,15 @@ export default function DMHeader({
               </svg>
             </button>
 
-            {/* 设置下拉菜单 */}
+            {/* Settings dropdown menu */}
             {isSettingsOpen && (
               <>
-                {/* 背景遮罩 */}
+                {/* Background overlay */}
                 <div
                   className="fixed inset-0 z-10"
                   onClick={() => setIsSettingsOpen(false)}
                 />
-                {/* 菜单内容 */}
+                {/* Menu content */}
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20">
                   <div className="px-4 py-2 border-b border-gray-100">
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -247,6 +249,30 @@ export default function DMHeader({
                   </button>
 
                   <button
+                    onClick={() => {
+                      setIsNotificationSettingsOpen(true);
+                      setIsSettingsOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+                      />
+                    </svg>
+                    Notification Settings
+                  </button>
+
+                  <button
                     onClick={handleClearMessages}
                     disabled={isLoading}
                     className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-50"
@@ -274,12 +300,20 @@ export default function DMHeader({
         </div>
       </div>
 
-      {/* 搜索消息弹窗 */}
+      {/* Search messages modal */}
       <SearchMessagesModal
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
         dmConversationId={member.dmConversationId}
         contextName={isOwnSpace ? 'My Space' : member.displayName}
+      />
+
+      {/* Notification settings modal */}
+      <DMNotificationSettingsModal
+        isOpen={isNotificationSettingsOpen}
+        onClose={() => setIsNotificationSettingsOpen(false)}
+        dmConversationId={member.dmConversationId || ''}
+        memberName={displayName}
       />
     </div>
   );

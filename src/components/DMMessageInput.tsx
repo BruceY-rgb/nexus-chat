@@ -228,7 +228,7 @@ export default function DMMessageInput({
     const maxSize = 10 * 1024 * 1024;
     const oversizedFiles = imageFiles.filter(file => file.size > maxSize);
     if (oversizedFiles.length > 0) {
-      alert(`文件大小不能超过 10MB。超出限制的文件：${oversizedFiles.map(f => f.name).join(', ')}`);
+      alert(`File size cannot exceed 10MB. Files exceeding the limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
       return;
     }
 
@@ -258,7 +258,7 @@ export default function DMMessageInput({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '上传失败');
+        throw new Error(error.error || 'Upload failed');
       }
 
       const result = await response.json();
@@ -276,8 +276,8 @@ export default function DMMessageInput({
       }));
 
     } catch (error) {
-      console.error('❌ 文件上传失败:', error);
-      alert(`上传失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      console.error('File upload failed:', error);
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       // 移除失败的文件
       setUploadedFiles(prev => prev.filter(f => !newFiles.some(nf => nf.id === f.id)));
     } finally {
@@ -295,7 +295,7 @@ export default function DMMessageInput({
     const maxSize = 50 * 1024 * 1024;
     const oversizedFiles = files.filter(file => file.size > maxSize);
     if (oversizedFiles.length > 0) {
-      alert(`文件大小不能超过 50MB。超出限制的文件：${oversizedFiles.map(f => f.name).join(', ')}`);
+      alert(`File size cannot exceed 50MB. Files exceeding the limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
       return;
     }
 
@@ -325,7 +325,7 @@ export default function DMMessageInput({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '上传失败');
+        throw new Error(error.error || 'Upload failed');
       }
 
       const result = await response.json();
@@ -343,8 +343,8 @@ export default function DMMessageInput({
       }));
 
     } catch (error) {
-      console.error('❌ 文件传输失败:', error);
-      alert(`传输失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      console.error('File transfer failed:', error);
+      alert(`Transfer failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       // 移除失败的文件
       setUploadedFiles(prev => prev.filter(f => !newFiles.some(nf => nf.id === f.id)));
     } finally {
@@ -1467,7 +1467,7 @@ export default function DMMessageInput({
                 />
 
                 <div className="p-3 border-b border-[#3A3A3D] flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-white">选择表情</h3>
+                  <h3 className="text-sm font-medium text-white">Select Emoji</h3>
                   <button
                     onClick={() => setShowEmojiPicker(false)}
                     className="text-white/60 hover:text-white transition-colors"
@@ -1520,7 +1520,7 @@ export default function DMMessageInput({
                         />
                         {uploadedFile.error && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="text-xs text-red-400">上传失败</span>
+                            <span className="text-xs text-red-400">Upload failed</span>
                           </div>
                         )}
                       </div>
@@ -1540,7 +1540,7 @@ export default function DMMessageInput({
                         </div>
                         {uploadedFile.error && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="text-xs text-red-400">上传失败</span>
+                            <span className="text-xs text-red-400">Upload failed</span>
                           </div>
                         )}
                       </div>

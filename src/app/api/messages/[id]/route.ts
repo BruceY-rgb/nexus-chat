@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 import { Server as SocketIOServer } from 'socket.io';
+import { deleteFile } from '@/lib/s3';
 
 /**
  * 递归遍历对象，将所有 BigInt 和 Date 字段转换为 String
@@ -271,6 +272,31 @@ export async function DELETE(
       );
     }
 
+    // 删除消息的附件（OSS文件 + 数据库记录）
+    try {
+      const attachments = await prisma.attachment.findMany({
+        where: { messageId: messageId }
+      });
+
+      // 删除OSS中的文件
+      for (const attachment of attachments) {
+        try {
+          await deleteFile(attachment.s3Key);
+        } catch (ossError) {
+          console.error('Error deleting file from OSS:', ossError);
+          // 继续删除数据库记录
+        }
+      }
+
+      // 删除数据库中的附件记录
+      await prisma.attachment.deleteMany({
+        where: { messageId: messageId }
+      });
+    } catch (attachmentError) {
+      console.error('Error deleting attachments:', attachmentError);
+      // 附件删除失败不影响消息删除
+    }
+
     // 执行逻辑删除：不修改 content 字段，只设置 isDeleted 标记
     const deletedMessage = await prisma.message.update({
       where: { id: messageId },
@@ -320,10 +346,10 @@ export async function DELETE(
 
         if (deletedMessage.channelId) {
           const channelRoom = `channel:${deletedMessage.channelId}`;
-          ioInstance.to(channelRoom).emit('message:delete', deletePayload);
+          ioInstance.to(channelRoom).emit('message-deleted', deletePayload);
         } else if (deletedMessage.dmConversationId) {
           const dmRoom = `dm:${deletedMessage.dmConversationId}`;
-          ioInstance.to(dmRoom).emit('message:delete', deletePayload);
+          ioInstance.to(dmRoom).emit('message-deleted', deletePayload);
         }
 
         console.log(`📡 [API] 消息删除事件已广播: ${messageId}`);

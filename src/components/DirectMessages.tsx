@@ -99,7 +99,7 @@ export default function DirectMessages({
     loadActiveConversations();
     loadStarredUsers();
 
-    // 监听WebSocket事件以实时更新活跃对话列表
+    // Listen for WebSocket events to update active conversation list in real-time
     const handleActiveConversationsUpdate = () => {
       // Refresh active conversation list
       loadActiveConversations();
@@ -115,7 +115,7 @@ export default function DirectMessages({
       socket.on('active-conversations-update', handleActiveConversationsUpdate);
     }
 
-    // 监听自定义事件
+    // Listen for custom events
     window.addEventListener('starred-users-updated', handleStarredUsersUpdate);
 
     // Cleanup function
@@ -127,15 +127,15 @@ export default function DirectMessages({
     };
   }, [socket]);
 
-  // 处理开始聊天（立即将对话添加到列表中）
+  // Handle starting a chat (adds conversation to list immediately)
   const handleStartChat = useCallback(async (userId: string, dmConversationId?: string) => {
-    // === 步骤1: 立即Clear search query, switching to active conversation list ===
+    // === Step 1: Clear search query, switching to active conversation list ===
     if (searchQuery.trim()) {
       setSearchQuery('');
       console.log('🔍 [DEBUG] Clear search query, switching to active conversation list');
     }
 
-    // 如果已经有 dmConversationId，直接使用
+    // If dmConversationId already exists, use it directly
     if (dmConversationId) {
       // When clicking to enter conversation, automatically clear unread count
       try {
@@ -162,7 +162,7 @@ export default function DirectMessages({
         const conversation = await response.json();
         const otherMember = conversation.members.find((m: any) => m.userId !== currentUserId);
 
-        // 确保otherMember存在
+        // Ensure otherMember exists
         if (!otherMember?.user?.id) {
           throw new Error('Failed to find other user');
         }
@@ -186,23 +186,23 @@ export default function DirectMessages({
           messageCount: 0
         };
 
-        // 乐观更新：将新对话添加到列表顶部
+        // Optimistic update: add new conversation to top of list
         setActiveConversations(prev => {
-          // 检查是否已存在
+          // Check if already exists
           if (prev.some(conv => conv.conversationId === conversation.id)) {
             return prev;
           }
           return [newConversation, ...prev];
         });
 
-        // 通知WebSocket更新
+        // Notify WebSocket to update
         if (socket) {
           socket.emit('active-conversations-update', { dmConversationId: conversation.id });
         }
 
         onStartChat?.(userId, conversation.id);
       } else {
-        // 即使失败，也调用原始回调
+        // Even if it fails, call the original callback
         onStartChat?.(userId);
       }
     } catch (error) {
@@ -211,7 +211,7 @@ export default function DirectMessages({
     }
   }, [socket, onStartChat, currentUserId, searchQuery]);
 
-  // 搜索团队成员（搜索所有用户，不仅仅是活跃的）
+  // Search team members (searches all users, not just active ones)
   useEffect(() => {
     const searchMembers = async () => {
       if (!searchQuery.trim()) {
@@ -241,9 +241,9 @@ export default function DirectMessages({
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  // 显示搜索结果或活跃对话
+  // Show search results or active conversations
   const displayConversations = searchQuery.trim() ? searchResults.map(user => ({
-    conversationId: user.dmConversationId || '', // 搜索结果没有conversationId，留空让handleStartChat创建
+    conversationId: user.dmConversationId || '', // Search results don't have conversationId, leave empty for handleStartChat to create
     lastMessageAt: '',
     createdAt: '',
     otherUser: {
@@ -260,7 +260,7 @@ export default function DirectMessages({
     lastMessage: null,
     messageCount: 0
   })) : activeConversations.filter(conv =>
-    // 过滤掉已在星标列表中的用户，避免重复显示
+    // Filter out users already in starred list to avoid duplicate display
     !starredUsers.some(starredUser => starredUser.id === conv.otherUser.id)
   );
 
@@ -335,8 +335,8 @@ export default function DirectMessages({
               const realUnreadCount = getUnreadCount(conversationId);
               const hasUnread = realUnreadCount > 0;
 
-              // 防御性检查：只有当未读数大于0且最后一条消息不是当前用户发送的，才显示未读标记
-              // 注意：星标列表没有lastMessage信息，但getUnreadCount已经排除了发送者
+              // Defensive check: only show unread badge when unread count > 0 and last message was not sent by current user
+              // Note: Starred list has no lastMessage info, but getUnreadCount already excludes the sender
               const shouldShowUnreadBadge = hasUnread;
 
               return (
@@ -404,7 +404,7 @@ export default function DirectMessages({
       <div>
         <div className="px-3 py-1.5">
           <h4 className="text-white/60 text-xs font-medium tracking-wide uppercase">
-            {searchQuery ? '搜索结果' : 'DIRECT MESSAGES'}
+            {searchQuery ? 'Search Results' : 'DIRECT MESSAGES'}
           </h4>
         </div>
         <div className="space-y-0.5">
@@ -416,8 +416,8 @@ export default function DirectMessages({
             const unreadCount = conversation.unreadCount || getUnreadCount(conversationId);
             const hasUnread = unreadCount > 0;
 
-            // 防御性检查：只有当未读数大于0且最后一条消息不是当前用户发送的，才显示未读标记
-            // 这确保了用户发送的消息不会触发自身的红点
+            // Defensive check: only show unread badge when unread count > 0 and last message was not sent by current user
+            // This ensures user-sent messages don't trigger their own notification badge
             const shouldShowUnreadBadge = hasUnread && (!conversation.lastMessage || conversation.lastMessage.user.id !== currentUserId);
 
             return (
@@ -489,14 +489,14 @@ export default function DirectMessages({
       {/* Search no results */}
       {displayConversations.length === 0 && searchQuery && !isSearching && (
         <div className="px-3 py-2 text-white/50 text-sm">
-          未找到用户 "{searchQuery}"
+          User "{searchQuery}" not found
         </div>
       )}
 
       {/* Searching state */}
       {isSearching && (
         <div className="px-3 py-2 text-white/50 text-sm">
-          搜索中...
+          Searching...
         </div>
       )}
     </div>

@@ -99,10 +99,10 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
       setTimeout(() => {
         scrollToMessage(messageId);
       }, 100);
-      // 3秒后自动清除高亮
+      // 2秒后自动清除高亮
       setTimeout(() => {
         setHighlightedMessageId(null);
-      }, 3000);
+      }, 2000);
     }
   }));
 
@@ -203,10 +203,10 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
       setTimeout(() => {
         scrollToMessage(messageId);
       }, 100);
-      // 3秒后自动清除高亮
+      // 2秒后自动清除高亮
       setTimeout(() => {
         setHighlightedMessageId(null);
-      }, 3000);
+      }, 2000);
     } else {
       // 没有指定消息时，滚动到底部并清除高亮
       setHighlightedMessageId(null);

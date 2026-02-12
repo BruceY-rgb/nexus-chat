@@ -6,7 +6,7 @@ import { Button } from '@/components/ui';
 interface CreateChannelModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (channelName: string, description?: string) => void;
+  onCreate: (channelName: string, description?: string, isPrivate?: boolean) => void;
 }
 
 export default function CreateChannelModal({
@@ -16,6 +16,7 @@ export default function CreateChannelModal({
 }: CreateChannelModalProps) {
   const [channelName, setChannelName] = useState('');
   const [description, setDescription] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
 
   // 检查频道名称是否有效（不为空且不以空格开头）
   const isChannelNameValid = channelName.trim().length > 0;
@@ -23,16 +24,18 @@ export default function CreateChannelModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isChannelNameValid) {
-      onCreate(channelName.trim(), description.trim() || undefined);
+      onCreate(channelName.trim(), description.trim() || undefined, isPrivate);
       // 重置表单
       setChannelName('');
       setDescription('');
+      setIsPrivate(false);
     }
   };
 
   const handleClose = () => {
     setChannelName('');
     setDescription('');
+    setIsPrivate(false);
     onClose();
   };
 
@@ -102,6 +105,36 @@ export default function CreateChannelModal({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900"
                 placeholder="What's this channel about?"
               />
+            </div>
+
+            {/* 私有频道复选框 */}
+            <div className="mt-4">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={isPrivate}
+                    onChange={(e) => setIsPrivate(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-[#1164A3] peer-checked:border-[#1164A3] transition-colors group-hover:border-gray-400"></div>
+                  <svg
+                    className="absolute top-0.5 left-0.5 w-4 h-4 text-white opacity-0 peer-checked:opacity-100 pointer-events-none"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-900">Make this a private channel</span>
+                  <p className="text-xs text-gray-500">Only invited members can see this channel</p>
+                </div>
+              </label>
             </div>
           </div>
 

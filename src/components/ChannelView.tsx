@@ -10,6 +10,8 @@ import MessageList, { MessageListRef } from './MessageList';
 import DMMessageInput from './DMMessageInput';
 import SearchMessagesModal from './SearchMessagesModal';
 import ThreadPanel from './ThreadPanel';
+import ChannelSettingsModal from './ChannelSettingsModal';
+import FileList from './FileList';
 import { useWebSocketMessages } from '@/hooks/useWebSocketMessages';
 import { useThreadStore } from '@/stores/threadStore';
 
@@ -41,6 +43,8 @@ export default function ChannelView({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'messages' | 'files'>('messages');
 
   // 线程状态管理
   const { setActiveThread, activeThreadId, activeThreadMessage, threadPanelOpen, closeThread } = useThreadStore();
@@ -129,21 +133,21 @@ export default function ChannelView({
   }, [activeThreadId, setActiveThread]);
 
   // 获取频道成员
+  const fetchMembers = async () => {
+    if (!channel?.id) return;
+    try {
+      const response = await fetch(`/api/channels/${channel.id}/members`);
+      if (response.ok) {
+        const data = await response.json();
+        setMembers(data.members || []);
+      }
+    } catch (error) {
+      console.error('Error fetching channel members:', error);
+    }
+  };
+
   useEffect(() => {
     if (!channel?.id) return;
-
-    const fetchMembers = async () => {
-      try {
-        const response = await fetch(`/api/channels/${channel.id}/members`);
-        if (response.ok) {
-          const data = await response.json();
-          setMembers(data.members || []);
-        }
-      } catch (error) {
-        console.error('Error fetching channel members:', error);
-      }
-    };
-
     if (isJoined) {
       fetchMembers();
     }
@@ -329,8 +333,21 @@ export default function ChannelView({
               </span>
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-text-primary">
+              <h1 className="text-lg font-semibold text-text-primary flex items-center gap-2">
                 #{channel?.name || 'Channel'}
+                {channel?.isPrivate && (
+                  <svg
+                    className="w-4 h-4 text-gray-500"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
               </h1>
               <p className="text-sm text-text-secondary">
                 {members.length} members
@@ -404,6 +421,35 @@ export default function ChannelView({
                         #{channel?.name || 'Channel'}
                       </p>
                     </div>
+
+                    <button
+                      onClick={() => {
+                        setIsSettingsOpen(true);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      Channel Settings
+                    </button>
 
                     <button
                       onClick={() => {
@@ -553,31 +599,74 @@ export default function ChannelView({
             </div>
           ) : (
             <>
-              {/* 消息列表：必须设置 flex-1 和 min-h-0 以强制占满空间并支持内部滚动 */}
-              <div className="flex-1 min-h-0 relative">
-                <MessageList
-                  ref={messageListRef}
-                  messages={messages}
-                  currentUserId={user?.id || ''}
-                  isLoading={isLoading}
-                  className="h-full w-full"
-                  channelId={channel?.id}
-                  onScrollPositionChange={handleScrollPositionChange}
-                  onEditMessage={handleEditMessage}
-                  onDeleteMessage={handleDeleteMessage}
-                  onThreadReply={handleThreadReply}
-                  onQuote={handleQuote}
-                />
+              {/* Tab 导航 */}
+              <div className="flex-shrink-0 border-b border-border bg-background-secondary">
+                <div className="flex">
+                  <button
+                    onClick={() => setActiveTab('messages')}
+                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === 'messages'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+                    }`}
+                  >
+                    Message
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('files')}
+                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === 'files'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+                    }`}
+                  >
+                    File
+                  </button>
+                </div>
               </div>
 
-              {/* 线程面板：右侧滑出面板，宽度360px */}
-              {threadPanelOpen && (
-                <ThreadPanel
-                  isOpen={threadPanelOpen}
-                  onClose={closeThread}
-                  threadMessage={activeThreadMessage}
-                  currentUserId={user?.id || ''}
-                />
+              {/* 根据activeTab渲染不同内容 */}
+              {activeTab === 'files' ? (
+                <div className="flex-1 overflow-hidden">
+                  <FileList
+                    conversationId={channel?.id || ''}
+                    conversationType="channel"
+                  />
+                </div>
+              ) : (
+                <>
+                  {/* 消息列表和线程面板使用 flex 布局，避免重叠导致事件穿透 */}
+                  <div className="flex flex-1 min-h-0">
+                    {/* 消息列表：必须设置 flex-1 和 min-h-0 以强制占满空间并支持内部滚动 */}
+                    <div className="flex-1 min-h-0 relative">
+                      <MessageList
+                        ref={messageListRef}
+                        messages={messages}
+                        currentUserId={user?.id || ''}
+                        isLoading={isLoading}
+                        className="h-full w-full"
+                        channelId={channel?.id}
+                        onScrollPositionChange={handleScrollPositionChange}
+                        onEditMessage={handleEditMessage}
+                        onDeleteMessage={handleDeleteMessage}
+                        onThreadReply={handleThreadReply}
+                        onQuote={handleQuote}
+                      />
+                    </div>
+
+                    {/* 线程面板：右侧滑出面板，宽度360px */}
+                    {threadPanelOpen && (
+                      <ThreadPanel
+                        isOpen={threadPanelOpen}
+                        onClose={closeThread}
+                        threadMessage={activeThreadMessage}
+                        currentUserId={user?.id || ''}
+                      />
+                    )}
+                  </div>
+
+                  {/* 关闭activeTab条件分支 */}
+                  </>
               )}
 
               {/* 3. 输入框：使用 flex-shrink-0 确保它被推到最底部，永不上移 */}
@@ -739,6 +828,27 @@ export default function ChannelView({
         onClose={() => setIsSearchModalOpen(false)}
         channelId={channel?.id}
         contextName={`#${channel?.name || ''}`}
+      />
+
+      {/* 频道设置弹窗 */}
+      <ChannelSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        channel={channel}
+        currentUserId={user?.id || ''}
+        currentUserRole={members.find(m => m.id === user?.id)?.role || 'member'}
+        members={members}
+        onUpdateChannel={(updatedChannel) => {
+          // 更新本地频道数据
+          if (updatedChannel.name !== undefined) {
+            // 通知父组件更新频道名称
+          }
+        }}
+        onRemoveMember={(userId) => {
+          setMembers(prev => prev.filter(m => m.id !== userId));
+        }}
+        onRefreshMembers={fetchMembers}
+        onStartChat={onStartChat}
       />
     </div>
   );

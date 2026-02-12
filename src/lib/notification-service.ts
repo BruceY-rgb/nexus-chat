@@ -7,6 +7,8 @@ import { prisma } from './prisma';
 import { Server as SocketIOServer } from 'socket.io';
 import { parseMentions, extractUsernames } from './mention-parser';
 
+export type NotificationLevel = 'all' | 'mentions' | 'nothing';
+
 export interface CreateNotificationParams {
   userId: string;
   type: 'mention' | 'dm' | 'channel_invite' | 'system' | 'thread_reply' | 'thread_mention';
@@ -16,6 +18,7 @@ export interface CreateNotificationParams {
   relatedThreadId?: string;
   relatedChannelId?: string;
   relatedDmConversationId?: string;
+  isMention?: boolean; // 是否是 @提及通知
 }
 
 export interface NotificationWithUser {
@@ -54,11 +57,125 @@ export class NotificationService {
   }
 
   /**
+   * 检查用户是否应该接收通知
+   * @param userId 用户ID
+   * @param relatedChannelId 频道ID（可选）
+   * @param relatedDmConversationId DM会话ID（可选）
+   * @param isMention 是否是@提及
+   * @returns 是否应该发送通知
+   */
+  async shouldSendNotification(
+    userId: string,
+    relatedChannelId?: string,
+    relatedDmConversationId?: string,
+    isMention?: boolean
+  ): Promise<boolean> {
+    try {
+      // 如果是 @提及通知，总是发送（除非用户设置为 nothing）
+      if (isMention) {
+        // 优先检查频道/DM级别的设置
+        if (relatedChannelId) {
+          const member = await prisma.channelMember.findUnique({
+            where: {
+              channelId_userId: {
+                channelId: relatedChannelId,
+                userId
+              }
+            },
+            select: {
+              notificationLevel: true
+            }
+          });
+          if (member && member.notificationLevel === 'nothing') {
+            return false;
+          }
+        } else if (relatedDmConversationId) {
+          const member = await prisma.dMConversationMember.findUnique({
+            where: {
+              conversationId_userId: {
+                conversationId: relatedDmConversationId,
+                userId
+              }
+            },
+            select: {
+              notificationLevel: true
+            }
+          });
+          if (member && member.notificationLevel === 'nothing') {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      // 非 @提及通知，检查用户的通知偏好
+      if (relatedChannelId) {
+        const member = await prisma.channelMember.findUnique({
+          where: {
+            channelId_userId: {
+              channelId: relatedChannelId,
+              userId
+            }
+          },
+          select: {
+            notificationLevel: true
+          }
+        });
+
+        if (!member) {
+          return true; // 如果不是成员，默认发送
+        }
+
+        // "all" - 发送所有通知
+        // "mentions" - 只发送 @提及通知（当前已经是 non-mention，所以不发送）
+        // "nothing" - 不发送任何通知
+        return member.notificationLevel === 'all';
+      } else if (relatedDmConversationId) {
+        const member = await prisma.dMConversationMember.findUnique({
+          where: {
+            conversationId_userId: {
+              conversationId: relatedDmConversationId,
+              userId
+            }
+          },
+          select: {
+            notificationLevel: true
+          }
+        });
+
+        if (!member) {
+          return true;
+        }
+
+        return member.notificationLevel === 'all';
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error checking notification preferences:', error);
+      return true; // 出错时默认发送
+    }
+  }
+
+  /**
    * 创建新通知
    * @param params 通知参数
    * @returns 创建的通知记录
    */
-  async createNotification(params: CreateNotificationParams): Promise<NotificationWithUser> {
+  async createNotification(params: CreateNotificationParams): Promise<NotificationWithUser | null> {
+    // 检查是否应该发送通知
+    const shouldSend = await this.shouldSendNotification(
+      params.userId,
+      params.relatedChannelId,
+      params.relatedDmConversationId,
+      params.isMention
+    );
+
+    if (!shouldSend) {
+      console.log(`🔕 Notification skipped for user ${params.userId} due to notification preferences`);
+      return null;
+    }
+
     const notification = await prisma.notification.create({
       data: {
         userId: params.userId,
@@ -172,6 +289,7 @@ export class NotificationService {
           relatedMessageId: messageId,
           relatedChannelId: channelId,
           relatedDmConversationId: dmConversationId,
+          isMention: true,
         });
       }
 
@@ -429,6 +547,7 @@ export class NotificationService {
           relatedThreadId: threadId,
           relatedChannelId: channelId,
           relatedDmConversationId: dmConversationId,
+          isMention: true,
         });
       }
 

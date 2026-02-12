@@ -10,7 +10,8 @@ import { TeamMember } from '@/types';
 import { Channel } from '@/types/channel';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useUnreadStore } from '@/store/unreadStore';
-import { LogOut, Settings } from 'lucide-react';
+import { useMarkAllAsRead } from '@/hooks/useMarkAllAsRead';
+import { LogOut, Settings, CheckCheck } from 'lucide-react';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -46,6 +47,7 @@ export default function DashboardLayout({
   // 初始化未读计数系统
   const { markAsRead } = useUnreadCount();
   const { totalUnreadCount } = useUnreadStore();
+  const { markAllAsRead, isLoading: isMarkingAllRead } = useMarkAllAsRead();
 
   // 调试：打印未读计数状态
   useEffect(() => {
@@ -57,6 +59,17 @@ export default function DashboardLayout({
     console.log('📖 Marking channel as read:', channelId);
     markAsRead(channelId);
     onSelectChannel?.(channelId);
+  };
+
+  // 标记全部已读
+  const handleMarkAllAsRead = async () => {
+    if (totalUnreadCount === 0) return;
+    try {
+      const result = await markAllAsRead();
+      console.log('✅ Marked all as read:', result);
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
   };
 
   // 开始聊天时，清除未读计数
@@ -118,6 +131,22 @@ export default function DashboardLayout({
               </Button>
             </div>
           </div>
+
+          {/* 全部已读按钮 */}
+          {totalUnreadCount > 0 && (
+            <div className="flex-shrink-0 px-2 py-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleMarkAllAsRead}
+                disabled={isMarkingAllRead}
+                className="w-full text-white/70 hover:text-white hover:bg-white/10 justify-start text-xs"
+              >
+                <CheckCheck className="w-4 h-4 mr-2" />
+                {isMarkingAllRead ? 'Marking...' : `Mark all as read (${totalUnreadCount})`}
+              </Button>
+            </div>
+          )}
 
           {/* 频道和私聊列表 - 独立滚动 */}
           <div className="flex-1 min-h-0 overflow-y-auto py-4 sidebar-scroll">
