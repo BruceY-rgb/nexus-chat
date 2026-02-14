@@ -13,7 +13,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import * as bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
 
 // ES模块兼容的__dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -267,7 +266,7 @@ async function importMessages(
         }
 
         // 判断是否为线程根消息
-        const isThreadRoot = slackMsg.thread_ts && slackMsg.ts === slackMsg.thread_ts;
+        const isThreadRoot = !!(slackMsg.thread_ts && slackMsg.ts === slackMsg.thread_ts);
 
         const message = await prisma.message.create({
           data: {
@@ -277,7 +276,7 @@ async function importMessages(
             userId: localUserId,
             createdAt: slackTimestampToDate(slackMsg.ts),
             isEdited: !!slackMsg.edited,
-            isThreadRoot,
+            isThreadRoot: isThreadRoot || false,
             // parentMessageId稍后处理
           },
         });
