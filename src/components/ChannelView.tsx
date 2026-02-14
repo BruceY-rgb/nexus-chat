@@ -52,6 +52,44 @@ export default function ChannelView({
   // 引用消息状态
   const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
 
+  // 输入框高度状态
+  const [inputHeight, setInputHeight] = useState(120); // 默认高度
+  const [isResizingInput, setIsResizingInput] = useState(false);
+  const inputDragStart = useRef({ y: 0, height: 120 });
+
+  // 输入框拖拽处理
+  const handleInputDragStart = (e: React.MouseEvent) => {
+    setIsResizingInput(true);
+    inputDragStart.current = { y: e.clientY, height: inputHeight };
+  };
+
+  useEffect(() => {
+    const handleInputDrag = (e: MouseEvent) => {
+      if (!isResizingInput) return;
+      const deltaY = inputDragStart.current.y - e.clientY; // 向上拖动时增加高度
+      const newHeight = Math.max(60, Math.min(400, inputDragStart.current.height + deltaY));
+      setInputHeight(newHeight);
+    };
+
+    const handleInputDragEnd = () => {
+      setIsResizingInput(false);
+    };
+
+    if (isResizingInput) {
+      document.addEventListener('mousemove', handleInputDrag);
+      document.addEventListener('mouseup', handleInputDragEnd);
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleInputDrag);
+      document.removeEventListener('mouseup', handleInputDragEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizingInput]);
+
   // 用于跟踪是否在消息列表底部
   const isAtBottomRef = useRef(true);
 
@@ -670,17 +708,25 @@ export default function ChannelView({
               )}
 
               {/* 3. 输入框：使用 flex-shrink-0 确保它被推到最底部，永不上移 */}
-              <div className="flex-shrink-0 p-4 bg-background border-t">
-                <DMMessageInput
-                  placeholder={`Message #${channel?.name || ''}`}
-                  disabled={false}
-                  channelId={channel?.id}
-                  currentUserId={user?.id || ''}
-                  members={members}
-                  onMessageSent={handleMessageSent}
-                  quotedMessage={quotedMessage}
-                  onClearQuote={handleClearQuote}
+              <div className="flex-shrink-0 bg-background border-t relative">
+                {/* 顶部拖拽区域 */}
+                <div
+                  className="absolute left-0 top-0 right-0 h-1 cursor-row-resize hover:bg-primary/50 transition-colors"
+                  onMouseDown={handleInputDragStart}
+                  style={{ cursor: isResizingInput ? 'row-resize' : 'row-resize' }}
                 />
+                <div style={{ height: `${inputHeight}px` }} className="p-4 overflow-hidden">
+                  <DMMessageInput
+                    placeholder={`Message #${channel?.name || ''}`}
+                    disabled={false}
+                    channelId={channel?.id}
+                    currentUserId={user?.id || ''}
+                    members={members}
+                    onMessageSent={handleMessageSent}
+                    quotedMessage={quotedMessage}
+                    onClearQuote={handleClearQuote}
+                  />
+                </div>
               </div>
             </>
           )

@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Button, Avatar } from '@/components/ui';
@@ -43,6 +43,44 @@ export default function DashboardLayout({
   const { user } = useAuth();
   const router = useRouter();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+
+  // 左侧边栏宽度状态
+  const [sidebarWidth, setSidebarWidth] = useState(256); // 默认 256px (w-64)
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const sidebarDragStart = useRef({ x: 0, width: 256 });
+
+  // 左侧边栏拖拽处理
+  const handleSidebarDragStart = (e: React.MouseEvent) => {
+    setIsResizingSidebar(true);
+    sidebarDragStart.current = { x: e.clientX, width: sidebarWidth };
+  };
+
+  useEffect(() => {
+    const handleSidebarDrag = (e: MouseEvent) => {
+      if (!isResizingSidebar) return;
+      const deltaX = e.clientX - sidebarDragStart.current.x;
+      const newWidth = Math.max(180, Math.min(400, sidebarDragStart.current.width + deltaX));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleSidebarDragEnd = () => {
+      setIsResizingSidebar(false);
+    };
+
+    if (isResizingSidebar) {
+      document.addEventListener('mousemove', handleSidebarDrag);
+      document.addEventListener('mouseup', handleSidebarDragEnd);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleSidebarDrag);
+      document.removeEventListener('mouseup', handleSidebarDragEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizingSidebar]);
 
   // 初始化未读计数系统
   const { markAsRead } = useUnreadCount();
@@ -106,7 +144,17 @@ export default function DashboardLayout({
     <div className="h-screen overflow-hidden bg-background">
       <div className="flex h-full">
         {/* 左侧边栏 */}
-        <div className="w-64 h-full bg-slack-purple flex flex-col">
+        <div
+          className="h-full bg-slack-purple flex flex-col relative"
+          style={{ width: `${sidebarWidth}px` }}
+        >
+          {/* 右侧拖拽区域 */}
+          <div
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-white/30 transition-colors"
+            onMouseDown={handleSidebarDragStart}
+            style={{ cursor: isResizingSidebar ? 'col-resize' : 'col-resize' }}
+          />
+
           {/* 顶部用户信息 - 固定不滚动 */}
           <div className="flex-shrink-0 p-4 border-b border-white/10">
             <div className="flex items-center gap-3">
