@@ -71,7 +71,10 @@ export default function MCPTestPage() {
     <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto' }}>
       <h1>MCP 工具测试页面</h1>
       <p style={{ color: '#666', marginBottom: '20px' }}>
-        使用此页面测试 MCP 服务器提供的工具
+        使用此页面测试 MCP 服务器提供的工具。
+        <a href="/mcp-test.md" target="_blank" style={{ marginLeft: '10px', color: '#0070f3' }}>
+          查看详细使用说明 →
+        </a>
       </p>
 
       <div style={{ marginBottom: '20px' }}>
@@ -85,6 +88,8 @@ export default function MCPTestPage() {
             width: '100%',
             padding: '8px',
             fontSize: '14px',
+            color: '#333 !important',
+            background: '#fff !important',
             border: '1px solid #ccc',
             borderRadius: '4px',
           }}
@@ -99,11 +104,11 @@ export default function MCPTestPage() {
 
       {selectedToolInfo && (
         <div style={{ marginBottom: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '4px' }}>
-          <h3 style={{ marginTop: 0 }}>{selectedToolInfo.name}</h3>
-          <p>{selectedToolInfo.description}</p>
+          <h3 style={{ marginTop: 0, color: '#333' }}>{selectedToolInfo.name}</h3>
+          <p style={{ color: '#333' }}>{selectedToolInfo.description}</p>
           <details>
-            <summary>参数说明</summary>
-            <pre style={{ fontSize: '12px' }}>
+            <summary style={{ color: '#333' }}>参数说明</summary>
+            <pre style={{ fontSize: '12px', color: '#333' }}>
               {JSON.stringify(selectedToolInfo.parameters, null, 2)}
             </pre>
           </details>
@@ -123,6 +128,8 @@ export default function MCPTestPage() {
             padding: '8px',
             fontSize: '14px',
             fontFamily: 'monospace',
+            color: '#333 !important',
+            background: '#fff !important',
             border: '1px solid #ccc',
             borderRadius: '4px',
           }}
@@ -142,6 +149,8 @@ export default function MCPTestPage() {
             width: '100%',
             padding: '8px',
             fontSize: '14px',
+            color: '#333 !important',
+            background: '#fff !important',
             border: '1px solid #ccc',
             borderRadius: '4px',
           }}
