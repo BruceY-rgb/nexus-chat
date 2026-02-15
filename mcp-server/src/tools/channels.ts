@@ -1,0 +1,296 @@
+/**
+ * Channel Tools - 频道管理工具
+ */
+
+import { z } from 'zod';
+import { apiExecutor } from '../executor.js';
+import type { ToolDefinition, ExecutionContext, Channel, ToolResult } from '../types.js';
+
+// Input schemas
+const listChannelsSchema = z.object({
+  type: z.enum(['all', 'joined', 'public', 'private']).optional(),
+  search: z.string().optional(),
+  page: z.number().int().positive().optional(),
+  limit: z.number().int().positive().max(100).optional(),
+  userToken: z.string(),
+});
+
+const getChannelSchema = z.object({
+  channelId: z.string(),
+  userToken: z.string(),
+});
+
+const createChannelSchema = z.object({
+  name: z.string().min(1).max(80),
+  description: z.string().optional(),
+  isPrivate: z.boolean().optional(),
+  userToken: z.string(),
+});
+
+const updateChannelSchema = z.object({
+  channelId: z.string(),
+  name: z.string().min(1).max(80).optional(),
+  description: z.string().optional(),
+  userToken: z.string(),
+});
+
+const deleteChannelSchema = z.object({
+  channelId: z.string(),
+  userToken: z.string(),
+});
+
+const joinChannelSchema = z.object({
+  channelId: z.string(),
+  userToken: z.string(),
+});
+
+const leaveChannelSchema = z.object({
+  channelId: z.string(),
+  userToken: z.string(),
+});
+
+const listChannelMembersSchema = z.object({
+  channelId: z.string(),
+  userToken: z.string(),
+});
+
+const inviteChannelMemberSchema = z.object({
+  channelId: z.string(),
+  userId: z.string(),
+  userToken: z.string(),
+});
+
+export const channelTools: ToolDefinition[] = [
+  {
+    name: 'list_channels',
+    description: '获取频道列表，支持过滤已加入的频道、公开频道、私有频道，支持搜索和分页',
+    parameters: listChannelsSchema,
+    execute: async (args, _context): Promise<ToolResult> => {
+      try {
+        const validatedArgs = listChannelsSchema.parse(args);
+        const result = await apiExecutor.get<Channel[]>(
+          '/api/channels',
+          validatedArgs.userToken,
+          {
+            type: validatedArgs.type || 'all',
+            search: validatedArgs.search || '',
+            page: String(validatedArgs.page || 1),
+            limit: String(validatedArgs.limit || 50),
+          }
+        );
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result) }],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ error: errorMessage }) }],
+          isError: true,
+        };
+      }
+    },
+  },
+  {
+    name: 'get_channel',
+    description: '获取指定频道的详细信息',
+    parameters: getChannelSchema,
+    execute: async (args, _context): Promise<ToolResult> => {
+      try {
+        const validatedArgs = getChannelSchema.parse(args);
+        const result = await apiExecutor.get<Channel>(
+          `/api/channels/${validatedArgs.channelId}`,
+          validatedArgs.userToken
+        );
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result) }],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ error: errorMessage }) }],
+          isError: true,
+        };
+      }
+    },
+  },
+  {
+    name: 'create_channel',
+    description: '创建一个新的频道',
+    parameters: createChannelSchema,
+    execute: async (args, _context): Promise<ToolResult> => {
+      try {
+        const validatedArgs = createChannelSchema.parse(args);
+        const result = await apiExecutor.post<Channel>(
+          '/api/channels',
+          validatedArgs.userToken,
+          {
+            name: validatedArgs.name,
+            description: validatedArgs.description,
+            isPrivate: validatedArgs.isPrivate,
+          }
+        );
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result) }],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ error: errorMessage }) }],
+          isError: true,
+        };
+      }
+    },
+  },
+  {
+    name: 'update_channel',
+    description: '更新频道信息',
+    parameters: updateChannelSchema,
+    execute: async (args, _context): Promise<ToolResult> => {
+      try {
+        const validatedArgs = updateChannelSchema.parse(args);
+        const result = await apiExecutor.put<Channel>(
+          `/api/channels/${validatedArgs.channelId}`,
+          validatedArgs.userToken,
+          {
+            name: validatedArgs.name,
+            description: validatedArgs.description,
+          }
+        );
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result) }],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ error: errorMessage }) }],
+          isError: true,
+        };
+      }
+    },
+  },
+  {
+    name: 'delete_channel',
+    description: '删除一个频道',
+    parameters: deleteChannelSchema,
+    execute: async (args, _context): Promise<ToolResult> => {
+      try {
+        const validatedArgs = deleteChannelSchema.parse(args);
+        await apiExecutor.delete(
+          `/api/channels/${validatedArgs.channelId}`,
+          validatedArgs.userToken
+        );
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Channel deleted' }) }],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ error: errorMessage }) }],
+          isError: true,
+        };
+      }
+    },
+  },
+  {
+    name: 'join_channel',
+    description: '加入一个频道',
+    parameters: joinChannelSchema,
+    execute: async (args, _context): Promise<ToolResult> => {
+      try {
+        const validatedArgs = joinChannelSchema.parse(args);
+        await apiExecutor.post(
+          `/api/channels/${validatedArgs.channelId}/join`,
+          validatedArgs.userToken
+        );
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Joined channel' }) }],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ error: errorMessage }) }],
+          isError: true,
+        };
+      }
+    },
+  },
+  {
+    name: 'leave_channel',
+    description: '离开一个频道',
+    parameters: leaveChannelSchema,
+    execute: async (args, _context): Promise<ToolResult> => {
+      try {
+        const validatedArgs = leaveChannelSchema.parse(args);
+        await apiExecutor.post(
+          `/api/channels/${validatedArgs.channelId}/leave`,
+          validatedArgs.userToken
+        );
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'Left channel' }) }],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ error: errorMessage }) }],
+          isError: true,
+        };
+      }
+    },
+  },
+  {
+    name: 'list_channel_members',
+    description: '获取频道成员列表',
+    parameters: listChannelMembersSchema,
+    execute: async (args, _context): Promise<ToolResult> => {
+      try {
+        const validatedArgs = listChannelMembersSchema.parse(args);
+        const result = await apiExecutor.get(
+          `/api/channels/${validatedArgs.channelId}/members`,
+          validatedArgs.userToken
+        );
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result) }],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ error: errorMessage }) }],
+          isError: true,
+        };
+      }
+    },
+  },
+  {
+    name: 'invite_channel_member',
+    description: '邀请用户加入频道',
+    parameters: inviteChannelMemberSchema,
+    execute: async (args, _context): Promise<ToolResult> => {
+      try {
+        const validatedArgs = inviteChannelMemberSchema.parse(args);
+        await apiExecutor.post(
+          `/api/channels/${validatedArgs.channelId}/invite`,
+          validatedArgs.userToken,
+          { userId: validatedArgs.userId }
+        );
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ success: true, message: 'User invited' }) }],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ error: errorMessage }) }],
+          isError: true,
+        };
+      }
+    },
+  },
+];
