@@ -286,7 +286,7 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(({
     } else if (diffInDays < 7) {
       return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
     } else {
-      return format(date, 'yyyy年MM月dd日', { locale: zhCN });
+      return format(date, 'yyyy-MM-dd', { locale: zhCN });
     }
   }, []);
 

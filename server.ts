@@ -2,11 +2,14 @@ import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
 import { setupWebSocket } from './src/lib/websocket-server';
+import { spawn } from 'child_process';
+import path from 'path';
 import type { Server as SocketIOServer } from 'socket.io';
 
 // 声明全局变量类型
 declare global {
   var io: SocketIOServer | undefined;
+  var mcpProcess: ReturnType<typeof spawn> | undefined;
 }
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -24,6 +27,38 @@ console.log('🔍 Debug - Environment Check:', {
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
+
+// 启动MCP服务器
+function startMCPServer() {
+  if (dev) {
+    console.log('🤖 Starting MCP Server...');
+    const mcpDir = path.join(process.cwd(), 'mcp-server');
+    const mcpProcess = spawn('npm', ['run', 'dev'], {
+      cwd: mcpDir,
+      stdio: 'pipe',
+      shell: true,
+    });
+
+    mcpProcess.stdout?.on('data', (data) => {
+      console.log(`[MCP] ${data}`);
+    });
+
+    mcpProcess.stderr?.on('data', (data) => {
+      console.error(`[MCP] ${data}`);
+    });
+
+    mcpProcess.on('error', (error) => {
+      console.error('Failed to start MCP Server:', error);
+    });
+
+    mcpProcess.on('close', (code) => {
+      console.log(`MCP Server exited with code ${code}`);
+    });
+
+    global.mcpProcess = mcpProcess;
+    console.log('🤖 MCP Server started');
+  }
+}
 
 app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
@@ -56,6 +91,9 @@ app.prepare().then(() => {
     socketCount: (global as any).io?.engine?.clientsCount
   });
 
+  // 启动MCP服务器
+  startMCPServer();
+
   // 错误处理
   httpServer
     .once('error', (err) => {
@@ -66,5 +104,23 @@ app.prepare().then(() => {
       console.log(`🚀 Server ready at http://${hostname}:${port}`);
       console.log(`🔌 WebSocket server ready for connections`);
       console.log(`📝 API endpoints available at http://${hostname}:${port}/api`);
+      console.log(`🧪 MCP Test UI available at http://${hostname}:${port}/mcp-test`);
     });
+});
+
+// 处理进程退出
+process.on('SIGINT', () => {
+  console.log('\n🛑 Shutting down...');
+  if (global.mcpProcess) {
+    global.mcpProcess.kill();
+  }
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n🛑 Shutting down...');
+  if (global.mcpProcess) {
+    global.mcpProcess.kill();
+  }
+  process.exit(0);
 });
