@@ -83,6 +83,29 @@ services:
     networks:
       - dokploy-network
 
+  mcp-server:
+    build:
+      context: ./mcp-server
+      dockerfile: Dockerfile
+    container_name: slack_mcp
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@dokploy-postgres:5432/${DB_NAME}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      MCP_PORT: 3002
+      MCP_MODE: http
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp.rule=Host(`slack-mcp.ontuotu.com`)"
+      - "traefik.http.routers.mcp.entrypoints=websecure"
+      - "traefik.http.routers.mcp.tls=true"
+      - "traefik.http.services.mcp.loadbalancer.server.port=3002"
+    networks:
+      - dokploy-network
+    depends_on:
+      - app
+
 networks:
   dokploy-network:
     external: true

@@ -1,5 +1,6 @@
 /**
  * MCP Server Entry Point
+ * 支持 stdio 和 http 两种运行模式
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -13,6 +14,9 @@ import {
 
 import { tools, toolRegistry } from './tools/index.js';
 import { resources, resourceHandlers } from './resources/index.js';
+import { startHttpServer } from './server-http.js';
+
+const MCP_MODE = process.env.MCP_MODE || 'http';
 
 // Simple schema parser
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,7 +67,7 @@ function parseZodSchema(schema: any): { properties: Record<string, unknown>; req
 }
 
 // Create server
-const server = new Server(
+export const server = new Server(
   {
     name: 'slack-mcp-server',
     version: '1.0.0',
@@ -230,11 +234,18 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   }
 });
 
-// Run the server
+// Run the server based on mode
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error('Slack MCP Server running on stdio');
+  if (MCP_MODE === 'http') {
+    // HTTP 模式
+    await startHttpServer();
+    console.log(`Slack MCP Server running in HTTP mode`);
+  } else {
+    // Stdio 模式（默认）
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error('Slack MCP Server running on stdio');
+  }
 }
 
 main().catch(console.error);
