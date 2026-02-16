@@ -307,10 +307,22 @@ app.get('/mcp/sse', (_req: Request, res: Response) => {
 export function startHttpServer(): Promise<void> {
   return new Promise((resolve) => {
     app.listen(PORT, () => {
-      console.log(`MCP HTTP Server running on http://localhost:${PORT}`);
-      console.log(`Health check: http://localhost:${PORT}/health`);
-      console.log(`Login: POST http://localhost:${PORT}/login`);
-      console.log(`MCP Messages: POST http://localhost:${PORT}/mcp/messages`);
+      const startTime = new Date().toISOString();
+      const MCP_MODE = process.env.MCP_MODE || 'http';
+
+      console.log('');
+      console.log('========================================');
+      console.log('🚀 MCP Server 启动成功');
+      console.log('========================================');
+      console.log(`🌐 模式: ${MCP_MODE.toUpperCase()}`);
+      console.log(`📍 端口: ${PORT}`);
+      console.log(`🔗 健康检查: http://localhost:${PORT}/health`);
+      console.log(`🔐 登录接口: POST http://localhost:${PORT}/login`);
+      console.log(`📬 MCP消息: POST http://localhost:${PORT}/mcp/messages`);
+      console.log(`⏰ 启动时间: ${startTime}`);
+      console.log('========================================');
+      console.log('');
+
       resolve();
     });
   });
