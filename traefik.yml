@@ -20,6 +20,15 @@ entryPoints:
   websecure:
     address: ":443"
 
+# Let's Encrypt 证书自动签发
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: your-email@example.com  # 替换为你的邮箱
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+
 # 启用 Docker 提供程序
 providers:
   docker:
