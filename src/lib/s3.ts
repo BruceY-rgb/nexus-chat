@@ -1,13 +1,15 @@
 import OSS from 'ali-oss';
 
-// 阿里云 OSS 配置
-const ossClient = new OSS({
-  accessKeyId: process.env.OSS_ACCESS_KEY_ID!,
-  accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET!,
-  region: process.env.OSS_REGION || 'oss-cn-hangzhou',
-  bucket: process.env.OSS_BUCKET!,
-  endpoint: process.env.OSS_ENDPOINT
-});
+// 延迟初始化 OSS 客户端（避免构建时就需要环境变量）
+function getOssClient(): OSS {
+  return new OSS({
+    accessKeyId: process.env.OSS_ACCESS_KEY_ID!,
+    accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET!,
+    region: process.env.OSS_REGION || 'oss-cn-hangzhou',
+    bucket: process.env.OSS_BUCKET!,
+    endpoint: process.env.OSS_ENDPOINT
+  });
+}
 
 export interface UploadParams {
   file: Buffer;
@@ -43,6 +45,7 @@ export async function uploadFile({
     const s3Key = uniqueFileName;
 
     // 上传到 OSS
+    const ossClient = getOssClient();
     const result = await ossClient.put(s3Key, file, {
       headers: {
         'Content-Type': mimeType,
@@ -82,6 +85,7 @@ export async function uploadFile({
  */
 export async function deleteFile(s3Key: string): Promise<void> {
   try {
+    const ossClient = getOssClient();
     await ossClient.delete(s3Key);
   } catch (error) {
     console.error('Error deleting file from OSS:', error);
@@ -94,6 +98,7 @@ export async function deleteFile(s3Key: string): Promise<void> {
  */
 export async function getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
   try {
+    const ossClient = getOssClient();
     const url = ossClient.signatureUrl(key, {
       expires: expiresIn
     });
@@ -199,4 +204,4 @@ export function validateFileSize(fileSize: number): boolean {
   return fileSize <= maxSize;
 }
 
-export default ossClient;
+export default getOssClient;
