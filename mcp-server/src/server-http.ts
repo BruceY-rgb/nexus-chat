@@ -17,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 // 端口配置
-const PORT = process.env.MCP_PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 // 路由
 
@@ -306,7 +306,8 @@ app.get('/mcp/sse', (_req: Request, res: Response) => {
 // 启动服务器
 export function startHttpServer(): Promise<void> {
   return new Promise((resolve) => {
-    app.listen(PORT, () => {
+    const port = typeof PORT === 'string' ? parseInt(PORT, 10) : PORT;
+    app.listen(port, '0.0.0.0', () => {
       const startTime = new Date().toISOString();
       const MCP_MODE = process.env.MCP_MODE || 'http';
 
@@ -315,10 +316,10 @@ export function startHttpServer(): Promise<void> {
       console.log('🚀 MCP Server 启动成功');
       console.log('========================================');
       console.log(`🌐 模式: ${MCP_MODE.toUpperCase()}`);
-      console.log(`📍 端口: ${PORT}`);
-      console.log(`🔗 健康检查: http://localhost:${PORT}/health`);
-      console.log(`🔐 登录接口: POST http://localhost:${PORT}/login`);
-      console.log(`📬 MCP消息: POST http://localhost:${PORT}/mcp/messages`);
+      console.log(`📍 端口: ${port}`);
+      console.log(`🔗 健康检查: http://localhost:${port}/health`);
+      console.log(`🔐 登录接口: POST http://localhost:${port}/login`);
+      console.log(`📬 MCP消息: POST http://localhost:${port}/mcp/messages`);
       console.log(`⏰ 启动时间: ${startTime}`);
       console.log('========================================');
       console.log('');
