@@ -19,6 +19,9 @@ app.use(express.json());
 // 端口配置
 const PORT = process.env.PORT || 3002;
 
+// 外部访问 URL（用于日志显示）
+const INTERNAL_API_URL = process.env.INTERNAL_API_URL || `http://localhost:${PORT}`;
+
 // 路由
 
 // 健康检查
@@ -307,6 +310,7 @@ app.get('/mcp/sse', (_req: Request, res: Response) => {
 export function startHttpServer(): Promise<void> {
   return new Promise((resolve) => {
     const port = typeof PORT === 'string' ? parseInt(PORT, 10) : PORT;
+    const baseUrl = INTERNAL_API_URL || `http://localhost:${port}`;
     app.listen(port, '0.0.0.0', () => {
       const startTime = new Date().toISOString();
       const MCP_MODE = process.env.MCP_MODE || 'http';
@@ -317,9 +321,9 @@ export function startHttpServer(): Promise<void> {
       console.log('========================================');
       console.log(`🌐 模式: ${MCP_MODE.toUpperCase()}`);
       console.log(`📍 端口: ${port}`);
-      console.log(`🔗 健康检查: http://localhost:${port}/health`);
-      console.log(`🔐 登录接口: POST http://localhost:${port}/login`);
-      console.log(`📬 MCP消息: POST http://localhost:${port}/mcp/messages`);
+      console.log(`🔗 健康检查: ${baseUrl}/health`);
+      console.log(`🔐 登录接口: POST ${baseUrl}/login`);
+      console.log(`📬 MCP消息: POST ${baseUrl}/mcp/messages`);
       console.log(`⏰ 启动时间: ${startTime}`);
       console.log('========================================');
       console.log('');
