@@ -93,7 +93,7 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@dokploy-postgres:5432/${DB_NAME}?schema=public
       JWT_SECRET: ${JWT_SECRET}
-      MCP_PORT: 3002
+      PORT: 3002
       MCP_MODE: http
     labels:
       - "traefik.enable=true"
