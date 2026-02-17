@@ -98,6 +98,13 @@ services:
       INTERNAL_API_URL: https://slack-mcp.ontuotu.com
     labels:
       - "traefik.enable=true"
+      # HTTP 路由 + 重定向到 HTTPS
+      - "traefik.http.routers.mcp-http.rule=Host(`slack-mcp.ontuotu.com`)"
+      - "traefik.http.routers.mcp-http.entrypoints=web"
+      - "traefik.http.routers.mcp-http.middlewares=mcp-redirect"
+      - "traefik.http.middlewares.mcp-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.mcp-redirect.redirectscheme.permanent=true"
+      # HTTPS 路由
       - "traefik.http.routers.mcp.rule=Host(`slack-mcp.ontuotu.com`)"
       - "traefik.http.routers.mcp.entrypoints=websecure"
       - "traefik.http.routers.mcp.tls=true"
