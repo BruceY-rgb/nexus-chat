@@ -95,6 +95,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       PORT: 3002
       MCP_MODE: http
+      INTERNAL_API_URL: https://slack-mcp.ontuotu.com
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mcp.rule=Host(`slack-mcp.ontuotu.com`)"
