@@ -222,7 +222,7 @@ export default function DirectMessages({
 
       setIsSearching(true);
       try {
-        const response = await fetch(`/api/users?search=${encodeURIComponent(searchQuery)}`, {
+        const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
           credentials: 'include'
         });
 
