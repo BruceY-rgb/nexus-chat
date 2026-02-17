@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         { isOnline: 'desc' }, // 在线用户排在前面
         { displayName: 'asc' }
       ],
-      take: 20 // 限制搜索结果数量
+      take: 100 // 增大获取数量，确保排序时有足够的候选结果
     });
 
     // 对搜索结果进行匹配度排序
