@@ -16,6 +16,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 全局请求日志中间件（用于调试请求是否到达）
+app.use((req: Request, _res: Response, next) => {
+  console.log('');
+  console.log('========== 收到请求 ==========');
+  console.log(`📌 Method: ${req.method}`);
+  console.log(`🔗 URL: ${req.url}`);
+  console.log(`📋 Headers:`, JSON.stringify(req.headers, null, 2));
+  console.log('================================');
+  console.log('');
+  next();
+});
+
 // 端口配置
 const PORT = process.env.PORT || 3002;
 
