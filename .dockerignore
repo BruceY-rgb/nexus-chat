@@ -147,9 +147,6 @@ $RECYCLE.BIN/
 # Serverless
 .serverless/
 
-# MCP Server (独立运行，不与主项目一起构建)
-mcp-server/
-
 # Docker volumes
 postgres_data
 postgres_data_dev
