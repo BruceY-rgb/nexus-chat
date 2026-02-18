@@ -1,9 +1,12 @@
 [phases.build]
 cmds = [
-  "npm ci",
+  "npm install",
   "npm run build",
   "cd mcp-server && npm install && npm run build"
 ]
 
 [start]
 runCommand = "npm run start"
+
+[cache]
+directives = "false"
