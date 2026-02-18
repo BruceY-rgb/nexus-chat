@@ -1,5 +1,9 @@
-[build]
-buildCommand = "npm install && npm run build && cd mcp-server && npm install && npx prisma generate && npm run build"
+[phases.build]
+cmds = [
+  "npm ci",
+  "npm run build",
+  "cd mcp-server && npm install && npm run build"
+]
 
 [start]
 runCommand = "npm run start"
