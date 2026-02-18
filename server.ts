@@ -4,6 +4,7 @@ import next from 'next';
 import { setupWebSocket } from './src/lib/websocket-server';
 import { spawn } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 import type { Server as SocketIOServer } from 'socket.io';
 
 // 声明全局变量类型
@@ -28,36 +29,67 @@ console.log('🔍 Debug - Environment Check:', {
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
+// 全局关闭标志
+let isShuttingDown = false;
+
 // 启动MCP服务器
 function startMCPServer() {
-  if (dev) {
-    console.log('🤖 Starting MCP Server...');
-    const mcpDir = path.join(process.cwd(), 'mcp-server');
-    const mcpProcess = spawn('npm', ['run', 'dev'], {
-      cwd: mcpDir,
-      stdio: 'pipe',
-      shell: true,
-    });
+  const isProduction = process.env.NODE_ENV === 'production';
+  const mcpDir = path.join(process.cwd(), 'mcp-server');
+
+  // 生产环境检查构建产物是否存在
+  const mcpEntryPoint = isProduction
+    ? path.join(mcpDir, 'dist/index.js')
+    : path.join(mcpDir, 'src/index.ts');
+
+  if (!fs.existsSync(mcpEntryPoint)) {
+    console.error(`[MCP] ERROR: ${mcpEntryPoint} not found. Run 'npm run mcp:build' first.`);
+    return;
+  }
+
+  const startMCP = () => {
+    console.log(`🤖 Starting MCP Server (${isProduction ? 'production' : 'development'})...`);
+
+    const mcpProcess = spawn(
+      isProduction ? 'node' : 'npx',
+      isProduction ? [mcpEntryPoint] : ['tsx', 'watch', mcpEntryPoint],
+      {
+        cwd: mcpDir,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        shell: true,
+        env: {
+          ...process.env,
+          PORT: '3002',
+          HOST: '0.0.0.0',
+        },
+      }
+    );
 
     mcpProcess.stdout?.on('data', (data) => {
-      console.log(`[MCP] ${data}`);
+      process.stdout.write(`[MCP-LOG] ${data}`);
     });
 
     mcpProcess.stderr?.on('data', (data) => {
-      console.error(`[MCP] ${data}`);
+      process.stderr.write(`[MCP-LOG] ${data}`);
     });
 
     mcpProcess.on('error', (error) => {
-      console.error('Failed to start MCP Server:', error);
+      console.error('[MCP] Failed to start:', error);
     });
 
     mcpProcess.on('close', (code) => {
-      console.log(`MCP Server exited with code ${code}`);
+      console.log(`[MCP] Process exited with code ${code}`);
+      if (!isShuttingDown) {
+        console.log('[MCP] Restarting in 5 seconds...');
+        setTimeout(startMCP, 5000);
+      }
     });
 
     global.mcpProcess = mcpProcess;
-    console.log('🤖 MCP Server started');
-  }
+    console.log('[MCP] Server started on port 3002');
+  };
+
+  startMCP();
 }
 
 app.prepare().then(() => {
@@ -111,6 +143,7 @@ app.prepare().then(() => {
 // 处理进程退出
 process.on('SIGINT', () => {
   console.log('\n🛑 Shutting down...');
+  isShuttingDown = true;
   if (global.mcpProcess) {
     global.mcpProcess.kill();
   }
@@ -119,6 +152,7 @@ process.on('SIGINT', () => {
 
 process.on('SIGTERM', () => {
   console.log('\n🛑 Shutting down...');
+  isShuttingDown = true;
   if (global.mcpProcess) {
     global.mcpProcess.kill();
   }
