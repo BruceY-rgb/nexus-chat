@@ -59,7 +59,7 @@ function startMCPServer() {
         shell: true,
         env: {
           ...process.env,
-          PORT: '3002',
+          PORT: process.env.MCP_PORT || '3002',
           HOST: '0.0.0.0',
         },
       }
