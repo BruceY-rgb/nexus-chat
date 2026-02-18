@@ -1,0 +1,12 @@
+[build]
+buildCommand = """
+  npm install
+  npm run build
+  cd mcp-server
+  npm install
+  npx prisma generate
+  npm run build
+"""
+
+[start]
+runCommand = "npm run start"
