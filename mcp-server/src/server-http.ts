@@ -30,9 +30,10 @@ app.use((req: Request, _res: Response, next) => {
 
 // 端口配置
 const PORT = process.env.PORT || 3002;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // 外部访问 URL（用于日志显示）
-const INTERNAL_API_URL = process.env.INTERNAL_API_URL || `http://localhost:${PORT}`;
+const INTERNAL_API_URL = process.env.INTERNAL_API_URL || `http://${HOST}:${PORT}`;
 
 // 路由
 
@@ -323,7 +324,7 @@ export function startHttpServer(): Promise<void> {
   return new Promise((resolve) => {
     const port = typeof PORT === 'string' ? parseInt(PORT, 10) : PORT;
     const baseUrl = INTERNAL_API_URL || `http://localhost:${port}`;
-    app.listen(port, '0.0.0.0', () => {
+    app.listen(port, HOST, () => {
       const startTime = new Date().toISOString();
       const MCP_MODE = process.env.MCP_MODE || 'http';
 
