@@ -129,9 +129,8 @@ storybook-static
 .yarn/install-state.gz
 .pnp.*
 
-# Electron build output
-dist-electron/
-release/
+# Build output
+
 
 # OS generated files
 .DS_Store
@@ -208,10 +207,6 @@ slack功能清单.md
 build/
 out/
 .turbo/
-
-# Electron
-electron-builder.yml
-!electron-builder.json
 
 # API test files
 test-auth.http
