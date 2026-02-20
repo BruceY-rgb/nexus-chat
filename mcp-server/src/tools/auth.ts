@@ -15,7 +15,7 @@ import type {
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-  name: z.string().min(1),
+  displayName: z.string().min(1),
 });
 
 // Login input schema
@@ -69,7 +69,7 @@ export const authTools: ToolDefinition[] = [
                 success: true,
                 message: "User registered successfully",
                 userId: result.user.id,
-                userName: result.user.name,
+                userName: result.user.displayName,
                 email: result.user.email,
                 token: result.token,
               }),
@@ -112,7 +112,7 @@ export const authTools: ToolDefinition[] = [
                 success: true,
                 message: "Login successful",
                 userId: result.user.id,
-                userName: result.user.name,
+                userName: result.user.displayName,
                 email: result.user.email,
                 token: result.token,
               }),

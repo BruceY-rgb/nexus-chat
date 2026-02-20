@@ -2,9 +2,9 @@
  * Health Tools - 健康检查工具
  */
 
-import { z } from 'zod';
-import { apiExecutor } from '../executor.js';
-import type { ToolDefinition, ToolResult } from '../types.js';
+import { z } from "zod";
+import { config } from "../config.js";
+import type { ToolDefinition, ToolResult } from "../types.js";
 
 const healthCheckSchema = z.object({
   userToken: z.string().optional(),
@@ -12,24 +12,24 @@ const healthCheckSchema = z.object({
 
 export const healthTools: ToolDefinition[] = [
   {
-    name: 'health_check',
-    description: '健康检查，返回数据库和WebSocket状态',
+    name: "health_check",
+    description: "健康检查，返回数据库和WebSocket状态",
     parameters: healthCheckSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
-        const validatedArgs = healthCheckSchema.parse(args);
-        const result = await apiExecutor.get(
-          '/api/health',
-          validatedArgs.userToken || ''
-        );
-
+        healthCheckSchema.parse(args);
+        const response = await fetch(`${config.INTERNAL_API_URL}/api/health`);
+        const data = await response.json();
         return {
-          content: [{ type: 'text', text: JSON.stringify(result) }],
+          content: [{ type: "text", text: JSON.stringify(data) }],
         };
       } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
         return {
-          content: [{ type: 'text', text: JSON.stringify({ error: errorMessage }) }],
+          content: [
+            { type: "text", text: JSON.stringify({ error: errorMessage }) },
+          ],
           isError: true,
         };
       }

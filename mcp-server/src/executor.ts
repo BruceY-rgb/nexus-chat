@@ -3,7 +3,6 @@
  */
 
 import { config } from "./config.js";
-import { APIResponse } from "./types.js";
 
 interface FetchOptions extends RequestInit {
   headers: Record<string, string>;
@@ -61,13 +60,19 @@ export class APIExecutor {
       throw new Error(errorMessage);
     }
 
-    const data = (await response.json()) as APIResponse<T>;
+    const data = (await response.json()) as Record<string, unknown>;
 
-    if (!data.success) {
-      throw new Error(data.error || data.message || "Unknown error");
+    // Auth endpoints return {success, data, message} wrapper; others return data directly
+    if ("success" in data) {
+      if (!data.success) {
+        throw new Error(
+          (data.error as string) || (data.message as string) || "Unknown error",
+        );
+      }
+      return data.data as T;
     }
 
-    return data.data as T;
+    return data as T;
   }
 
   async get<T>(
@@ -137,13 +142,34 @@ export class APIExecutor {
       throw new Error(errorMessage);
     }
 
-    const data = (await response.json()) as APIResponse<T>;
-
-    if (!data.success) {
-      throw new Error(data.error || data.message || "Unknown error");
+    // Extract token from set-cookie header for login/register
+    const setCookie = response.headers.get("set-cookie");
+    let token: string | undefined;
+    if (setCookie) {
+      const match = setCookie.match(/auth_token=([^;]+)/);
+      if (match) {
+        token = match[1];
+      }
     }
 
-    return data.data as T;
+    const data = (await response.json()) as Record<string, unknown>;
+
+    // Auth endpoints return {success, data, message} wrapper; others return data directly
+    if ("success" in data) {
+      if (!data.success) {
+        throw new Error(
+          (data.error as string) || (data.message as string) || "Unknown error",
+        );
+      }
+      const result = data.data as Record<string, unknown>;
+      // Attach token if extracted from cookie
+      if (token && typeof result === "object" && result !== null) {
+        result.token = token;
+      }
+      return result as T;
+    }
+
+    return data as T;
   }
 }
 

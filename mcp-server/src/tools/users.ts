@@ -82,7 +82,7 @@ export const userTools: ToolDefinition[] = [
         const result = await apiExecutor.get<User[]>(
           "/api/users/search",
           validatedArgs.userToken,
-          { query: validatedArgs.query },
+          { q: validatedArgs.query },
         );
 
         return {

@@ -178,7 +178,7 @@ export const channelTools: ToolDefinition[] = [
     execute: async (args, _context): Promise<ToolResult> => {
       try {
         const validatedArgs = updateChannelSchema.parse(args);
-        const result = await apiExecutor.put<Channel>(
+        const result = await apiExecutor.patch<Channel>(
           `/api/channels/${validatedArgs.channelId}`,
           validatedArgs.userToken,
           {
@@ -341,7 +341,7 @@ export const channelTools: ToolDefinition[] = [
         await apiExecutor.post(
           `/api/channels/${validatedArgs.channelId}/invite`,
           validatedArgs.userToken,
-          { userId: validatedArgs.userId },
+          { userIds: [validatedArgs.userId] },
         );
 
         return {
