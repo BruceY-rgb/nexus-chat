@@ -1,9 +1,9 @@
 // =====================================================
-// 频率限制器
-// 防止恶意刷邮件攻击
+// Rate Limiter
+// Prevent malicious email spamming attacks
 // =====================================================
 
-// 内存存储（生产环境建议使用 Redis）
+// In-memory storage (Redis recommended for production)
 interface RateLimitEntry {
   count: number;
   firstRequest: number;
@@ -14,16 +14,16 @@ class MemoryRateLimiter {
   private store: Map<string, RateLimitEntry> = new Map();
 
   /**
-   * 检查是否超过频率限制
-   * @param key 限制键（如邮箱地址或IP）
-   * @param maxRequests 最大请求数
-   * @param windowMs 时间窗口（毫秒）
+   * Check if rate limit is exceeded
+   * @param key Limit key (e.g., email address or IP)
+   * @param maxRequests Maximum number of requests
+   * @param windowMs Time window (milliseconds)
    */
   check(key: string, maxRequests: number, windowMs: number): { allowed: boolean; remaining: number; resetTime: number } {
     const now = Date.now();
     const entry = this.store.get(key);
 
-    // 首次请求
+    // First request
     if (!entry) {
       const newEntry: RateLimitEntry = {
         count: 1,
@@ -38,9 +38,9 @@ class MemoryRateLimiter {
       };
     }
 
-    // 检查时间窗口是否过期
+    // Check if time window has expired
     if (now - entry.firstRequest >= windowMs) {
-      // 重置窗口
+      // Reset window
       const newEntry: RateLimitEntry = {
         count: 1,
         firstRequest: now,
@@ -54,7 +54,7 @@ class MemoryRateLimiter {
       };
     }
 
-    // 更新请求计数
+    // Update request count
     entry.count++;
     entry.lastRequest = now;
 
@@ -70,7 +70,7 @@ class MemoryRateLimiter {
   }
 
   /**
-   * 获取当前限制状态（不修改）
+   * Get current limit status (without modification)
    */
   getStatus(key: string, windowMs: number): { count: number; remaining: number; resetTime: number } | null {
     const now = Date.now();
@@ -80,7 +80,7 @@ class MemoryRateLimiter {
       return null;
     }
 
-    // 检查时间窗口是否过期
+    // Check if time window has expired
     if (now - entry.firstRequest >= windowMs) {
       return null;
     }
@@ -93,7 +93,7 @@ class MemoryRateLimiter {
   }
 
   /**
-   * 清理过期条目（可选调用）
+   * Clean up expired entries (optional)
    */
   cleanup(maxAge: number = 60 * 60 * 1000): void {
     const now = Date.now();
@@ -105,23 +105,23 @@ class MemoryRateLimiter {
   }
 }
 
-// 全局频率限制器实例
+// Global rate limiter instance
 export const emailRateLimiter = new MemoryRateLimiter();
 
 /**
- * 邮件发送频率限制配置
+ * Email sending rate limit configuration
  */
 export const EMAIL_RATE_LIMIT = {
-  // 每个邮箱每小时最多 5 次
+  // Maximum 5 requests per email per hour
   MAX_REQUESTS_PER_EMAIL: 5,
-  WINDOW_MS: 60 * 60 * 1000, // 1小时
+  WINDOW_MS: 60 * 60 * 1000, // 1 hour
 
-  // 每个IP每小时最多 10 次（防止IP刷邮件）
+  // Maximum 10 requests per IP per hour (prevent IP-based email spamming)
   MAX_REQUESTS_PER_IP: 10,
 };
 
 /**
- * 检查邮箱频率限制
+ * Check email rate limit
  */
 export function checkEmailRateLimit(email: string): { allowed: boolean; remaining: number; resetTime: number } {
   return emailRateLimiter.check(
@@ -132,7 +132,7 @@ export function checkEmailRateLimit(email: string): { allowed: boolean; remainin
 }
 
 /**
- * 检查IP频率限制
+ * Check IP rate limit
  */
 export function checkIPRateLimit(ip: string): { allowed: boolean; remaining: number; resetTime: number } {
   return emailRateLimiter.check(
@@ -143,7 +143,7 @@ export function checkIPRateLimit(ip: string): { allowed: boolean; remaining: num
 }
 
 /**
- * 获取邮箱发送状态
+ * Get email send status
  */
 export function getEmailSendStatus(email: string): { count: number; remaining: number; resetTime: number } | null {
   const status = emailRateLimiter.getStatus(`email:${email.toLowerCase()}`, EMAIL_RATE_LIMIT.WINDOW_MS);

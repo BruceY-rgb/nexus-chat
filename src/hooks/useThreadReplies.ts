@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Message } from '@/types/message';
+import { useState, useEffect } from "react";
+import { Message } from "@/types/message";
 
 interface UseThreadRepliesReturn {
   replies: Message[];
@@ -13,7 +13,7 @@ interface UseThreadRepliesReturn {
 }
 
 export function useThreadReplies(
-  messageId: string | null
+  messageId: string | null,
 ): UseThreadRepliesReturn {
   const [replies, setReplies] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +31,7 @@ export function useThreadReplies(
     try {
       const currentOffset = reset ? 0 : offset;
       const response = await fetch(
-        `/api/messages/${messageId}/thread-replies?limit=${LIMIT}&offset=${currentOffset}`
+        `/api/messages/${messageId}/thread-replies?limit=${LIMIT}&offset=${currentOffset}`,
       );
 
       if (!response.ok) {
@@ -44,13 +44,13 @@ export function useThreadReplies(
       if (reset) {
         setReplies(newReplies);
       } else {
-        setReplies(prev => [...prev, ...newReplies]);
+        setReplies((prev) => [...prev, ...newReplies]);
       }
 
       setHasMore(data.hasMore);
       setOffset(currentOffset + LIMIT);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
+      setError(err instanceof Error ? err : new Error("Unknown error"));
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +65,7 @@ export function useThreadReplies(
     await fetchReplies(true);
   };
 
-  // 当messageId改变时，重新获取回复
+  // When messageId changes, refetch replies
   useEffect(() => {
     if (messageId) {
       setOffset(0);
@@ -84,6 +84,6 @@ export function useThreadReplies(
     error,
     hasMore,
     loadMore,
-    refetch
+    refetch,
   };
 }

@@ -1,8 +1,8 @@
-# Traefik 反向代理配置
-# 用于 Dokploy/Docker Swarm 部署
-# 使用方法：
-# 1. 将此文件作为 traefik 的 docker-compose.yml 部署
-# 2. 或将配置集成到现有的 Traefik 实例中
+# Traefik reverse proxy configuration
+# For Dokploy/Docker Swarm deployment
+# Usage:
+# 1. Deploy this file as traefik's docker-compose.yml
+# 2. Or integrate configuration into existing Traefik instance
 
 version: '3.8'
 
@@ -23,15 +23,15 @@ services:
     networks:
       - dokploy-network
     labels:
-      # 启用 Traefik
+      # Enable Traefik
       - "traefik.enable=true"
 
-      # HTTP 入口点
+      # HTTP entrypoint
       - "traefik.http.entrypoints.web.address=:80"
       - "traefik.http.entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "traefik.http.entrypoints.web.http.redirections.entrypoint.scheme=https"
 
-      # HTTPS 入口点
+      # HTTPS entrypoint
       - "traefik.http.entrypoints.websecure.address=:443"
 
       # Dashboard
@@ -41,7 +41,7 @@ services:
       - "traefik.http.routers.traefik.tls=true"
       - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
 
-      # 日志
+      # Logging
       - "traefik.log.level=INFO"
       - "traefik.accesslog=true"
 

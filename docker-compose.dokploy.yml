@@ -1,5 +1,5 @@
-# Dokploy Traefik 配置
-# 适用于 Dokploy 环境
+# Dokploy Traefik Configuration
+# For Dokploy environment
 
 version: '3.8'
 
@@ -22,61 +22,61 @@ services:
       PORT: 3000
       WEBSOCKET_PORT: 3001
 
-      # 邮件配置
+      # Email configuration
       RESEND_API_KEY: ${RESEND_API_KEY}
       EMAIL_FROM: ${EMAIL_FROM}
       EMAIL_REPLY_TO: ${EMAIL_REPLY_TO}
       APP_NAME: ${APP_NAME}
 
-      # OSS 配置
+      # OSS configuration
       OSS_REGION: ${OSS_REGION}
       OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID}
       OSS_ACCESS_KEY_SECRET: ${OSS_ACCESS_KEY_SECRET}
       OSS_BUCKET: ${OSS_BUCKET}
       OSS_ENDPOINT: ${OSS_ENDPOINT}
 
-      # 功能开关
+      # Feature flags
       ENABLE_FILE_UPLOAD: ${ENABLE_FILE_UPLOAD}
       ENABLE_SEARCH: ${ENABLE_SEARCH}
       ENABLE_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS}
       ENABLE_EMAIL_NOTIFICATIONS: ${ENABLE_EMAIL_NOTIFICATIONS}
 
-      # 文件上传限制
+      # File upload limits
       MAX_FILE_SIZE: ${MAX_FILE_SIZE}
       ALLOWED_FILE_TYPES: ${ALLOWED_FILE_TYPES}
 
-      # 速率限制
+      # Rate limiting
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS}
       RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS}
 
-      # 日志
+      # Logging
       LOG_LEVEL: ${LOG_LEVEL}
       LOG_FORMAT: ${LOG_FORMAT}
-    # Dokploy Traefik 标签
+    # Dokploy Traefik labels
     labels:
-      # 启用 Traefik
+      # Enable Traefik
       - "traefik.enable=true"
 
-      # HTTP 路由
+      # HTTP route
       - "traefik.http.routers.slack-app-http.rule=Host(`slack.rlenv.data4o.ai`)"
       - "traefik.http.routers.slack-app-http.entrypoints=web"
       - "traefik.http.routers.slack-app-http.middlewares=redirect-to-https"
 
-      # HTTPS 路由
+      # HTTPS route
       - "traefik.http.routers.slack-app.rule=Host(`slack.rlenv.data4o.ai`)"
       - "traefik.http.routers.slack-app.entrypoints=websecure"
       - "traefik.http.routers.slack-app.tls=true"
 
-      # WebSocket 支持 - 修复配置
+      # WebSocket support - fix configuration
       - "traefik.http.services.slack-app.loadbalancer.server.port=3000"
-      # 正确的 WebSocket 升级头配置
+      # Proper WebSocket upgrade header configuration
       - "traefik.http.middlewares.slack-websocket.headers.customrequestheaders.Upgrade=websocket"
       - "traefik.http.middlewares.slack-websocket.headers.customrequestheaders.Connection=upgrade"
 
-      # 应用中间件
+      # Application middleware
       - "traefik.http.routers.slack-app.middlewares=slack-websocket"
 
-      # 额外的 WebSocket 支持配置
+      # Additional WebSocket support configuration
       - "traefik.http.middlewares.slack-websocket.headers.customresponseheaders.Upgrade=websocket"
       - "traefik.http.middlewares.slack-websocket.headers.customresponseheaders.Connection=upgrade"
 
@@ -98,13 +98,13 @@ services:
       INTERNAL_API_URL: https://slack-mcp.ontuotu.com
     labels:
       - "traefik.enable=true"
-      # HTTP 路由 + 重定向到 HTTPS
+      # HTTP route + redirect to HTTPS
       - "traefik.http.routers.mcp-http.rule=Host(`slack-mcp.ontuotu.com`)"
       - "traefik.http.routers.mcp-http.entrypoints=web"
       - "traefik.http.routers.mcp-http.middlewares=mcp-redirect"
       - "traefik.http.middlewares.mcp-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.mcp-redirect.redirectscheme.permanent=true"
-      # HTTPS 路由
+      # HTTPS route
       - "traefik.http.routers.mcp.rule=Host(`slack-mcp.ontuotu.com`)"
       - "traefik.http.routers.mcp.entrypoints=websecure"
       - "traefik.http.routers.mcp.tls=true"

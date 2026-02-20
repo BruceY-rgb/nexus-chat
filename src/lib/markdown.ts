@@ -1,44 +1,47 @@
-import { TeamMember } from '@/types';
+import { TeamMember } from "@/types";
 
 export class MarkdownProcessor {
   /**
-   * 预处理消息内容，保护Token格式@提及
-   * 将 @{userId:displayName} 格式临时替换为标记，便于后续处理
+   * Preprocess message content, protect token format @mentions
+   * Temporarily replace @{userId:displayName} format with markers for later processing
    */
   static protectTokens(content: string): string {
-    return content.replace(/@\{([^:]+):([^}]+)\}/g, '[[MENTION_TOKEN:$1:$2]]');
+    return content.replace(/@\{([^:]+):([^}]+)\}/g, "[[MENTION_TOKEN:$1:$2]]");
   }
 
   /**
-   * 还原Token格式@提及（如果需要的话）
-   * 将 [[MENTION_TOKEN:userId:displayName]] 格式还原为显示文本
+   * Restore token format @mentions (if needed)
+   * Restore [[MENTION_TOKEN:userId:displayName]] format to display text
    */
   static restoreTokens(content: string, members: TeamMember[] = []): string {
-    return content.replace(/\[\[MENTION_TOKEN:([^:]+):([^\]]+)\]\]/g, (match, userId, displayName) => {
-      const member = members.find(m => m.id === userId);
-      const actualDisplayName = member?.displayName || displayName;
-      return `@${actualDisplayName}`;
-    });
+    return content.replace(
+      /\[\[MENTION_TOKEN:([^:]+):([^\]]+)\]\]/g,
+      (match, userId, displayName) => {
+        const member = members.find((m) => m.id === userId);
+        const actualDisplayName = member?.displayName || displayName;
+        return `@${actualDisplayName}`;
+      },
+    );
   }
 
   /**
-   * 检测是否包含Markdown语法
-   * 检查常见的Markdown标记符
+   * Detect if it contains Markdown syntax
+   * Check common Markdown markers
    */
   static hasMarkdownSyntax(content: string): boolean {
-    // 检测常见Markdown语法：粗体、斜体、代码、标题、引用、列表、链接
+    // Detect common Markdown syntax: bold, italic, code, headings, quotes, lists, links
     return /\*\*|\*|`|#|>|-\s|\[|\(https?:\/\//.test(content);
   }
 
   /**
-   * 智能检测是否应该使用Markdown渲染
-   * 优先考虑现有Token格式的存在
-   * 规则：
-   * 1. 如果包含Token格式且没有其他Markdown语法，回退到现有渲染
-   * 2. 如果包含其他Markdown语法，使用Markdown渲染
+   * Smart detection if Markdown rendering should be used
+   * Prioritize existing token format presence
+   * Rules:
+   * 1. If contains token format but no other Markdown syntax, fallback to existing rendering
+   * 2. If contains other Markdown syntax, use Markdown rendering
    */
   static shouldUseMarkdown(content: string): boolean {
-    // 如果包含Token格式且没有其他Markdown语法，回退到现有渲染
+    // If contains token format but no other Markdown syntax, fallback to existing rendering
     if (/@\{[^}]+\}/.test(content) && !this.hasMarkdownSyntax(content)) {
       return false;
     }
@@ -46,24 +49,26 @@ export class MarkdownProcessor {
   }
 
   /**
-   * 提取Token信息
-   * 用于在自定义组件中处理Token
+   * Extract token information
+   * Used to handle tokens in custom components
    */
-  static extractToken(text: string): { userId: string; displayName: string } | null {
+  static extractToken(
+    text: string,
+  ): { userId: string; displayName: string } | null {
     const match = text.match(/\[\[MENTION_TOKEN:([^:]+):([^\]]+)\]\]/);
     if (match) {
       return {
         userId: match[1],
-        displayName: match[2]
+        displayName: match[2],
       };
     }
     return null;
   }
 
   /**
-   * 清理内容，移除Token保护标记
+   * Clean content, remove token protection markers
    */
   static cleanProtectedTokens(content: string): string {
-    return content.replace(/\[\[MENTION_TOKEN:[^\]]+\]\]/g, '');
+    return content.replace(/\[\[MENTION_TOKEN:[^\]]+\]\]/g, "");
   }
 }

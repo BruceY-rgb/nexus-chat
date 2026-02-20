@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
-import { unauthorizedResponse } from '@/lib/api-response';
-import { Server as SocketIOServer } from 'socket.io';
-import { deleteFile } from '@/lib/s3';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { verifyToken } from "@/lib/auth";
+import { unauthorizedResponse } from "@/lib/api-response";
+import { Server as SocketIOServer } from "socket.io";
+import { deleteFile } from "@/lib/s3";
 
 /**
- * 递归遍历对象，将所有 BigInt 和 Date 字段转换为 String
+ * Recursively traverse object, convert all BigInt and Date fields to String
  */
 function convertBigIntToString(obj: any): any {
   if (obj === null || obj === undefined) {
     return obj;
   }
 
-  if (typeof obj === 'bigint') {
+  if (typeof obj === "bigint") {
     return obj.toString();
   }
 
@@ -22,10 +22,10 @@ function convertBigIntToString(obj: any): any {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => convertBigIntToString(item));
+    return obj.map((item) => convertBigIntToString(item));
   }
 
-  if (typeof obj === 'object') {
+  if (typeof obj === "object") {
     const converted: any = {};
     for (const [key, value] of Object.entries(obj)) {
       converted[key] = convertBigIntToString(value);
@@ -37,29 +37,25 @@ function convertBigIntToString(obj: any): any {
 }
 
 /**
- * PATCH /api/messages/[id] - 编辑消息
+ * PATCH /api/messages/[id] - Edit message
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
-    const token = request.cookies.get('auth_token')?.value;
+    const token = request.cookies.get("auth_token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        unauthorizedResponse(),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse(), { status: 401 });
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
-      return NextResponse.json(
-        unauthorizedResponse('token无效'),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse("invalid token"), {
+        status: 401,
+      });
     }
 
     const currentUserId = decoded.userId;
@@ -68,68 +64,65 @@ export async function PATCH(
     const body = await request.json();
     const { content } = body;
 
-    // 验证内容
-    if (!content || typeof content !== 'string' || content.trim() === '') {
+    // Validate content
+    if (!content || typeof content !== "string" || content.trim() === "") {
       return NextResponse.json(
-        { error: 'Message content cannot be empty' },
-        { status: 400 }
+        { error: "Message content cannot be empty" },
+        { status: 400 },
       );
     }
 
-    // 查找消息并验证权限
+    // Find message and verify permissions
     const existingMessage = await prisma.message.findUnique({
       where: { id: messageId },
       include: {
         user: {
           select: {
             id: true,
-            displayName: true
-          }
+            displayName: true,
+          },
         },
         channel: {
           select: {
             id: true,
-            name: true
-          }
+            name: true,
+          },
         },
         dmConversation: {
           select: {
-            id: true
-          }
-        }
-      }
+            id: true,
+          },
+        },
+      },
     });
 
     if (!existingMessage) {
-      return NextResponse.json(
-        { error: 'Message not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Message not found" }, { status: 404 });
     }
 
-    // 检查是否是已删除的消息
+    // Check if message is already deleted
     if (existingMessage.isDeleted) {
       return NextResponse.json(
-        { error: 'Cannot edit deleted message' },
-        { status: 400 }
+        { error: "Cannot edit deleted message" },
+        { status: 400 },
       );
     }
 
-    // 检查权限：只有消息作者可以编辑
+    // Check permission: only message author can edit
     if (existingMessage.userId !== currentUserId) {
       return NextResponse.json(
         { error: "You don't have permission to edit this message" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
-    // 更新消息
+    // Update message
     const updatedMessage = await prisma.message.update({
       where: { id: messageId },
       data: {
         content: content.trim(),
         isEdited: true,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         user: {
@@ -137,19 +130,19 @@ export async function PATCH(
             id: true,
             displayName: true,
             avatarUrl: true,
-            realName: true
-          }
+            realName: true,
+          },
         },
         channel: {
           select: {
             id: true,
-            name: true
-          }
+            name: true,
+          },
         },
         dmConversation: {
           select: {
-            id: true
-          }
+            id: true,
+          },
         },
         attachments: true,
         mentions: {
@@ -157,153 +150,146 @@ export async function PATCH(
             mentionedUser: {
               select: {
                 id: true,
-                displayName: true
-              }
-            }
-          }
-        }
-      }
+                displayName: true,
+              },
+            },
+          },
+        },
+      },
     });
 
-    // 通过 WebSocket 广播更新后的消息
+    // Broadcast updated message via WebSocket
     try {
       const globalIo = (global as any).io;
-      if (typeof globalIo !== 'undefined') {
+      if (typeof globalIo !== "undefined") {
         const ioInstance = globalIo as SocketIOServer;
 
         if (updatedMessage.channelId) {
           const channelRoom = `channel:${updatedMessage.channelId}`;
-          ioInstance.to(channelRoom).emit('message:update', updatedMessage);
+          ioInstance.to(channelRoom).emit("message:update", updatedMessage);
         } else if (updatedMessage.dmConversationId) {
           const dmRoom = `dm:${updatedMessage.dmConversationId}`;
-          ioInstance.to(dmRoom).emit('message:update', updatedMessage);
+          ioInstance.to(dmRoom).emit("message:update", updatedMessage);
         }
 
-        console.log(`📡 [API] 消息更新事件已广播: ${messageId}`);
+        console.log(`📡 [API] Message update event broadcast: ${messageId}`);
       }
     } catch (wsError) {
-      console.error('❌ [API] WebSocket 广播错误:', wsError);
-      // WebSocket 广播失败不影响 HTTP 响应
+      console.error("❌ [API] WebSocket broadcast error:", wsError);
+      // WebSocket broadcast failure does not affect HTTP response
     }
 
     return NextResponse.json(convertBigIntToString(updatedMessage));
   } catch (error) {
-    console.error('Error updating message:', error);
+    console.error("Error updating message:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
 
 /**
- * DELETE /api/messages/[id] - 逻辑删除消息
+ * DELETE /api/messages/[id] - Logical delete message
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
-    const token = request.cookies.get('auth_token')?.value;
+    const token = request.cookies.get("auth_token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        unauthorizedResponse(),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse(), { status: 401 });
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
-      return NextResponse.json(
-        unauthorizedResponse('token无效'),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse("invalid token"), {
+        status: 401,
+      });
     }
 
     const currentUserId = decoded.userId;
     const messageId = params.id;
 
-    // 查找消息并验证权限
+    // Find message and verify permissions
     const existingMessage = await prisma.message.findUnique({
       where: { id: messageId },
       include: {
         user: {
           select: {
             id: true,
-            displayName: true
-          }
+            displayName: true,
+          },
         },
         channel: {
           select: {
             id: true,
-            name: true
-          }
+            name: true,
+          },
         },
         dmConversation: {
           select: {
-            id: true
-          }
-        }
-      }
+            id: true,
+          },
+        },
+      },
     });
 
     if (!existingMessage) {
-      return NextResponse.json(
-        { error: 'Message not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Message not found" }, { status: 404 });
     }
 
-    // 检查是否是已删除的消息
+    // Check if message is already deleted
     if (existingMessage.isDeleted) {
       return NextResponse.json(
-        { error: 'Message has been deleted' },
-        { status: 400 }
+        { error: "Message has been deleted" },
+        { status: 400 },
       );
     }
 
-    // 检查权限：只有消息作者可以删除
+    // Check permission: only message author can delete
     if (existingMessage.userId !== currentUserId) {
       return NextResponse.json(
         { error: "You don't have permission to delete this message" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
-    // 删除消息的附件（OSS文件 + 数据库记录）
+    // Delete message attachments (OSS files + database records)
     try {
       const attachments = await prisma.attachment.findMany({
-        where: { messageId: messageId }
+        where: { messageId: messageId },
       });
 
-      // 删除OSS中的文件
+      // Delete files from OSS
       for (const attachment of attachments) {
         try {
           await deleteFile(attachment.s3Key);
         } catch (ossError) {
-          console.error('Error deleting file from OSS:', ossError);
-          // 继续删除数据库记录
+          console.error("Error deleting file from OSS:", ossError);
+          // Continue deleting database records
         }
       }
 
-      // 删除数据库中的附件记录
+      // Delete attachment records from database
       await prisma.attachment.deleteMany({
-        where: { messageId: messageId }
+        where: { messageId: messageId },
       });
     } catch (attachmentError) {
-      console.error('Error deleting attachments:', attachmentError);
-      // 附件删除失败不影响消息删除
+      console.error("Error deleting attachments:", attachmentError);
+      // Attachment deletion failure does not affect message deletion
     }
 
-    // 执行逻辑删除：不修改 content 字段，只设置 isDeleted 标记
+    // Perform logical delete: do not modify content field, only set isDeleted flag
     const deletedMessage = await prisma.message.update({
       where: { id: messageId },
       data: {
         isDeleted: true,
         deletedAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         user: {
@@ -311,68 +297,68 @@ export async function DELETE(
             id: true,
             displayName: true,
             avatarUrl: true,
-            realName: true
-          }
+            realName: true,
+          },
         },
         channel: {
           select: {
             id: true,
-            name: true
-          }
+            name: true,
+          },
         },
         dmConversation: {
           select: {
-            id: true
-          }
-        }
-      }
+            id: true,
+          },
+        },
+      },
     });
 
-    // 通过 WebSocket 广播删除事件
+    // Broadcast deletion event via WebSocket
     try {
       const globalIo = (global as any).io;
-      if (typeof globalIo !== 'undefined') {
+      if (typeof globalIo !== "undefined") {
         const ioInstance = globalIo as SocketIOServer;
 
-        // 广播删除事件（携带删除的消息信息用于前端更新）
+        // Broadcast deletion event (with deleted message info for frontend update)
         const deletePayload = {
           id: deletedMessage.id,
           channelId: deletedMessage.channelId,
           dmConversationId: deletedMessage.dmConversationId,
           isDeleted: true,
           deletedAt: deletedMessage.deletedAt,
-          userId: deletedMessage.userId
+          userId: deletedMessage.userId,
         };
 
         if (deletedMessage.channelId) {
           const channelRoom = `channel:${deletedMessage.channelId}`;
-          ioInstance.to(channelRoom).emit('message-deleted', deletePayload);
+          ioInstance.to(channelRoom).emit("message-deleted", deletePayload);
         } else if (deletedMessage.dmConversationId) {
           const dmRoom = `dm:${deletedMessage.dmConversationId}`;
-          ioInstance.to(dmRoom).emit('message-deleted', deletePayload);
+          ioInstance.to(dmRoom).emit("message-deleted", deletePayload);
         }
 
-        console.log(`📡 [API] 消息删除事件已广播: ${messageId}`);
+        console.log(`📡 [API] Message deletion event broadcast: ${messageId}`);
       }
     } catch (wsError) {
-      console.error('❌ [API] WebSocket 广播错误:', wsError);
-      // WebSocket 广播失败不影响 HTTP 响应
+      console.error("❌ [API] WebSocket broadcast error:", wsError);
+      // WebSocket broadcast failure does not affect HTTP response
     }
 
     return NextResponse.json({
       success: true,
-      message: '消息已删除',
+      message: "Message deleted",
       data: {
         id: deletedMessage.id,
         isDeleted: true,
-        deletedAt: deletedMessage.deletedAt
-      }
+        deletedAt: deletedMessage.deletedAt,
+      },
     });
   } catch (error) {
-    console.error('Error deleting message:', error);
+    console.error("Error deleting message:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

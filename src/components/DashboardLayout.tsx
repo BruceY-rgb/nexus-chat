@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { ReactNode, useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import { Button, Avatar } from '@/components/ui';
-import DirectMessages from '@/components/DirectMessages';
-import Channels from '@/components/Channels';
-import { TeamMember } from '@/types';
-import { Channel } from '@/types/channel';
-import { useUnreadCount } from '@/hooks/useUnreadCount';
-import { useUnreadStore } from '@/store/unreadStore';
-import { useMarkAllAsRead } from '@/hooks/useMarkAllAsRead';
-import { LogOut, Settings, CheckCheck } from 'lucide-react';
+import { ReactNode, useState, useEffect, useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { Button, Avatar } from "@/components/ui";
+import DirectMessages from "@/components/DirectMessages";
+import Channels from "@/components/Channels";
+import { TeamMember } from "@/types";
+import { Channel } from "@/types/channel";
+import { useUnreadCount } from "@/hooks/useUnreadCount";
+import { useUnreadStore } from "@/store/unreadStore";
+import { useMarkAllAsRead } from "@/hooks/useMarkAllAsRead";
+import { LogOut, Settings, CheckCheck } from "lucide-react";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -38,18 +38,18 @@ export default function DashboardLayout({
   onBrowseChannels,
   onStartChat,
   onNewChat,
-  onLogout
+  onLogout,
 }: DashboardLayoutProps) {
   const { user } = useAuth();
   const router = useRouter();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
-  // 左侧边栏宽度状态
-  const [sidebarWidth, setSidebarWidth] = useState(256); // 默认 256px (w-64)
+  // Left sidebar width state
+  const [sidebarWidth, setSidebarWidth] = useState(256); // Default 256px (w-64)
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const sidebarDragStart = useRef({ x: 0, width: 256 });
 
-  // 左侧边栏拖拽处理
+  // Left sidebar drag handling
   const handleSidebarDragStart = (e: React.MouseEvent) => {
     setIsResizingSidebar(true);
     sidebarDragStart.current = { x: e.clientX, width: sidebarWidth };
@@ -59,7 +59,10 @@ export default function DashboardLayout({
     const handleSidebarDrag = (e: MouseEvent) => {
       if (!isResizingSidebar) return;
       const deltaX = e.clientX - sidebarDragStart.current.x;
-      const newWidth = Math.max(180, Math.min(400, sidebarDragStart.current.width + deltaX));
+      const newWidth = Math.max(
+        180,
+        Math.min(400, sidebarDragStart.current.width + deltaX),
+      );
       setSidebarWidth(newWidth);
     };
 
@@ -68,64 +71,64 @@ export default function DashboardLayout({
     };
 
     if (isResizingSidebar) {
-      document.addEventListener('mousemove', handleSidebarDrag);
-      document.addEventListener('mouseup', handleSidebarDragEnd);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
+      document.addEventListener("mousemove", handleSidebarDrag);
+      document.addEventListener("mouseup", handleSidebarDragEnd);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
     }
 
     return () => {
-      document.removeEventListener('mousemove', handleSidebarDrag);
-      document.removeEventListener('mouseup', handleSidebarDragEnd);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.removeEventListener("mousemove", handleSidebarDrag);
+      document.removeEventListener("mouseup", handleSidebarDragEnd);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     };
   }, [isResizingSidebar]);
 
-  // 初始化未读计数系统
+  // Initialize unread count system
   const { markAsRead } = useUnreadCount();
   const { totalUnreadCount } = useUnreadStore();
   const { markAllAsRead, isLoading: isMarkingAllRead } = useMarkAllAsRead();
 
-  // 调试：打印未读计数状态
+  // Debug: print unread count state
   useEffect(() => {
-    console.log('📊 DashboardLayout - Total unread count:', totalUnreadCount);
+    console.log("📊 DashboardLayout - Total unread count:", totalUnreadCount);
   }, [totalUnreadCount]);
 
-  // 当选择频道时，清除未读计数
+  // When selecting a channel, clear unread count
   const handleSelectChannel = (channelId: string) => {
-    console.log('📖 Marking channel as read:', channelId);
+    console.log("📖 Marking channel as read:", channelId);
     markAsRead(channelId);
     onSelectChannel?.(channelId);
   };
 
-  // 标记全部已读
+  // Mark all as read
   const handleMarkAllAsRead = async () => {
     if (totalUnreadCount === 0) return;
     try {
       const result = await markAllAsRead();
-      console.log('✅ Marked all as read:', result);
+      console.log("✅ Marked all as read:", result);
     } catch (error) {
-      console.error('Failed to mark all as read:', error);
+      console.error("Failed to mark all as read:", error);
     }
   };
 
-  // 开始聊天时，清除未读计数
+  // When starting a chat, clear unread count
   const handleStartChat = (memberId: string, dmConversationId?: string) => {
-    // 使用传入的 dmConversationId，或回退到 memberId
+    // Use passed dmConversationId, or fallback to memberId
     const conversationId = dmConversationId || memberId;
 
-    console.log('📖 Marking DM as read:', { memberId, conversationId });
+    console.log("📖 Marking DM as read:", { memberId, conversationId });
     markAsRead(undefined, conversationId);
     onStartChat?.(memberId, dmConversationId);
   };
 
-  // 获取团队成员列表
+  // Get team member list
   useEffect(() => {
     const fetchTeamMembers = async () => {
       try {
-        const response = await fetch('/api/users', {
-          credentials: 'include'
+        const response = await fetch("/api/users", {
+          credentials: "include",
         });
 
         if (response.ok) {
@@ -133,7 +136,7 @@ export default function DashboardLayout({
           setTeamMembers(data.users || []);
         }
       } catch (error) {
-        console.error('Error fetching team members:', error);
+        console.error("Error fetching team members:", error);
       }
     };
 
@@ -143,19 +146,19 @@ export default function DashboardLayout({
   return (
     <div className="h-screen overflow-hidden bg-background">
       <div className="flex h-full">
-        {/* 左侧边栏 */}
+        {/* Left sidebar */}
         <div
           className="h-full bg-slack-purple flex flex-col relative"
           style={{ width: `${sidebarWidth}px` }}
         >
-          {/* 右侧拖拽区域 */}
+          {/* Right drag area */}
           <div
             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-white/30 transition-colors"
             onMouseDown={handleSidebarDragStart}
-            style={{ cursor: isResizingSidebar ? 'col-resize' : 'col-resize' }}
+            style={{ cursor: isResizingSidebar ? "col-resize" : "col-resize" }}
           />
 
-          {/* 顶部用户信息 - 固定不滚动 */}
+          {/* Top user info - fixed, no scroll */}
           <div className="flex-shrink-0 p-4 border-b border-white/10">
             <div className="flex items-center gap-3">
               <Avatar
@@ -166,13 +169,15 @@ export default function DashboardLayout({
                 online={user?.isOnline}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-medium truncate">{user?.displayName}</p>
+                <p className="text-white text-sm font-medium truncate">
+                  {user?.displayName}
+                </p>
                 <p className="text-white/60 text-xs truncate">{user?.email}</p>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => router.push('/profile')}
+                onClick={() => router.push("/profile")}
                 className="text-white/60 hover:text-white hover:bg-white/10"
               >
                 <Settings className="w-4 h-4" />
@@ -180,7 +185,7 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          {/* 全部已读按钮 */}
+          {/* Mark all as read button */}
           {totalUnreadCount > 0 && (
             <div className="flex-shrink-0 px-2 py-2">
               <Button
@@ -191,12 +196,14 @@ export default function DashboardLayout({
                 className="w-full text-white/70 hover:text-white hover:bg-white/10 justify-start text-xs"
               >
                 <CheckCheck className="w-4 h-4 mr-2" />
-                {isMarkingAllRead ? 'Marking...' : `Mark all as read (${totalUnreadCount})`}
+                {isMarkingAllRead
+                  ? "Marking..."
+                  : `Mark all as read (${totalUnreadCount})`}
               </Button>
             </div>
           )}
 
-          {/* 频道和私聊列表 - 独立滚动 */}
+          {/* Channels and direct messages list - independent scroll */}
           <div className="flex-1 min-h-0 overflow-y-auto py-4 sidebar-scroll">
             <Channels
               channels={channels}
@@ -208,14 +215,14 @@ export default function DashboardLayout({
             />
             <DirectMessages
               members={teamMembers}
-              currentUserId={user?.id || ''}
+              currentUserId={user?.id || ""}
               selectedDirectMessageId={selectedDirectMessageId}
               onStartChat={handleStartChat}
               onNewChat={onNewChat}
             />
           </div>
 
-          {/* 底部登出按钮 - 固定不滚动 */}
+          {/* Bottom logout button - fixed, no scroll */}
           <div className="flex-shrink-0 p-4 border-t border-white/10">
             <Button
               variant="ghost"
@@ -228,7 +235,7 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* 右侧主内容区 */}
+        {/* Right main content area */}
         <div className="flex-1 min-h-0 h-full flex flex-col overflow-hidden">
           {children}
         </div>

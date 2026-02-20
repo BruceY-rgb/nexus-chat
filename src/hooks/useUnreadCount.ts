@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
-import { useUnreadStore } from '../store/unreadStore';
-import { useSocket } from './useSocket';
-import { useAuth } from './useAuth';
+import { useEffect } from "react";
+import { useUnreadStore } from "../store/unreadStore";
+import { useSocket } from "./useSocket";
+import { useAuth } from "./useAuth";
 
 export function useUnreadCount() {
   const {
@@ -9,65 +9,73 @@ export function useUnreadCount() {
     decrementUnread,
     setUnread,
     clearUnread,
-    setUnreadFromDB
+    setUnreadFromDB,
   } = useUnreadStore();
   const { socket, isConnected } = useSocket();
   const { user } = useAuth();
 
-  // 从数据库加载未读计数
+  // Load unread counts from database
   const loadUnreadCounts = async (retryCount = 0) => {
     try {
-      console.log('📊 Loading unread counts from API...');
-      const response = await fetch('/api/users/unread-counts', {
-        credentials: 'include'
+      console.log("📊 Loading unread counts from API...");
+      const response = await fetch("/api/users/unread-counts", {
+        credentials: "include",
       });
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Loaded unread counts:', data);
+        console.log("✅ Loaded unread counts:", data);
         setUnreadFromDB(data);
       } else if (response.status === 403) {
-        // 权限错误：用户可能不是频道成员
-        console.warn('⚠️ Permission denied for unread counts, may not be a channel member');
-        // 不显示错误，而是延迟重试（最多3次）
+        // Permission error: user may not be a channel member
+        console.warn(
+          "⚠️ Permission denied for unread counts, may not be a channel member",
+        );
+        // Don't show error, instead delay retry (max 3 times)
         if (retryCount < 3) {
-          setTimeout(() => {
-            loadUnreadCounts(retryCount + 1);
-          }, 1000 * (retryCount + 1)); // 递增延迟
+          setTimeout(
+            () => {
+              loadUnreadCounts(retryCount + 1);
+            },
+            1000 * (retryCount + 1),
+          ); // Increasing delay
         }
       } else {
-        console.error('❌ Failed to load unread counts:', response.status);
+        console.error("❌ Failed to load unread counts:", response.status);
       }
     } catch (error) {
-      console.error('❌ Failed to load unread counts:', error);
-      // 网络错误也可以重试
+      console.error("❌ Failed to load unread counts:", error);
+      // Network errors can also retry
       if (retryCount < 3) {
-        setTimeout(() => {
-          loadUnreadCounts(retryCount + 1);
-        }, 1000 * (retryCount + 1));
+        setTimeout(
+          () => {
+            loadUnreadCounts(retryCount + 1);
+          },
+          1000 * (retryCount + 1),
+        );
       }
     }
   };
 
-  // 标记消息为已读
+  // Mark messages as read
   const markAsRead = async (channelId?: string, dmConversationId?: string) => {
     try {
-      const response = await fetch('/api/messages/read', {
-        method: 'POST',
+      const response = await fetch("/api/messages/read", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({
           channelId,
-          dmConversationId
-        })
+          dmConversationId,
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
 
-        // 清除本地状态
+        // Clear local state
         if (channelId) {
           clearUnread(channelId);
         } else if (dmConversationId) {
@@ -76,32 +84,34 @@ export function useUnreadCount() {
 
         return data;
       } else if (response.status === 403) {
-        // 权限错误：用户可能不是频道成员
-        console.warn('⚠️ Permission denied when marking as read, may not be a channel member');
-        // 不抛出错误，静默处理
+        // Permission error: user may not be a channel member
+        console.warn(
+          "⚠️ Permission denied when marking as read, may not be a channel member",
+        );
+        // Don't throw error, handle silently
         return null;
       }
     } catch (error) {
-      console.error('Failed to mark as read:', error);
-      // 网络错误不抛出，静默处理
+      console.error("Failed to mark as read:", error);
+      // Network error doesn't throw, handle silently
       return null;
     }
   };
 
-  // 在组件挂载时立即加载未读计数（不依赖 WebSocket）
+  // Load unread counts immediately when component mounts (not dependent on WebSocket)
   useEffect(() => {
     if (user?.id) {
       loadUnreadCounts();
     }
   }, [user?.id]);
 
-  // 设置 WebSocket 监听器
+  // Set up WebSocket listeners
   useEffect(() => {
     if (!socket || !isConnected) {
       return;
     }
 
-    // 监听未读计数更新
+    // Listen for unread count updates
     const handleUnreadUpdate = (data: {
       channelId?: string;
       dmConversationId?: string;
@@ -109,7 +119,7 @@ export function useUnreadCount() {
     }) => {
       const { channelId, dmConversationId, unreadCount } = data;
 
-      // 设置未读计数（后端已经排除了发送者，这里直接设置即可）
+      // Set unread count (backend already excluded sender, just set it directly)
       if (channelId) {
         setUnread(channelId, unreadCount);
       } else if (dmConversationId) {
@@ -117,11 +127,11 @@ export function useUnreadCount() {
       }
     };
 
-    // 监听新消息
+    // Listen for new messages
     const handleNewMessage = (message: any) => {
       const { channelId, dmConversationId, userId } = message;
 
-      // 如果不是当前用户发送的消息，增加未读计数
+      // If it's not a message sent by current user, increment unread count
       if (channelId && userId !== user?.id) {
         incrementUnread(channelId);
       } else if (dmConversationId && userId !== user?.id) {
@@ -129,13 +139,13 @@ export function useUnreadCount() {
       }
     };
 
-    socket.on('unread-count-update', handleUnreadUpdate);
-    socket.on('new-message', handleNewMessage);
+    socket.on("unread-count-update", handleUnreadUpdate);
+    socket.on("new-message", handleNewMessage);
 
     // Cleanup function
     return () => {
-      socket.off('unread-count-update', handleUnreadUpdate);
-      socket.off('new-message', handleNewMessage);
+      socket.off("unread-count-update", handleUnreadUpdate);
+      socket.off("new-message", handleNewMessage);
     };
   }, [socket, isConnected, user?.id, incrementUnread, setUnread]);
 
@@ -144,6 +154,6 @@ export function useUnreadCount() {
     markAsRead,
     incrementUnread,
     setUnread,
-    clearUnread
+    clearUnread,
   };
 }

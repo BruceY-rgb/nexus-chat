@@ -1,21 +1,21 @@
-# Traefik 动态配置文件
-# 用于定义中间件和服务
+# Traefik dynamic configuration file
+# For defining middleware and services
 
-# 中间件定义
+# Middleware definitions
 http:
   middlewares:
-    # WebSocket 支持中间件
+    # WebSocket support middleware
     websocket-support:
       headers:
         customRequestHeaders:
           Upgrade: "upgrade"
           Connection: "keep-alive"
 
-    # 压缩中间件
+    # Compression middleware
     compress:
       compression: {}
 
-    # 安全头中间件
+    # Security headers middleware
     security-headers:
       headers:
         accessControlAllowMethods:
@@ -34,7 +34,7 @@ http:
         stsIncludeSubdomains: true
         stsPreload: true
 
-    # CORS 中间件
+    # CORS middleware
     cors-headers:
       headers:
         accessControlAllowCredentials: true
@@ -53,8 +53,8 @@ http:
           - "https://instagram.rlenv.data4o.ai"
         accessControlMaxAge: 86400
 
-# TCP 配置（用于 WebSocket）
+# TCP configuration (for WebSocket)
 tcp:
   serversTransitions:
-    # 如果需要 TCP 代理，可以在这里配置
+    # If TCP proxy is needed, configure here
     passHostHeader: true

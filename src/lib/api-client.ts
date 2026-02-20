@@ -1,5 +1,5 @@
 // =====================================================
-// API 客户端
+// API Client
 // =====================================================
 
 interface ApiError {
@@ -33,10 +33,10 @@ export class ApiClient {
 
     const data: T | ApiError = await response.json();
 
-    // 如果响应不成功，抛出错误
+    // If response is not successful, throw error
     if (!response.ok) {
       const error = data as ApiError;
-      throw new Error(error.message || '请求失败');
+      throw new Error(error.message || 'Request failed');
     }
 
     return data as T;
@@ -76,5 +76,5 @@ export class ApiClient {
   }
 }
 
-// 创建默认 API 客户端实例
+// Create default API client instance
 export const apiClient = new ApiClient();

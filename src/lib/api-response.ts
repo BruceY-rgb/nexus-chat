@@ -1,21 +1,21 @@
 // =====================================================
-// API 响应格式
+// API Response Format
 // =====================================================
 
 /**
- * 成功响应
+ * Success response
  */
 export function successResponse<T>(data: T, message?: string) {
   return {
     success: true,
-    message: message || '操作成功',
+    message: message || 'Operation successful',
     data,
     timestamp: new Date().toISOString(),
   };
 }
 
 /**
- * 错误响应
+ * Error response
  */
 export function errorResponse(
   message: string,
@@ -32,7 +32,7 @@ export function errorResponse(
 }
 
 /**
- * 分页响应
+ * Paginated response
  */
 export function paginatedResponse<T>(
   data: T[],
@@ -52,29 +52,29 @@ export function paginatedResponse<T>(
 }
 
 /**
- * 未授权响应
+ * Unauthorized response
  */
-export function unauthorizedResponse(message = '未授权访问') {
+export function unauthorizedResponse(message = 'Unauthorized access') {
   return errorResponse(message, 'UNAUTHORIZED');
 }
 
 /**
- * 禁止访问响应
+ * Forbidden response
  */
-export function forbiddenResponse(message = '禁止访问') {
+export function forbiddenResponse(message = 'Forbidden') {
   return errorResponse(message, 'FORBIDDEN');
 }
 
 /**
- * 未找到响应
+ * Not found response
  */
-export function notFoundResponse(message = '资源未找到') {
+export function notFoundResponse(message = 'Resource not found') {
   return errorResponse(message, 'NOT_FOUND');
 }
 
 /**
- * Validation error响应
+ * Validation error response
  */
 export function validationErrorResponse(errors: Record<string, string>) {
-  return errorResponse('输入数据验证失败', 'VALIDATION_ERROR', { errors });
+  return errorResponse('Input data validation failed', 'VALIDATION_ERROR', { errors });
 }

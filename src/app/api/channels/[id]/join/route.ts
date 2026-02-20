@@ -1,72 +1,65 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
-import { unauthorizedResponse } from '@/lib/api-response';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { verifyToken } from "@/lib/auth";
+import { unauthorizedResponse } from "@/lib/api-response";
 
-// 加入频道 API
+// Join Channel API
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
-    const token = request.cookies.get('auth_token')?.value;
+    const token = request.cookies.get("auth_token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        unauthorizedResponse(),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse(), { status: 401 });
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
-      return NextResponse.json(
-        unauthorizedResponse('token无效'),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse("Invalid token"), {
+        status: 401,
+      });
     }
 
     const currentUserId = decoded.userId;
     const channelId = params.id;
 
-    // 检查频道是否存在
+    // Check if channel exists
     const channel = await prisma.channel.findUnique({
       where: { id: channelId },
       include: {
         members: {
-          where: { userId: currentUserId }
-        }
-      }
+          where: { userId: currentUserId },
+        },
+      },
     });
 
     if (!channel) {
-      return NextResponse.json(
-        { error: 'Channel not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    // 检查是否已经是成员
+    // Check if already a member
     if (channel.members.length > 0) {
       return NextResponse.json(
-        { error: 'Already a member of this channel' },
-        { status: 400 }
+        { error: "Already a member of this channel" },
+        { status: 400 },
       );
     }
 
-    // 检查私有频道（暂时允许加入，后续可以添加审批流程）
+    // Check private channels (temporarily allowed to join, approval flow can be added later)
     if (channel.isPrivate) {
-      // TODO: 这里可以添加审批流程，比如发送加入申请
-      // 现在暂时允许加入
+      // TODO: Add approval flow here, such as sending join request
+      // Currently temporarily allowed to join
     }
 
-    // 加入频道
+    // Join channel
     const channelMember = await prisma.channelMember.create({
       data: {
         channelId,
         userId: currentUserId,
-        role: 'member'
+        role: "member",
       },
       include: {
         channel: {
@@ -74,28 +67,31 @@ export async function POST(
             id: true,
             name: true,
             description: true,
-            isPrivate: true
-          }
+            isPrivate: true,
+          },
         },
         user: {
           select: {
             id: true,
             displayName: true,
-            avatarUrl: true
-          }
-        }
-      }
+            avatarUrl: true,
+          },
+        },
+      },
     });
 
-    return NextResponse.json({
-      message: 'Successfully joined the channel',
-      channelMember
-    }, { status: 201 });
-  } catch (error) {
-    console.error('Error joining channel:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      {
+        message: "Successfully joined the channel",
+        channelMember,
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    console.error("Error joining channel:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

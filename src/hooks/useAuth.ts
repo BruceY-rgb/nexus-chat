@@ -1,15 +1,15 @@
 // =====================================================
-// 认证 Hook
+// Authentication Hook
 // =====================================================
 
-import { useContext } from 'react';
-import { AuthContext } from '@/contexts/AuthContext';
+import { useContext } from "react";
+import { AuthContext } from "@/contexts/AuthContext";
 
-// 为了向后兼容，也提供一个独立的 hook
+// Also provides a standalone hook for backward compatibility
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

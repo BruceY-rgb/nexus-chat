@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Message } from '@/types/message';
-import MessageRenderer from './MessageRenderer';
-import MessageActions from './MessageActions';
-import MessageEditor from './MessageEditor';
-import QuoteBlock from './QuoteBlock';
-import ReactionBadges from './ReactionBadges';
-import { useReactions } from '@/hooks/useReactions';
+import React from "react";
+import { Message } from "@/types/message";
+import MessageRenderer from "./MessageRenderer";
+import MessageActions from "./MessageActions";
+import MessageEditor from "./MessageEditor";
+import QuoteBlock from "./QuoteBlock";
+import ReactionBadges from "./ReactionBadges";
+import { useReactions } from "@/hooks/useReactions";
 
 interface MessageItemProps {
   message: Message;
@@ -48,10 +48,13 @@ function MessageItemBase({
   onQuote,
   formatMessageTime,
   messageRefs,
-  scrollContainerRef
+  scrollContainerRef,
 }: MessageItemProps) {
   // 在组件顶层调用 useReactions hook
-  const { reactions, toggleReaction, pendingReactions } = useReactions(message.id, currentUserId);
+  const { reactions, toggleReaction, pendingReactions } = useReactions(
+    message.id,
+    currentUserId,
+  );
 
   return (
     <div>
@@ -69,7 +72,7 @@ function MessageItemBase({
           messageRefs.current[message.id] = el;
         }}
         className={`message-row w-full relative group transition-all duration-200 hover:bg-slate-800/50 hover:z-[60] ${
-          isHighlighted ? 'bg-yellow-100/50 rounded-lg' : ''
+          isHighlighted ? "bg-yellow-100/50 rounded-lg" : ""
         }`}
       >
         {/* 🧠 智能对侧悬停工具栏 - 脱离内容容器，悬浮在行级别 */}
@@ -85,13 +88,18 @@ function MessageItemBase({
         />
 
         {/* 头像 + 消息内容容器 */}
-        <div className={`flex w-full items-start gap-3 ${
-          isOwnMessage ? 'flex-row-reverse' : ''
-        }`}>
+        <div
+          className={`flex w-full items-start gap-3 ${
+            isOwnMessage ? "flex-row-reverse" : ""
+          }`}
+        >
           {/* 头像 */}
           {showAvatar ? (
             <img
-              src={message.user.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${message.user.displayName || message.user.id}&size=40`}
+              src={
+                message.user.avatarUrl ||
+                `https://api.dicebear.com/7.x/identicon/png?seed=${message.user.displayName || message.user.id}&size=40`
+              }
               alt={message.user.displayName}
               className="w-10 h-10 rounded-sm flex-shrink-0"
             />
@@ -100,21 +108,29 @@ function MessageItemBase({
           )}
 
           {/* 消息内容 */}
-          <div className={`flex-1 ${isOwnMessage ? 'text-right' : ''}`}>
+          <div className={`flex-1 min-w-0 ${isOwnMessage ? "text-right" : ""}`}>
             {/* 用户名和时间（仅在需要时显示） */}
             {showAvatar && (
-              <div className={`flex items-baseline gap-2 mb-1 ${
-                isOwnMessage ? 'justify-end' : ''
-              }`}>
+              <div
+                className={`flex items-baseline gap-2 mb-1 ${
+                  isOwnMessage ? "justify-end" : ""
+                }`}
+              >
                 <span className="font-semibold text-text-primary text-sm">
                   {message.user.displayName}
                 </span>
-                <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: "14px", color: "var(--text-muted)" }}>
                   {formatMessageTime(message.createdAt)}
                 </span>
                 {/* Edited indicator */}
                 {message.isEdited && !message.isDeleted && (
-                  <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      color: "var(--text-muted)",
+                      fontStyle: "italic",
+                    }}
+                  >
                     (edited)
                   </span>
                 )}
@@ -122,27 +138,26 @@ function MessageItemBase({
             )}
 
             {/* Quote Block - 显示被引用的消息 */}
-            {(message.quotedContent || message.quotedUserName) && !message.isDeleted && (
-              <div className="mb-2">
-                <QuoteBlock
-                  content={message.quotedContent || ''}
-                  userName={message.quotedUserName || 'Unknown'}
-                  avatarUrl={message.quotedAvatarUrl}
-                  createdAt={message.quotedAt || ''}
-                  isDeleted={message.isQuotedDeleted}
-                />
-              </div>
-            )}
+            {(message.quotedContent || message.quotedUserName) &&
+              !message.isDeleted && (
+                <div className="mb-2">
+                  <QuoteBlock
+                    content={message.quotedContent || ""}
+                    userName={message.quotedUserName || "Unknown"}
+                    avatarUrl={message.quotedAvatarUrl}
+                    createdAt={message.quotedAt || ""}
+                    isDeleted={message.isQuotedDeleted}
+                  />
+                </div>
+              )}
 
             {/* 消息气泡 */}
             <div
-              className={`relative inline-block max-w-[85%] px-4 py-2 rounded-lg ${
+              className={`relative max-w-full px-4 py-2 rounded-lg break-words ${
                 isOwnMessage
-                  ? 'bg-primary text-white'
-                  : 'bg-background-component text-text-primary'
-              } ${
-                message.isDeleted ? 'opacity-50 italic' : ''
-              }`}
+                  ? "bg-primary text-white"
+                  : "bg-background-component text-text-primary"
+              } ${message.isDeleted ? "opacity-50 italic" : ""}`}
             >
               {/* 消息内容 */}
               {editingMessageId === message.id ? (
@@ -153,11 +168,15 @@ function MessageItemBase({
                   className="mt-1"
                 />
               ) : message.isDeleted ? (
-                <div className={`italic ${isOwnMessage ? 'text-white' : 'text-text-tertiary'}`}>
+                <div
+                  className={`italic ${isOwnMessage ? "text-white" : "text-text-tertiary"}`}
+                >
                   This message was deleted
                 </div>
               ) : (
-                <div className={isOwnMessage ? 'text-white' : 'text-text-primary'}>
+                <div
+                  className={isOwnMessage ? "text-white" : "text-text-primary"}
+                >
                   <MessageRenderer
                     message={message}
                     currentUserId={currentUserId}
@@ -168,9 +187,7 @@ function MessageItemBase({
 
             {/* Reply indicator */}
             {message.parentMessageId && (
-              <div className="mt-1 text-xs text-text-tertiary">
-                Replied
-              </div>
+              <div className="mt-1 text-xs text-text-tertiary">Replied</div>
             )}
 
             {/* Reaction badges */}
@@ -195,7 +212,7 @@ function MessageItemBase({
  */
 const propsAreEqual = (
   prevProps: MessageItemProps,
-  nextProps: MessageItemProps
+  nextProps: MessageItemProps,
 ): boolean => {
   // Deep comparison for message object (most important)
   const prevMessage = prevProps.message;
@@ -234,17 +251,18 @@ const propsAreEqual = (
   // Refs are stable across renders, no need to compare
 
   // Only re-render if something actually changed
-  const shouldRerender = messageChanged || basicPropsChanged || functionsChanged;
+  const shouldRerender =
+    messageChanged || basicPropsChanged || functionsChanged;
 
   // Debug logging in development
-  if (process.env.NODE_ENV === 'development' && shouldRerender) {
-    console.log('🔄 MessageItem re-rendering:', {
+  if (process.env.NODE_ENV === "development" && shouldRerender) {
+    console.log("🔄 MessageItem re-rendering:", {
       messageId: nextMessage.id,
       messageChanged,
       basicPropsChanged,
       functionsChanged,
       prevMessageContent: prevMessage.content?.substring(0, 30),
-      nextMessageContent: nextMessage.content?.substring(0, 30)
+      nextMessageContent: nextMessage.content?.substring(0, 30),
     });
   }
 

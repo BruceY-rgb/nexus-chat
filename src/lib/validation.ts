@@ -1,84 +1,84 @@
 // =====================================================
-// 验证模式
+// Validation Schemas
 // =====================================================
 
 import { z } from 'zod';
 
-// 注册验证模式
+// Registration validation schema
 export const registerSchema = z.object({
-  email: z.string().email('Please enter有效的邮箱地址'),
+  email: z.string().email('Please enter a valid email address'),
   password: z
     .string()
-    .min(8, '密码至少8个字符')
-    .max(100, '密码不能超过100个字符')
+    .min(8, 'Password must be at least 8 characters')
+    .max(100, 'Password must not exceed 100 characters')
     .regex(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      '密码必须包含大小写字母和数字'
+      'Password must contain uppercase, lowercase letters and numbers'
     ),
   displayName: z
     .string()
-    .min(2, '昵称至少2个字符')
-    .max(50, '昵称不能超过50个字符'),
+    .min(2, 'Display name must be at least 2 characters')
+    .max(50, 'Display name must not exceed 50 characters'),
   realName: z
     .string()
-    .min(2, '真实姓名至少2个字符')
-    .max(50, '真实姓名不能超过50个字符')
+    .min(2, 'Real name must be at least 2 characters')
+    .max(50, 'Real name must not exceed 50 characters')
     .optional()
     .or(z.literal('')),
 });
 
-// 登录验证模式
+// Login validation schema
 export const loginSchema = z.object({
-  email: z.string().email('Please enter有效的邮箱地址'),
-  password: z.string().min(1, 'Please enter密码'),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(1, 'Please enter password'),
 });
 
-// 发送验证码验证模式
+// Send verification code schema
 export const sendVerificationSchema = z.object({
-  email: z.string().email('Please enter有效的邮箱地址'),
+  email: z.string().email('Please enter a valid email address'),
 });
 
-// 验证码登录验证模式
+// Verification code login schema
 export const verificationLoginSchema = z.object({
-  email: z.string().email('Please enter有效的邮箱地址'),
-  code: z.string().length(6, '验证码为6位数字'),
+  email: z.string().email('Please enter a valid email address'),
+  code: z.string().length(6, 'Verification code must be 6 digits'),
 });
 
-// 更改密码验证模式
+// Change password schema
 export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Please enter当前密码'),
+  currentPassword: z.string().min(1, 'Please enter current password'),
   newPassword: z
     .string()
-    .min(8, '密码至少8个字符')
-    .max(100, '密码不能超过100个字符')
+    .min(8, 'Password must be at least 8 characters')
+    .max(100, 'Password must not exceed 100 characters')
     .regex(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      '密码必须包含大小写字母和数字'
+      'Password must contain uppercase, lowercase letters and numbers'
     ),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
-  message: '两次输入的密码不一致',
+  message: 'Passwords do not match',
   path: ['confirmPassword'],
 });
 
-// 更新用户资料验证模式
+// Update user profile schema
 export const updateProfileSchema = z.object({
   displayName: z
     .string()
-    .min(2, '昵称至少2个字符')
-    .max(50, '昵称不能超过50个字符')
+    .min(2, 'Display name must be at least 2 characters')
+    .max(50, 'Display name must not exceed 50 characters')
     .optional(),
   realName: z
     .string()
-    .min(2, '真实姓名至少2个字符')
-    .max(50, '真实姓名不能超过50个字符')
+    .min(2, 'Real name must be at least 2 characters')
+    .max(50, 'Real name must not exceed 50 characters')
     .optional()
     .or(z.literal('')),
-  avatarUrl: z.string().url('Please enter有效的URL').optional().or(z.literal('')),
+  avatarUrl: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
   timezone: z.string().optional(),
 });
 
-// 验证函数
+// Validation function
 export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown): { success: true; data: T } | { success: false; errors: Record<string, string> } {
   const result = schema.safeParse(data);
 

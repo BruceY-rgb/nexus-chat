@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Channel } from '../types/channel';
-import { Badge } from './ui';
-import { useUnreadStore } from '../store/unreadStore';
-import CreateChannelModal from './CreateChannelModal';
+import { useState } from "react";
+import { Channel } from "../types/channel";
+import { Badge } from "./ui";
+import { useUnreadStore } from "../store/unreadStore";
+import CreateChannelModal from "./CreateChannelModal";
 
 interface ChannelsProps {
   channels?: Channel[];
@@ -21,7 +21,7 @@ export default function Channels({
   joinedChannels = [],
   onSelectChannel,
   onCreateChannel,
-  onBrowseChannels
+  onBrowseChannels,
 }: ChannelsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { getUnreadCount } = useUnreadStore();
@@ -34,25 +34,29 @@ export default function Channels({
     setIsModalOpen(false);
   };
 
-  const handleCreateChannelSubmit = async (channelName: string, description?: string, isPrivate?: boolean) => {
+  const handleCreateChannelSubmit = async (
+    channelName: string,
+    description?: string,
+    isPrivate?: boolean,
+  ) => {
     try {
-      // 调用实际 API 创建频道
-      const response = await fetch('/api/channels', {
-        method: 'POST',
+      // Call actual API to create channel
+      const response = await fetch("/api/channels", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({
           name: channelName,
           description,
-          isPrivate: isPrivate || false
-        })
+          isPrivate: isPrivate || false,
+        }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to create channel');
+        throw new Error(error.error || "Failed to create channel");
       }
 
       const data = await response.json();
@@ -67,16 +71,20 @@ export default function Channels({
       // 自动选中新建的频道（使用真实ID）
       onSelectChannel?.(newChannel.id);
 
-      console.log('Created new channel successfully:', newChannel);
+      console.log("Created new channel successfully:", newChannel);
     } catch (error) {
-      console.error('Create channel error:', error);
+      console.error("Create channel error:", error);
       // 可以添加用户友好的错误提示
-      alert(`Failed to create channel: ${error instanceof Error ? error.message : '未知错误'}`);
+      alert(
+        `Failed to create channel: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   };
 
   // 只显示已加入的频道
-  const joinedChannelsList = channels.filter(channel => joinedChannels.includes(channel.id));
+  const joinedChannelsList = channels.filter((channel) =>
+    joinedChannels.includes(channel.id),
+  );
 
   return (
     <div className="mb-4">
@@ -151,9 +159,7 @@ export default function Channels({
             <div
               key={channel.id}
               className={`flex items-center px-3 py-1.5 mx-2 rounded cursor-pointer transition-colors group ${
-                isSelected
-                  ? 'bg-slack-blue text-white'
-                  : 'hover:bg-white/10'
+                isSelected ? "bg-slack-blue text-white" : "hover:bg-white/10"
               }`}
               onClick={() => onSelectChannel?.(channel.id)}
             >
@@ -161,8 +167,8 @@ export default function Channels({
               <span
                 className={`text-base font-medium ${
                   isSelected
-                    ? 'text-white'
-                    : 'text-white/70 group-hover:text-white'
+                    ? "text-white"
+                    : "text-white/70 group-hover:text-white"
                 } transition-colors`}
               >
                 #
@@ -172,10 +178,10 @@ export default function Channels({
               <span
                 className={`ml-3 text-sm truncate transition-colors ${
                   isSelected
-                    ? 'text-white'
+                    ? "text-white"
                     : hasUnread
-                    ? 'text-white font-semibold'
-                    : 'text-white/70 group-hover:text-white'
+                      ? "text-white font-semibold"
+                      : "text-white/70 group-hover:text-white"
                 }`}
               >
                 {channel.name}
@@ -183,11 +189,7 @@ export default function Channels({
 
               {/* Unread Count Badge */}
               {hasUnread && (
-                <Badge
-                  count={unreadCount}
-                  size="sm"
-                  className="ml-auto"
-                />
+                <Badge count={unreadCount} size="sm" className="ml-auto" />
               )}
             </div>
           );

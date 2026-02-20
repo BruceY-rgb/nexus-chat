@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { TeamMember } from '../types';
-import { Badge } from './ui';
-import { useUnreadStore } from '../store/unreadStore';
-import { useSocket } from '../hooks/useSocket';
-import { useUnreadCount } from '../hooks/useUnreadCount';
+import { useState, useEffect, useCallback } from "react";
+import { TeamMember } from "../types";
+import { Badge } from "./ui";
+import { useUnreadStore } from "../store/unreadStore";
+import { useSocket } from "../hooks/useSocket";
+import { useUnreadCount } from "../hooks/useUnreadCount";
 
 interface DirectMessagesProps {
   members?: TeamMember[];
@@ -49,12 +49,14 @@ export default function DirectMessages({
   currentUserId,
   selectedDirectMessageId,
   onStartChat,
-  onNewChat // Not used, but kept for interface compatibility
+  onNewChat, // Not used, but kept for interface compatibility
 }: DirectMessagesProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<TeamMember[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [activeConversations, setActiveConversations] = useState<ActiveDMConversation[]>([]);
+  const [activeConversations, setActiveConversations] = useState<
+    ActiveDMConversation[]
+  >([]);
   const [starredUsers, setStarredUsers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { getUnreadCount } = useUnreadStore();
@@ -66,8 +68,8 @@ export default function DirectMessages({
     const loadActiveConversations = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/conversations/dm/active', {
-          credentials: 'include'
+        const response = await fetch("/api/conversations/dm/active", {
+          credentials: "include",
         });
 
         if (response.ok) {
@@ -75,7 +77,7 @@ export default function DirectMessages({
           setActiveConversations(data.conversations || []);
         }
       } catch (error) {
-        console.error('Error loading active conversations:', error);
+        console.error("Error loading active conversations:", error);
       } finally {
         setIsLoading(false);
       }
@@ -83,8 +85,8 @@ export default function DirectMessages({
 
     const loadStarredUsers = async () => {
       try {
-        const response = await fetch('/api/users/starred', {
-          credentials: 'include'
+        const response = await fetch("/api/users/starred", {
+          credentials: "include",
         });
 
         if (response.ok) {
@@ -92,7 +94,7 @@ export default function DirectMessages({
           setStarredUsers(data.users || []);
         }
       } catch (error) {
-        console.error('Error loading starred users:', error);
+        console.error("Error loading starred users:", error);
       }
     };
 
@@ -112,104 +114,119 @@ export default function DirectMessages({
 
     // Listen to events via socket
     if (socket) {
-      socket.on('active-conversations-update', handleActiveConversationsUpdate);
+      socket.on("active-conversations-update", handleActiveConversationsUpdate);
     }
 
     // Listen for custom events
-    window.addEventListener('starred-users-updated', handleStarredUsersUpdate);
+    window.addEventListener("starred-users-updated", handleStarredUsersUpdate);
 
     // Cleanup function
     return () => {
       if (socket) {
-        socket.off('active-conversations-update', handleActiveConversationsUpdate);
+        socket.off(
+          "active-conversations-update",
+          handleActiveConversationsUpdate,
+        );
       }
-      window.removeEventListener('starred-users-updated', handleStarredUsersUpdate);
+      window.removeEventListener(
+        "starred-users-updated",
+        handleStarredUsersUpdate,
+      );
     };
   }, [socket]);
 
   // Handle starting a chat (adds conversation to list immediately)
-  const handleStartChat = useCallback(async (userId: string, dmConversationId?: string) => {
-    // === Step 1: Clear search query, switching to active conversation list ===
-    if (searchQuery.trim()) {
-      setSearchQuery('');
-      console.log('🔍 [DEBUG] Clear search query, switching to active conversation list');
-    }
-
-    // If dmConversationId already exists, use it directly
-    if (dmConversationId) {
-      // When clicking to enter conversation, automatically clear unread count
-      try {
-        await markAsRead(undefined, dmConversationId);
-      } catch (error) {
-        console.error('Failed to mark as read:', error);
+  const handleStartChat = useCallback(
+    async (userId: string, dmConversationId?: string) => {
+      // === Step 1: Clear search query, switching to active conversation list ===
+      if (searchQuery.trim()) {
+        setSearchQuery("");
+        console.log(
+          "🔍 [DEBUG] Clear search query, switching to active conversation list",
+        );
       }
-      onStartChat?.(userId, dmConversationId);
-      return;
-    }
 
-    // Otherwise, create or get conversation
-    try {
-      const response = await fetch('/api/conversations/dm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ userId })
-      });
-
-      if (response.ok) {
-        const conversation = await response.json();
-        const otherMember = conversation.members.find((m: any) => m.userId !== currentUserId);
-
-        // Ensure otherMember exists
-        if (!otherMember?.user?.id) {
-          throw new Error('Failed to find other user');
+      // If dmConversationId already exists, use it directly
+      if (dmConversationId) {
+        // When clicking to enter conversation, automatically clear unread count
+        try {
+          await markAsRead(undefined, dmConversationId);
+        } catch (error) {
+          console.error("Failed to mark as read:", error);
         }
+        onStartChat?.(userId, dmConversationId);
+        return;
+      }
 
-        const newConversation: ActiveDMConversation = {
-          conversationId: conversation.id,
-          lastMessageAt: '',
-          createdAt: conversation.createdAt,
-          otherUser: {
-            id: otherMember.user.id,
-            email: otherMember.user.email,
-            displayName: otherMember.user.displayName,
-            realName: otherMember.user.realName,
-            avatarUrl: otherMember.user.avatarUrl,
-            isOnline: otherMember.user.isOnline,
-            lastSeenAt: otherMember.user.lastSeenAt
+      // Otherwise, create or get conversation
+      try {
+        const response = await fetch("/api/conversations/dm", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-          unreadCount: 0,
-          lastReadAt: undefined,
-          lastMessage: undefined,
-          messageCount: 0
-        };
-
-        // Optimistic update: add new conversation to top of list
-        setActiveConversations(prev => {
-          // Check if already exists
-          if (prev.some(conv => conv.conversationId === conversation.id)) {
-            return prev;
-          }
-          return [newConversation, ...prev];
+          credentials: "include",
+          body: JSON.stringify({ userId }),
         });
 
-        // Notify WebSocket to update
-        if (socket) {
-          socket.emit('active-conversations-update', { dmConversationId: conversation.id });
-        }
+        if (response.ok) {
+          const conversation = await response.json();
+          const otherMember = conversation.members.find(
+            (m: any) => m.userId !== currentUserId,
+          );
 
-        onStartChat?.(userId, conversation.id);
-      } else {
-        // Even if it fails, call the original callback
+          // Ensure otherMember exists
+          if (!otherMember?.user?.id) {
+            throw new Error("Failed to find other user");
+          }
+
+          const newConversation: ActiveDMConversation = {
+            conversationId: conversation.id,
+            lastMessageAt: "",
+            createdAt: conversation.createdAt,
+            otherUser: {
+              id: otherMember.user.id,
+              email: otherMember.user.email,
+              displayName: otherMember.user.displayName,
+              realName: otherMember.user.realName,
+              avatarUrl: otherMember.user.avatarUrl,
+              isOnline: otherMember.user.isOnline,
+              lastSeenAt: otherMember.user.lastSeenAt,
+            },
+            unreadCount: 0,
+            lastReadAt: undefined,
+            lastMessage: undefined,
+            messageCount: 0,
+          };
+
+          // Optimistic update: add new conversation to top of list
+          setActiveConversations((prev) => {
+            // Check if already exists
+            if (prev.some((conv) => conv.conversationId === conversation.id)) {
+              return prev;
+            }
+            return [newConversation, ...prev];
+          });
+
+          // Notify WebSocket to update
+          if (socket) {
+            socket.emit("active-conversations-update", {
+              dmConversationId: conversation.id,
+            });
+          }
+
+          onStartChat?.(userId, conversation.id);
+        } else {
+          // Even if it fails, call the original callback
+          onStartChat?.(userId);
+        }
+      } catch (error) {
+        console.error("Error starting chat:", error);
         onStartChat?.(userId);
       }
-    } catch (error) {
-      console.error('Error starting chat:', error);
-      onStartChat?.(userId);
-    }
-  }, [socket, onStartChat, currentUserId, searchQuery]);
+    },
+    [socket, onStartChat, currentUserId, searchQuery],
+  );
 
   // Search team members (searches all users, not just active ones)
   useEffect(() => {
@@ -222,16 +239,19 @@ export default function DirectMessages({
 
       setIsSearching(true);
       try {
-        const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
-          credentials: 'include'
-        });
+        const response = await fetch(
+          `/api/users/search?q=${encodeURIComponent(searchQuery)}`,
+          {
+            credentials: "include",
+          },
+        );
 
         if (response.ok) {
           const data = await response.json();
           setSearchResults(data.users || []);
         }
       } catch (error) {
-        console.error('Error searching members:', error);
+        console.error("Error searching members:", error);
       } finally {
         setIsSearching(false);
       }
@@ -242,27 +262,32 @@ export default function DirectMessages({
   }, [searchQuery]);
 
   // Show search results or active conversations
-  const displayConversations = searchQuery.trim() ? searchResults.map(user => ({
-    conversationId: user.dmConversationId || '', // Search results don't have conversationId, leave empty for handleStartChat to create
-    lastMessageAt: '',
-    createdAt: '',
-    otherUser: {
-      id: user.id,
-      email: user.email,
-      displayName: user.displayName,
-      realName: user.realName,
-      avatarUrl: user.avatarUrl,
-      isOnline: user.isOnline,
-      lastSeenAt: user.lastSeenAt
-    },
-    unreadCount: user.unreadCount || 0,
-    lastReadAt: user.lastReadAt,
-    lastMessage: null,
-    messageCount: 0
-  })) : activeConversations.filter(conv =>
-    // Filter out users already in starred list to avoid duplicate display
-    !starredUsers.some(starredUser => starredUser.id === conv.otherUser.id)
-  );
+  const displayConversations = searchQuery.trim()
+    ? searchResults.map((user) => ({
+        conversationId: user.dmConversationId || "", // Search results don't have conversationId, leave empty for handleStartChat to create
+        lastMessageAt: "",
+        createdAt: "",
+        otherUser: {
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          realName: user.realName,
+          avatarUrl: user.avatarUrl,
+          isOnline: user.isOnline,
+          lastSeenAt: user.lastSeenAt,
+        },
+        unreadCount: user.unreadCount || 0,
+        lastReadAt: user.lastReadAt,
+        lastMessage: null,
+        messageCount: 0,
+      }))
+    : activeConversations.filter(
+        (conv) =>
+          // Filter out users already in starred list to avoid duplicate display
+          !starredUsers.some(
+            (starredUser) => starredUser.id === conv.otherUser.id,
+          ),
+      );
 
   const getStatusIndicator = (isOnline: boolean) => {
     if (isOnline) {
@@ -278,7 +303,10 @@ export default function DirectMessages({
   return (
     <div className="mb-4">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 hover:bg-white/10 cursor-pointer" onClick={() => setSearchQuery('')}>
+      <div
+        className="flex items-center justify-between px-3 py-2 hover:bg-white/10 cursor-pointer"
+        onClick={() => setSearchQuery("")}
+      >
         <h3 className="text-white/80 text-sm font-medium tracking-wide uppercase">
           DIRECT MESSAGES
         </h3>
@@ -288,7 +316,7 @@ export default function DirectMessages({
           title="Search members"
           onClick={(e) => {
             e.stopPropagation();
-            setSearchQuery('');
+            setSearchQuery("");
           }}
         >
           <svg
@@ -308,7 +336,7 @@ export default function DirectMessages({
         </button>
       </div>
 
-      {/* 搜索框 */}
+      {/* Search box */}
       <div className="px-3 py-2">
         <input
           type="text"
@@ -320,7 +348,7 @@ export default function DirectMessages({
         />
       </div>
 
-      {/* 星标用户分组 - 只在非搜索模式下显示 */}
+      {/* Starred users group - only show in non-search mode */}
       {!searchQuery && starredUsers.length > 0 && (
         <div className="mb-2">
           <div className="px-3 py-1.5">
@@ -343,22 +371,23 @@ export default function DirectMessages({
                 <div
                   key={conversationId}
                   className={`flex items-center px-3 py-1.5 mx-2 rounded cursor-pointer transition-colors group ${
-                    isSelected
-                      ? 'bg-[#1164A3] text-white'
-                      : 'hover:bg-white/10'
+                    isSelected ? "bg-[#1164A3] text-white" : "hover:bg-white/10"
                   }`}
                   onClick={() => handleStartChat(user.id, conversationId)}
                 >
                   {/* Avatar with status indicator */}
                   <div className="relative flex-shrink-0">
                     <img
-                      src={user.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${user.displayName || user.id}&size=24`}
+                      src={
+                        user.avatarUrl ||
+                        `https://api.dicebear.com/7.x/identicon/png?seed=${user.displayName || user.id}&size=24`
+                      }
                       alt={user.displayName}
                       className="w-5 h-5 rounded-sm"
-                      style={{ borderRadius: '4px' }}
+                      style={{ borderRadius: "4px" }}
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
-                        if (!img.src.includes('api.dicebear.com')) {
+                        if (!img.src.includes("api.dicebear.com")) {
                           img.src = `https://api.dicebear.com/7.x/identicon/png?seed=${user.displayName || user.id}&size=24`;
                         }
                       }}
@@ -367,11 +396,13 @@ export default function DirectMessages({
                   </div>
 
                   {/* Display Name with Star Icon */}
-                  <span className={`ml-3 text-sm truncate transition-colors ${
-                    isSelected
-                      ? 'text-white'
-                      : 'text-white/80 group-hover:text-white'
-                  }`}>
+                  <span
+                    className={`ml-3 text-sm truncate transition-colors ${
+                      isSelected
+                        ? "text-white"
+                        : "text-white/80 group-hover:text-white"
+                    }`}
+                  >
                     {user.displayName}
                   </span>
 
@@ -400,11 +431,11 @@ export default function DirectMessages({
         </div>
       )}
 
-      {/* 所有用户分组 */}
+      {/* All users group */}
       <div>
         <div className="px-3 py-1.5">
           <h4 className="text-white/60 text-xs font-medium tracking-wide uppercase">
-            {searchQuery ? 'Search Results' : 'DIRECT MESSAGES'}
+            {searchQuery ? "Search Results" : "DIRECT MESSAGES"}
           </h4>
         </div>
         <div className="space-y-0.5">
@@ -413,33 +444,38 @@ export default function DirectMessages({
             const isSelected = selectedDirectMessageId === otherUser.id;
             const isCurrentUser = otherUser.id === currentUserId;
             const conversationId = conversation.conversationId;
-            const unreadCount = conversation.unreadCount || getUnreadCount(conversationId);
+            const unreadCount =
+              conversation.unreadCount || getUnreadCount(conversationId);
             const hasUnread = unreadCount > 0;
 
             // Defensive check: only show unread badge when unread count > 0 and last message was not sent by current user
             // This ensures user-sent messages don't trigger their own notification badge
-            const shouldShowUnreadBadge = hasUnread && (!conversation.lastMessage || conversation.lastMessage.user.id !== currentUserId);
+            const shouldShowUnreadBadge =
+              hasUnread &&
+              (!conversation.lastMessage ||
+                conversation.lastMessage.user.id !== currentUserId);
 
             return (
               <div
                 key={conversationId}
                 className={`flex items-center px-3 py-1.5 mx-2 rounded cursor-pointer transition-colors group ${
-                  isSelected
-                    ? 'bg-[#1164A3] text-white'
-                    : 'hover:bg-white/10'
+                  isSelected ? "bg-[#1164A3] text-white" : "hover:bg-white/10"
                 }`}
                 onClick={() => handleStartChat(otherUser.id, conversationId)}
               >
                 {/* Avatar with status indicator */}
                 <div className="relative flex-shrink-0">
                   <img
-                    src={otherUser.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${otherUser.displayName || otherUser.id}&size=24`}
+                    src={
+                      otherUser.avatarUrl ||
+                      `https://api.dicebear.com/7.x/identicon/png?seed=${otherUser.displayName || otherUser.id}&size=24`
+                    }
                     alt={otherUser.displayName}
                     className="w-5 h-5 rounded-sm"
-                    style={{ borderRadius: '4px' }}
+                    style={{ borderRadius: "4px" }}
                     onError={(e) => {
                       const img = e.target as HTMLImageElement;
-                      if (!img.src.includes('api.dicebear.com')) {
+                      if (!img.src.includes("api.dicebear.com")) {
                         img.src = `https://api.dicebear.com/7.x/identicon/png?seed=${otherUser.displayName || otherUser.id}&size=24`;
                       }
                     }}
@@ -448,23 +484,22 @@ export default function DirectMessages({
                 </div>
 
                 {/* Display Name */}
-                <span className={`ml-3 text-sm truncate transition-colors ${
-                  isSelected
-                    ? 'text-white'
-                    : shouldShowUnreadBadge
-                    ? 'text-white font-semibold'
-                    : 'text-white/80 group-hover:text-white'
-                }`}>
-                  {otherUser.displayName}{isCurrentUser ? ' (you)' : ''}
+                <span
+                  className={`ml-3 text-sm truncate transition-colors ${
+                    isSelected
+                      ? "text-white"
+                      : shouldShowUnreadBadge
+                        ? "text-white font-semibold"
+                        : "text-white/80 group-hover:text-white"
+                  }`}
+                >
+                  {otherUser.displayName}
+                  {isCurrentUser ? " (you)" : ""}
                 </span>
 
                 {/* Unread Count Badge */}
                 {shouldShowUnreadBadge && (
-                  <Badge
-                    count={unreadCount}
-                    size="sm"
-                    className="ml-auto"
-                  />
+                  <Badge count={unreadCount} size="sm" className="ml-auto" />
                 )}
               </div>
             );
@@ -473,17 +508,18 @@ export default function DirectMessages({
       </div>
 
       {/* Empty state */}
-      {displayConversations.length === 0 && !isSearching && !searchQuery && !isLoading && (
-        <div className="px-3 py-2 text-white/50 text-sm">
-          No direct messages yet. 
-        </div>
-      )}
+      {displayConversations.length === 0 &&
+        !isSearching &&
+        !searchQuery &&
+        !isLoading && (
+          <div className="px-3 py-2 text-white/50 text-sm">
+            No direct messages yet.
+          </div>
+        )}
 
       {/* Loading state */}
       {isLoading && (
-        <div className="px-3 py-2 text-white/50 text-sm">
-          Loading...
-        </div>
+        <div className="px-3 py-2 text-white/50 text-sm">Loading...</div>
       )}
 
       {/* Search no results */}
@@ -495,9 +531,7 @@ export default function DirectMessages({
 
       {/* Searching state */}
       {isSearching && (
-        <div className="px-3 py-2 text-white/50 text-sm">
-          Searching...
-        </div>
+        <div className="px-3 py-2 text-white/50 text-sm">Searching...</div>
       )}
     </div>
   );

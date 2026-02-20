@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useUnreadStore } from '@/store/unreadStore';
+import { useState, useCallback } from "react";
+import { useUnreadStore } from "@/store/unreadStore";
 
 interface MarkAllAsReadResult {
   channelsMarkedRead: number;
@@ -14,30 +14,30 @@ interface UseMarkAllAsReadReturn {
 
 export function useMarkAllAsRead(): UseMarkAllAsReadReturn {
   const [isLoading, setIsLoading] = useState(false);
-  const clearAllUnread = useUnreadStore(state => state.clearAllUnread);
+  const clearAllUnread = useUnreadStore((state) => state.clearAllUnread);
 
   const markAllAsRead = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/messages/read-all', {
-        method: 'POST',
+      const response = await fetch("/api/messages/read-all", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to mark all as read');
+        throw new Error("Failed to mark all as read");
       }
 
       const data = await response.json();
 
-      // 清空本地未读状态
+      // Clear local unread state
       clearAllUnread();
 
       return data as MarkAllAsReadResult;
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      console.error("Error marking all as read:", error);
       throw error;
     } finally {
       setIsLoading(false);

@@ -1,21 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 /**
- * 防抖 Hook
- * @param value 需要防抖处理的值
- * @param delay 延迟时间（毫秒）
- * @returns 防抖后的值
+ * Debounce Hook
+ * @param value The value to debounce
+ * @param delay Delay time in milliseconds
+ * @returns Debounced value
  */
 export function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
   useEffect(() => {
-    // 设置定时器，在延迟后更新值
+    // Set timer, update value after delay
     const handler = setTimeout(() => {
       setDebouncedValue(value);
     }, delay);
 
-    // Cleanup function：如果 value 发生变化，会清除上一个定时器
+    // Cleanup function: if value changes, clear previous timer
     return () => {
       clearTimeout(handler);
     };

@@ -2,8 +2,8 @@
  * API Executor - 负责调用 Internal API
  */
 
-import { config } from './config.js';
-import { APIResponse } from './types.js';
+import { config } from "./config.js";
+import { APIResponse } from "./types.js";
 
 interface FetchOptions extends RequestInit {
   headers: Record<string, string>;
@@ -21,13 +21,13 @@ export class APIExecutor {
     endpoint: string,
     userToken: string,
     body?: unknown,
-    queryParams?: Record<string, string>
+    queryParams?: Record<string, string>,
   ): Promise<T> {
     const url = new URL(`${this.baseURL}${endpoint}`);
 
     if (queryParams) {
       Object.entries(queryParams).forEach(([key, value]) => {
-        if (value !== undefined && value !== '') {
+        if (value !== undefined && value !== "") {
           url.searchParams.append(key, value);
         }
       });
@@ -36,12 +36,12 @@ export class APIExecutor {
     const options: FetchOptions = {
       method,
       headers: {
-        'Content-Type': 'application/json',
-        'Cookie': `auth_token=${userToken}`,
+        "Content-Type": "application/json",
+        Cookie: `auth_token=${userToken}`,
       },
     };
 
-    if (body && method !== 'GET') {
+    if (body && method !== "GET") {
       options.body = JSON.stringify(body);
     }
 
@@ -50,7 +50,10 @@ export class APIExecutor {
     if (!response.ok) {
       let errorMessage = `API error: ${response.status}`;
       try {
-        const errorData = await response.json() as { message?: string; error?: string };
+        const errorData = (await response.json()) as {
+          message?: string;
+          error?: string;
+        };
         errorMessage = errorData.message || errorData.error || errorMessage;
       } catch {
         // Ignore parse errors
@@ -58,10 +61,10 @@ export class APIExecutor {
       throw new Error(errorMessage);
     }
 
-    const data = await response.json() as APIResponse<T>;
+    const data = (await response.json()) as APIResponse<T>;
 
     if (!data.success) {
-      throw new Error(data.error || data.message || 'Unknown error');
+      throw new Error(data.error || data.message || "Unknown error");
     }
 
     return data.data as T;
@@ -70,32 +73,37 @@ export class APIExecutor {
   async get<T>(
     endpoint: string,
     userToken: string,
-    params?: Record<string, string>
+    params?: Record<string, string>,
   ): Promise<T> {
-    return this.request<T>('GET', endpoint, userToken, undefined, params);
+    return this.request<T>("GET", endpoint, userToken, undefined, params);
   }
 
   async post<T>(
     endpoint: string,
     userToken: string,
-    body?: unknown
+    body?: unknown,
   ): Promise<T> {
-    return this.request<T>('POST', endpoint, userToken, body);
+    return this.request<T>("POST", endpoint, userToken, body);
   }
 
   async put<T>(
     endpoint: string,
     userToken: string,
-    body?: unknown
+    body?: unknown,
   ): Promise<T> {
-    return this.request<T>('PUT', endpoint, userToken, body);
+    return this.request<T>("PUT", endpoint, userToken, body);
   }
 
-  async delete<T>(
+  async patch<T>(
     endpoint: string,
-    userToken: string
+    userToken: string,
+    body?: unknown,
   ): Promise<T> {
-    return this.request<T>('DELETE', endpoint, userToken);
+    return this.request<T>("PATCH", endpoint, userToken, body);
+  }
+
+  async delete<T>(endpoint: string, userToken: string): Promise<T> {
+    return this.request<T>("DELETE", endpoint, userToken);
   }
 
   // 不需要认证的请求 (用于register, login)
@@ -103,9 +111,9 @@ export class APIExecutor {
     const url = new URL(`${this.baseURL}${endpoint}`);
 
     const options: FetchOptions = {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     };
 
@@ -118,7 +126,10 @@ export class APIExecutor {
     if (!response.ok) {
       let errorMessage = `API error: ${response.status}`;
       try {
-        const errorData = await response.json() as { message?: string; error?: string };
+        const errorData = (await response.json()) as {
+          message?: string;
+          error?: string;
+        };
         errorMessage = errorData.message || errorData.error || errorMessage;
       } catch {
         // Ignore parse errors
@@ -126,10 +137,10 @@ export class APIExecutor {
       throw new Error(errorMessage);
     }
 
-    const data = await response.json() as APIResponse<T>;
+    const data = (await response.json()) as APIResponse<T>;
 
     if (!data.success) {
-      throw new Error(data.error || data.message || 'Unknown error');
+      throw new Error(data.error || data.message || "Unknown error");
     }
 
     return data.data as T;
