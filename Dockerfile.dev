@@ -10,6 +10,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     libssl3 \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制package文件

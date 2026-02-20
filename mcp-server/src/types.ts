@@ -2,7 +2,7 @@
  * MCP Server Types
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 // API Response types
 export interface APIResponse<T = unknown> {
@@ -35,7 +35,7 @@ export interface ToolDefinition {
 // Tool result
 export interface ToolResult {
   content: Array<{
-    type: 'text' | 'image' | 'resource';
+    type: "text" | "image" | "resource";
     text?: string;
     data?: string;
     mimeType?: string;
@@ -76,7 +76,7 @@ export interface Message {
 export interface User {
   id: string;
   email: string;
-  name: string;
+  displayName: string;
   avatarUrl?: string;
   createdAt: string;
 }
@@ -90,7 +90,7 @@ export interface LoginResponse {
 export interface RegisterInput {
   email: string;
   password: string;
-  name: string;
+  displayName: string;
 }
 
 export interface LoginInput {

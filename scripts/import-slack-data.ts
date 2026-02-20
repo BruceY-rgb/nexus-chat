@@ -74,7 +74,7 @@ async function uploadToOss(
   const s3Key = uniqueFileName;
 
   const ossClient = getOssClient();
-  await ossClient.put(s3Key, fileBuffer, {
+  const result = await ossClient.put(s3Key, fileBuffer, {
     headers: {
       "Content-Type": mimeType,
       "Content-Disposition": `inline; filename="${encodeURIComponent(fileName)}"`,
@@ -82,7 +82,8 @@ async function uploadToOss(
     },
   });
 
-  let fileUrl = `https://${s3Bucket}.${process.env.OSS_REGION}.aliyuncs.com/${s3Key}`;
+  // 使用 ali-oss 返回的 URL
+  let fileUrl = result.url;
   if (process.env.OSS_CUSTOM_DOMAIN) {
     fileUrl = `https://${process.env.OSS_CUSTOM_DOMAIN}/${s3Key}`;
   }
@@ -107,11 +108,9 @@ async function importAttachment(
   userId: string,
 ): Promise<number> {
   try {
-    // 下载文件
-    const fileBuffer = await downloadSlackFile(
-      slackFile.url_private,
-      SLACK_TOKEN!,
-    );
+    // 下载文件（优先使用下载专用 URL）
+    const downloadUrl = slackFile.url_private_download || slackFile.url_private;
+    const fileBuffer = await downloadSlackFile(downloadUrl, SLACK_TOKEN!);
 
     // 上传到 OSS
     const uploadResult = await uploadToOss(

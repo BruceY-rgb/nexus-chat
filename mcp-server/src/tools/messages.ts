@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import { apiExecutor } from "../executor.js";
+import { verifyToken } from "../auth.js";
 import type {
   ToolDefinition,
   ExecutionContext,
@@ -222,7 +223,7 @@ export const messageTools: ToolDefinition[] = [
     execute: async (args, _context): Promise<ToolResult> => {
       try {
         const validatedArgs = updateMessageSchema.parse(args);
-        const result = await apiExecutor.put<Message>(
+        const result = await apiExecutor.patch<Message>(
           `/api/messages/${validatedArgs.messageId}`,
           validatedArgs.userToken,
           { content: validatedArgs.content },
@@ -343,10 +344,12 @@ export const messageTools: ToolDefinition[] = [
     execute: async (args, _context): Promise<ToolResult> => {
       try {
         const validatedArgs = addReactionSchema.parse(args);
+        const decoded = verifyToken(validatedArgs.userToken);
+        if (!decoded) throw new Error("Invalid token");
         await apiExecutor.post(
           `/api/messages/${validatedArgs.messageId}/reactions`,
           validatedArgs.userToken,
-          { emoji: validatedArgs.emoji },
+          { emoji: validatedArgs.emoji, userId: decoded.userId },
         );
 
         return {
@@ -379,9 +382,13 @@ export const messageTools: ToolDefinition[] = [
     execute: async (args, _context): Promise<ToolResult> => {
       try {
         const validatedArgs = removeReactionSchema.parse(args);
-        await apiExecutor.delete(
-          `/api/messages/${validatedArgs.messageId}/reactions?emoji=${encodeURIComponent(validatedArgs.emoji)}`,
+        const decoded = verifyToken(validatedArgs.userToken);
+        if (!decoded) throw new Error("Invalid token");
+        // Reactions API is a toggle - POST again to remove
+        await apiExecutor.post(
+          `/api/messages/${validatedArgs.messageId}/reactions`,
           validatedArgs.userToken,
+          { emoji: validatedArgs.emoji, userId: decoded.userId },
         );
 
         return {

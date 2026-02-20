@@ -59,4 +59,4 @@ CREATE INDEX IF NOT EXISTS idx_notification_settings_user_id ON notification_set
 -- CREATE INDEX IF NOT EXISTS idx_messages_content_fts ON messages USING gin(to_tsvector('english', content));
 
 -- 注释
-COMMENT ON DATABASE current_database() IS 'Slack-like chat application database';
+-- COMMENT ON DATABASE slack_chat IS 'Slack-like chat application database';

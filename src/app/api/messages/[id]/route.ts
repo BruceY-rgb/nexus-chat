@@ -37,6 +37,64 @@ function convertBigIntToString(obj: any): any {
 }
 
 /**
+ * GET /api/messages/[id] - Get single message
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  try {
+    const token = request.cookies.get("auth_token")?.value;
+    if (!token) {
+      return NextResponse.json(unauthorizedResponse(), { status: 401 });
+    }
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json(unauthorizedResponse("invalid token"), {
+        status: 401,
+      });
+    }
+
+    const message = await prisma.message.findUnique({
+      where: { id: params.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            displayName: true,
+            avatarUrl: true,
+            realName: true,
+          },
+        },
+        channel: { select: { id: true, name: true } },
+        dmConversation: { select: { id: true } },
+        attachments: true,
+        reactions: {
+          include: { user: { select: { id: true, displayName: true } } },
+        },
+        mentions: {
+          include: {
+            mentionedUser: { select: { id: true, displayName: true } },
+          },
+        },
+      },
+    });
+
+    if (!message) {
+      return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(convertBigIntToString(message));
+  } catch (error) {
+    console.error("Error getting message:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+/**
  * PATCH /api/messages/[id] - Edit message
  */
 export async function PATCH(
