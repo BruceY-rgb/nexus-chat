@@ -18,7 +18,7 @@ COPY package.json package-lock.json* ./
 # 复制 Prisma schema
 COPY prisma ./prisma
 
-# 安装依赖（跳过 postinstall 脚本以避免 electron-builder 问题）
+# 安装依赖
 RUN npm install --ignore-scripts
 
 # 显式生成 Prisma 客户端
