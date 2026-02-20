@@ -1,24 +1,30 @@
 // =====================================================
 // Notification Service
-// 自动创建和管理用户通知
+// Automatically create and manage user notifications
 // =====================================================
 
-import { prisma } from './prisma';
-import { Server as SocketIOServer } from 'socket.io';
-import { parseMentions, extractUsernames } from './mention-parser';
+import { prisma } from "./prisma";
+import { Server as SocketIOServer } from "socket.io";
+import { parseMentions, extractUsernames } from "./mention-parser";
 
-export type NotificationLevel = 'all' | 'mentions' | 'nothing';
+export type NotificationLevel = "all" | "mentions" | "nothing";
 
 export interface CreateNotificationParams {
   userId: string;
-  type: 'mention' | 'dm' | 'channel_invite' | 'system' | 'thread_reply' | 'thread_mention';
+  type:
+    | "mention"
+    | "dm"
+    | "channel_invite"
+    | "system"
+    | "thread_reply"
+    | "thread_mention";
   title: string;
   content?: string;
   relatedMessageId?: string;
   relatedThreadId?: string;
   relatedChannelId?: string;
   relatedDmConversationId?: string;
-  isMention?: boolean; // 是否是 @提及通知
+  isMention?: boolean; // Whether this is a @mention notification
 }
 
 export interface NotificationWithUser {
@@ -42,51 +48,51 @@ export interface NotificationWithUser {
 }
 
 /**
- * NotificationService 类
- * 负责自动创建通知并通过 WebSocket 推送
+ * NotificationService class
+ * Responsible for creating notifications and pushing them via WebSocket
  */
 export class NotificationService {
   private io: SocketIOServer | null = null;
 
   /**
-   * 设置 WebSocket 实例
-   * @param io Socket.IO 服务器实例
+   * Set WebSocket instance
+   * @param io Socket.IO server instance
    */
   setSocketIO(io: SocketIOServer) {
     this.io = io;
   }
 
   /**
-   * 检查用户是否应该接收通知
-   * @param userId 用户ID
-   * @param relatedChannelId 频道ID（可选）
-   * @param relatedDmConversationId DM会话ID（可选）
-   * @param isMention 是否是@提及
-   * @returns 是否应该发送通知
+   * Check if user should receive notification
+   * @param userId User ID
+   * @param relatedChannelId Channel ID (optional)
+   * @param relatedDmConversationId DM conversation ID (optional)
+   * @param isMention Whether this is a @mention
+   * @returns Whether notification should be sent
    */
   async shouldSendNotification(
     userId: string,
     relatedChannelId?: string,
     relatedDmConversationId?: string,
-    isMention?: boolean
+    isMention?: boolean,
   ): Promise<boolean> {
     try {
-      // 如果是 @提及通知，总是发送（除非用户设置为 nothing）
+      // For @mention notifications, always send (unless user set to nothing)
       if (isMention) {
-        // 优先检查频道/DM级别的设置
+        // Prioritize channel/DM level settings
         if (relatedChannelId) {
           const member = await prisma.channelMember.findUnique({
             where: {
               channelId_userId: {
                 channelId: relatedChannelId,
-                userId
-              }
+                userId,
+              },
             },
             select: {
-              notificationLevel: true
-            }
+              notificationLevel: true,
+            },
           });
-          if (member && member.notificationLevel === 'nothing') {
+          if (member && member.notificationLevel === "nothing") {
             return false;
           }
         } else if (relatedDmConversationId) {
@@ -94,85 +100,89 @@ export class NotificationService {
             where: {
               conversationId_userId: {
                 conversationId: relatedDmConversationId,
-                userId
-              }
+                userId,
+              },
             },
             select: {
-              notificationLevel: true
-            }
+              notificationLevel: true,
+            },
           });
-          if (member && member.notificationLevel === 'nothing') {
+          if (member && member.notificationLevel === "nothing") {
             return false;
           }
         }
         return true;
       }
 
-      // 非 @提及通知，检查用户的通知偏好
+      // For non-@mention notifications, check user's notification preferences
       if (relatedChannelId) {
         const member = await prisma.channelMember.findUnique({
           where: {
             channelId_userId: {
               channelId: relatedChannelId,
-              userId
-            }
+              userId,
+            },
           },
           select: {
-            notificationLevel: true
-          }
+            notificationLevel: true,
+          },
         });
 
         if (!member) {
-          return true; // 如果不是成员，默认发送
+          return true; // If not a member, send by default
         }
 
-        // "all" - 发送所有通知
-        // "mentions" - 只发送 @提及通知（当前已经是 non-mention，所以不发送）
-        // "nothing" - 不发送任何通知
-        return member.notificationLevel === 'all';
+        // "all" - send all notifications
+        // "mentions" - only send @mention notifications (currently non-mention, so don't send)
+        // "nothing" - don't send any notifications
+        return member.notificationLevel === "all";
       } else if (relatedDmConversationId) {
         const member = await prisma.dMConversationMember.findUnique({
           where: {
             conversationId_userId: {
               conversationId: relatedDmConversationId,
-              userId
-            }
+              userId,
+            },
           },
           select: {
-            notificationLevel: true
-          }
+            notificationLevel: true,
+          },
         });
 
         if (!member) {
           return true;
         }
 
-        return member.notificationLevel === 'all';
+        return member.notificationLevel === "all";
       }
 
       return true;
     } catch (error) {
-      console.error('Error checking notification preferences:', error);
-      return true; // 出错时默认发送
+      console.error("Error checking notification preferences:", error);
+      return true; // Send by default on error
     }
   }
 
   /**
-   * 创建新通知
-   * @param params 通知参数
-   * @returns 创建的通知记录
+   * Create new notification
+   * @param params Notification parameters
+   * @returns Created notification record
    */
-  async createNotification(params: CreateNotificationParams): Promise<NotificationWithUser | null> {
-    // 检查是否应该发送通知
+  async createNotification(
+    params: CreateNotificationParams,
+  ): Promise<NotificationWithUser | null> {
+    // Check if notification should be sent
     const shouldSend = await this.shouldSendNotification(
       params.userId,
       params.relatedChannelId,
       params.relatedDmConversationId,
-      params.isMention
+      params.isMention,
     );
 
     if (!shouldSend) {
-      console.log(`🔕 Notification skipped for user ${params.userId} due to notification preferences`);
+      console.log(
+        `Notification skipped for user ${params.userId} due to notification preferences`,
+      );
       return null;
     }
 
@@ -198,41 +208,43 @@ export class NotificationService {
       },
     });
 
-    console.log(`🔔 Created notification: ${params.type} for user ${params.userId}`);
+    console.log(
+      `Created notification: ${params.type} for user ${params.userId}`,
+    );
 
-    // 通过 WebSocket 推送给目标用户
+    // Push to target user via WebSocket
     this.broadcastNotification(notification);
 
     return notification as NotificationWithUser;
   }
 
   /**
-   * 为消息提及创建通知
-   * 当消息包含 @提及时，为被提及用户创建通知
-   * @param messageId 消息ID
-   * @param senderId 发送者ID
-   * @param content 消息内容
-   * @param channelId 频道ID（可选）
-   * @param dmConversationId 私聊会话ID（可选）
+   * Create notifications for message mentions
+   * When a message contains @mentions, create notifications for mentioned users
+   * @param messageId Message ID
+   * @param senderId Sender ID
+   * @param content Message content
+   * @param channelId Channel ID (optional)
+   * @param dmConversationId DM conversation ID (optional)
    */
   async createMentionNotifications(
     messageId: string,
     senderId: string,
     content: string,
     channelId?: string,
-    dmConversationId?: string
+    dmConversationId?: string,
   ): Promise<void> {
     try {
-      // 解析消息中的提及
+      // Parse mentions in message
       const mentions = parseMentions(content);
       if (mentions.length === 0) {
         return;
       }
 
-      // 提取被提及的用户名
+      // Extract mentioned usernames
       const usernames = extractUsernames(mentions);
 
-      // 根据 displayName 查找用户
+      // Find users by displayName
       const mentionedUsers = await prisma.user.findMany({
         where: {
           displayName: { in: usernames },
@@ -247,7 +259,7 @@ export class NotificationService {
         return;
       }
 
-      // 获取发送者信息
+      // Get sender information
       const sender = await prisma.user.findUnique({
         where: { id: senderId },
         select: {
@@ -260,9 +272,9 @@ export class NotificationService {
         return;
       }
 
-      // 为每个被提及的用户创建通知
+      // Create notification for each mentioned user
       for (const mentionedUser of mentionedUsers) {
-        // 不为发送者自己创建通知
+        // Don't create notification for sender themselves
         if (mentionedUser.id === senderId) {
           continue;
         }
@@ -270,20 +282,20 @@ export class NotificationService {
         let title = `${sender.displayName} mentioned you in a message`;
         let notificationContent = content.substring(0, 100);
 
-        // 如果是频道消息，添加频道信息
+        // If it's a channel message, add channel information
         if (channelId) {
           const channel = await prisma.channel.findUnique({
             where: { id: channelId },
             select: { name: true },
           });
           if (channel) {
-            title = `${sender.displayName} 在 #${channel.name} 中提到了你`;
+            title = `${sender.displayName} mentioned you in #${channel.name}`;
           }
         }
 
         await this.createNotification({
           userId: mentionedUser.id,
-          type: 'mention',
+          type: "mention",
           title,
           content: notificationContent,
           relatedMessageId: messageId,
@@ -293,26 +305,28 @@ export class NotificationService {
         });
       }
 
-      console.log(`📌 Created ${mentionedUsers.length} mention notifications for message ${messageId}`);
+      console.log(
+        `Created ${mentionedUsers.length} mention notifications for message ${messageId}`,
+      );
     } catch (error) {
-      console.error('Error creating mention notifications:', error);
+      console.error("Error creating mention notifications:", error);
     }
   }
 
   /**
-   * 为私聊消息创建通知
-   * 当发送私聊消息时，为接收方创建通知
-   * @param messageId 消息ID
-   * @param senderId 发送者ID
-   * @param dmConversationId 私聊会话ID
+   * Create notification for DM messages
+   * When sending a DM, create notification for the recipient
+   * @param messageId Message ID
+   * @param senderId Sender ID
+   * @param dmConversationId DM conversation ID
    */
   async createDMNotification(
     messageId: string,
     senderId: string,
-    dmConversationId: string
+    dmConversationId: string,
   ): Promise<void> {
     try {
-      // 获取私聊会话的成员
+      // Get DM conversation members
       const dmMembers = await prisma.dMConversationMember.findMany({
         where: {
           conversationId: dmConversationId,
@@ -322,7 +336,7 @@ export class NotificationService {
         },
       });
 
-      // 获取发送者信息
+      // Get sender information
       const sender = await prisma.user.findUnique({
         where: { id: senderId },
         select: {
@@ -335,7 +349,7 @@ export class NotificationService {
         return;
       }
 
-      // 为其他成员创建通知（排除发送者）
+      // Create notifications for other members (excluding sender)
       for (const member of dmMembers) {
         if (member.userId === senderId) {
           continue;
@@ -343,24 +357,26 @@ export class NotificationService {
 
         await this.createNotification({
           userId: member.userId,
-          type: 'dm',
-          title: `The new message from ${sender.displayName} `,
-          content: 'You have a new message',
+          type: "dm",
+          title: `New message from ${sender.displayName}`,
+          content: "You have a new message",
           relatedMessageId: messageId,
           relatedDmConversationId: dmConversationId,
         });
       }
 
-      console.log(`💬 Created DM notification for conversation ${dmConversationId}`);
+      console.log(
+        `Created DM notification for conversation ${dmConversationId}`,
+      );
     } catch (error) {
-      console.error('Error creating DM notification:', error);
+      console.error("Error creating DM notification:", error);
     }
   }
 
   /**
-   * 批量标记通知为已读
-   * @param userId 用户ID
-   * @param notificationIds 通知ID数组
+   * Batch mark notifications as read
+   * @param userId User ID
+   * @param notificationIds Array of notification IDs
    */
   async markAsRead(userId: string, notificationIds: string[]): Promise<void> {
     try {
@@ -376,16 +392,18 @@ export class NotificationService {
         },
       });
 
-      console.log(`✅ Marked ${notificationIds.length} notifications as read for user ${userId}`);
+      console.log(
+        `Marked ${notificationIds.length} notifications as read for user ${userId}`,
+      );
     } catch (error) {
-      console.error('Error marking notifications as read:', error);
+      console.error("Error marking notifications as read:", error);
     }
   }
 
   /**
-   * 获取用户未读通知数量
-   * @param userId 用户ID
-   * @returns 未读通知数量
+   * Get user's unread notification count
+   * @param userId User ID
+   * @returns Unread notification count
    */
   async getUnreadCount(userId: string): Promise<number> {
     try {
@@ -398,24 +416,24 @@ export class NotificationService {
 
       return count;
     } catch (error) {
-      console.error('Error getting unread notification count:', error);
+      console.error("Error getting unread notification count:", error);
       return 0;
     }
   }
 
   /**
-   * 通过 WebSocket 广播通知给目标用户
-   * @param notification 通知记录
+   * Broadcast notification to target user via WebSocket
+   * @param notification Notification record
    */
   private broadcastNotification(notification: any): void {
     if (!this.io) {
-      console.warn('WebSocket instance not set, notification not broadcast');
+      console.warn("WebSocket instance not set, notification not broadcast");
       return;
     }
 
     try {
-      // 推送给目标用户
-      this.io.to(`user:${notification.userId}`).emit('new-notification', {
+      // Push to target user
+      this.io.to(`user:${notification.userId}`).emit("new-notification", {
         id: notification.id,
         type: notification.type,
         title: notification.title,
@@ -429,21 +447,23 @@ export class NotificationService {
         user: notification.user,
       });
 
-      console.log(`📡 Broadcasted notification ${notification.id} to user ${notification.userId}`);
+      console.log(
+        `Broadcasted notification ${notification.id} to user ${notification.userId}`,
+      );
     } catch (error) {
-      console.error('Error broadcasting notification:', error);
+      console.error("Error broadcasting notification:", error);
     }
   }
 
   /**
-   * 为线程回复创建通知
-   * 当用户回复线程时，为线程参与者创建通知
-   * @param replyId 回复ID
-   * @param threadId 线程ID（父消息ID）
-   * @param senderId 发送者ID
-   * @param content 回复内容
-   * @param channelId 频道ID（可选）
-   * @param dmConversationId 私聊会话ID（可选）
+   * Create notification for thread replies
+   * When user replies to a thread, create notifications for thread participants
+   * @param replyId Reply ID
+   * @param threadId Thread ID (parent message ID)
+   * @param senderId Sender ID
+   * @param content Reply content
+   * @param channelId Channel ID (optional)
+   * @param dmConversationId DM conversation ID (optional)
    */
   async createThreadReplyNotification(
     replyId: string,
@@ -451,10 +471,10 @@ export class NotificationService {
     senderId: string,
     content: string,
     channelId?: string,
-    dmConversationId?: string
+    dmConversationId?: string,
   ): Promise<void> {
     try {
-      // 获取线程的父消息
+      // Get parent message of thread
       const parentMessage = await prisma.message.findUnique({
         where: { id: threadId },
         include: {
@@ -464,35 +484,35 @@ export class NotificationService {
               name: true,
               members: {
                 select: {
-                  userId: true
-                }
-              }
-            }
+                  userId: true,
+                },
+              },
+            },
           },
           dmConversation: {
             select: {
               id: true,
               members: {
                 select: {
-                  userId: true
-                }
-              }
-            }
+                  userId: true,
+                },
+              },
+            },
           },
           replies: {
             select: {
-              userId: true
+              userId: true,
             },
-            distinct: ['userId']
-          }
-        }
+            distinct: ["userId"],
+          },
+        },
       });
 
       if (!parentMessage) {
         return;
       }
 
-      // 获取发送者信息
+      // Get sender information
       const sender = await prisma.user.findUnique({
         where: { id: senderId },
         select: {
@@ -505,42 +525,42 @@ export class NotificationService {
         return;
       }
 
-      // 获取所有线程参与者（父消息作者 + 所有回复者，排除发送者）
+      // Get all thread participants (parent message author + all repliers, excluding sender)
       const participants = new Set<string>();
 
-      // 添加父消息作者
+      // Add parent message author
       if (parentMessage.userId) {
         participants.add(parentMessage.userId);
       }
 
-      // 添加所有回复者
-      parentMessage.replies.forEach(reply => {
+      // Add all repliers
+      parentMessage.replies.forEach((reply) => {
         if (reply.userId) {
           participants.add(reply.userId);
         }
       });
 
-      // 移除发送者自己
+      // Remove sender themselves
       participants.delete(senderId);
 
-      // 为每个参与者创建通知
+      // Create notification for each participant
       for (const participantId of participants) {
         let title = `${sender.displayName} replied to your thread`;
         let notificationContent = content.substring(0, 100);
 
-        // 如果是频道消息，添加频道信息
+        // If it's a channel message, add channel information
         if (parentMessage.channelId) {
           const channel = parentMessage.channel;
           if (channel) {
-            title = `${sender.displayName} 在 #${channel.name} 的线程中回复了`;
+            title = `${sender.displayName} replied in your thread in #${channel.name}`;
           }
         } else if (parentMessage.dmConversationId) {
-          title = `${sender.displayName} 在线程中回复了你`;
+          title = `${sender.displayName} replied to you in a thread`;
         }
 
         await this.createNotification({
           userId: participantId,
-          type: 'thread_reply',
+          type: "thread_reply",
           title,
           content: notificationContent,
           relatedMessageId: replyId,
@@ -551,12 +571,12 @@ export class NotificationService {
         });
       }
 
-      console.log(`🧵 Created thread reply notifications for thread ${threadId}`);
+      console.log(`Created thread reply notifications for thread ${threadId}`);
     } catch (error) {
-      console.error('Error creating thread reply notification:', error);
+      console.error("Error creating thread reply notification:", error);
     }
   }
 }
 
-// 创建全局实例
+// Create global instance
 export const notificationService = new NotificationService();

@@ -1,6 +1,6 @@
 import OSS from 'ali-oss';
 
-// 延迟初始化 OSS 客户端（避免构建时就需要环境变量）
+// Lazy initialize OSS client (avoid needing environment variables at build time)
 function getOssClient(): OSS {
   return new OSS({
     accessKeyId: process.env.OSS_ACCESS_KEY_ID!,
@@ -26,7 +26,7 @@ export interface UploadResult {
 }
 
 /**
- * 上传文件到阿里云 OSS
+ * Upload file to Alibaba Cloud OSS
  */
 export async function uploadFile({
   file,
@@ -35,7 +35,7 @@ export async function uploadFile({
   userId
 }: UploadParams): Promise<UploadResult> {
   try {
-    // 生成唯一文件名
+    // Generate unique file name
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(7);
     const extension = fileName.split('.').pop();
@@ -44,25 +44,25 @@ export async function uploadFile({
     const s3Bucket = process.env.OSS_BUCKET!;
     const s3Key = uniqueFileName;
 
-    // 上传到 OSS
+    // Upload to OSS
     const ossClient = getOssClient();
     const result = await ossClient.put(s3Key, file, {
       headers: {
         'Content-Type': mimeType,
-        'Content-Disposition': `inline; filename="${encodeURIComponent(fileName)}"`,  // 确保文件名编码正确
-        'Cache-Control': 'public, max-age=31536000'  // 添加缓存控制
+        'Content-Disposition': `inline; filename="${encodeURIComponent(fileName)}"`,  // Ensure filename encoding is correct
+        'Cache-Control': 'public, max-age=31536000'  // Add cache control
       }
     });
 
-    // 构建文件 URL
+    // Build file URL
     let fileUrl = result.url;
 
-    // 如果配置了自定义域名，使用自定义域名
+    // If custom domain is configured, use custom domain
     if (process.env.OSS_CUSTOM_DOMAIN) {
       fileUrl = `https://${process.env.OSS_CUSTOM_DOMAIN}/${s3Key}`;
     }
 
-    // 如果是图片，生成缩略图URL（暂时使用原图，实际可以使用 OSS 图片处理服务）
+    // If it's an image, generate thumbnail URL (temporarily use original, actually can use OSS image processing service)
     let thumbnailUrl: string | undefined;
     if (mimeType.startsWith('image/')) {
       thumbnailUrl = fileUrl;
@@ -76,12 +76,12 @@ export async function uploadFile({
     };
   } catch (error) {
     console.error('Error uploading file to OSS:', error);
-    throw new Error('文件上传失败');
+    throw new Error('File upload failed');
   }
 }
 
 /**
- * 从 OSS 删除文件
+ * Delete file from OSS
  */
 export async function deleteFile(s3Key: string): Promise<void> {
   try {
@@ -89,12 +89,12 @@ export async function deleteFile(s3Key: string): Promise<void> {
     await ossClient.delete(s3Key);
   } catch (error) {
     console.error('Error deleting file from OSS:', error);
-    throw new Error('文件删除失败');
+    throw new Error('File deletion failed');
   }
 }
 
 /**
- * 生成预签名 URL（用于私有 Bucket 访问）
+ * Generate pre-signed URL (for private bucket access)
  */
 export async function getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
   try {
@@ -105,17 +105,17 @@ export async function getSignedUrl(key: string, expiresIn: number = 3600): Promi
     return url;
   } catch (error) {
     console.error('Error generating signed URL:', error);
-    throw new Error('生成文件链接失败');
+    throw new Error('Failed to generate file link');
   }
 }
 
 /**
- * 生成用于预览的内联 URL（私有 Bucket）
- * 添加参数确保浏览器以 inline 方式处理文件
+ * Generate inline URL for preview (private bucket)
+ * Add parameters to ensure browser handles file inline
  */
 export function getPreviewInlineUrl(fileUrl: string): string {
-  // 如果 URL 已经包含参数，添加 &response-content-type=inline
-  // 如果没有参数，添加 ?response-content-type=inline
+  // If URL already contains parameters, add &response-content-type=inline
+  // If no parameters, add ?response-content-type=inline
   if (fileUrl.includes('?')) {
     return `${fileUrl}&response-content-type=inline`;
   }
@@ -123,35 +123,35 @@ export function getPreviewInlineUrl(fileUrl: string): string {
 }
 
 /**
- * 获取允许的文件类型列表
+ * Get list of allowed file types
  */
 export function getAllowedFileTypes(): string[] {
   return [
-    // 图片类型
+    // Image types
     'image/jpeg',
     'image/png',
     'image/gif',
     'image/webp',
-    // 文档类型
+    // Document types
     'application/pdf',
     'text/plain',
-    // Office 文档 - Excel
+    // Office documents - Excel
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    // Office 文档 - Word
+    // Office documents - Word
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    // Office 文档 - PowerPoint
+    // Office documents - PowerPoint
     'application/vnd.ms-powerpoint',
     'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    // 压缩包
+    // Compressed files
     'application/zip',
     'application/x-zip-compressed'
   ];
 }
 
 /**
- * 验证文件类型
+ * Validate file type
  */
 export function validateFileType(mimeType: string): boolean {
   const allowedTypes = getAllowedFileTypes();
@@ -159,25 +159,25 @@ export function validateFileType(mimeType: string): boolean {
 }
 
 /**
- * 检查文件是否支持在线预览
+ * Check if file supports inline preview
  */
 export function canPreviewInline(mimeType: string, fileSize: number): boolean {
-  // 支持预览的文件类型
+  // File types that support preview
   const previewableTypes = [
-    // 图片
+    // Images
     'image/jpeg',
     'image/png',
     'image/gif',
     'image/webp',
     'image/svg+xml',
-    // 视频
+    // Videos
     'video/mp4',
     'video/webm',
     'video/ogg',
     'video/quicktime',
     'video/x-msvideo',
     'video/x-matroska',
-    // 文档
+    // Documents
     'application/pdf',
     'text/plain',
     'text/markdown',
@@ -186,21 +186,21 @@ export function canPreviewInline(mimeType: string, fileSize: number): boolean {
     'application/xml'
   ];
 
-  // 检查文件类型
+  // Check file type
   if (!previewableTypes.includes(mimeType)) {
     return false;
   }
 
-  // 检查文件大小（超过 50MB 的文件不建议预览）
+  // Check file size (files over 50MB are not recommended for preview)
   const maxPreviewSize = 50 * 1024 * 1024; // 50MB
   return Number(fileSize) <= maxPreviewSize;
 }
 
 /**
- * 验证文件大小
+ * Validate file size
  */
 export function validateFileSize(fileSize: number): boolean {
-  const maxSize = parseInt(process.env.MAX_FILE_SIZE || '10485760'); // 10MB 默认
+  const maxSize = parseInt(process.env.MAX_FILE_SIZE || '10485760'); // 10MB default
   return fileSize <= maxSize;
 }
 

@@ -1,172 +1,190 @@
 // =====================================================
-// 通知监听 Hook
-// 监听 WebSocket 新通知事件并显示 Slack 风格 toast
-// 集成浏览器原生通知功能（仅在页面后台时触发）
+// Notification Listener Hook
+// Listen for WebSocket new notification events and display Slack-style toast
+// Integrate browser native notification function (only triggered when page is in background)
 // =====================================================
 
-import { useEffect, useCallback } from 'react';
-import { useSocket } from './useSocket';
-import { NewNotificationPayload } from '@/types/socket';
-import { showSlackToast } from '@/components/ui/SlackToast';
+import { useEffect, useCallback } from "react";
+import { useSocket } from "./useSocket";
+import { NewNotificationPayload } from "@/types/socket";
+import { showSlackToast } from "@/components/ui/SlackToast";
 
 interface UseNotificationsOptions {
   userId?: string;
 }
 
-// 浏览器通知权限类型
-type NotificationPermission = 'default' | 'granted' | 'denied';
+// Browser notification permission type
+type NotificationPermission = "default" | "granted" | "denied";
 
-// 检查浏览器通知支持
+// Check browser notification support
 const isNotificationSupported = (): boolean => {
-  return typeof window !== 'undefined' && 'Notification' in window;
+  return typeof window !== "undefined" && "Notification" in window;
 };
 
-// 获取通知权限
+// Get notification permission
 const getNotificationPermission = (): NotificationPermission => {
   if (!isNotificationSupported()) {
-    return 'denied';
+    return "denied";
   }
   return Notification.permission;
 };
 
-// 请求通知权限
-const requestNotificationPermission = async (): Promise<NotificationPermission> => {
-  if (!isNotificationSupported()) {
-    return 'denied';
-  }
+// Request notification permission
+const requestNotificationPermission =
+  async (): Promise<NotificationPermission> => {
+    if (!isNotificationSupported()) {
+      return "denied";
+    }
 
-  try {
-    const permission = await Notification.requestPermission();
-    return permission;
-  } catch (error) {
-    console.error('Error requesting notification permission:', error);
-    return 'denied';
-  }
-};
+    try {
+      const permission = await Notification.requestPermission();
+      return permission;
+    } catch (error) {
+      console.error("Error requesting notification permission:", error);
+      return "denied";
+    }
+  };
 
-// 显示浏览器原生通知
-const showBrowserNotification = (notification: NewNotificationPayload): void => {
-  // 🔍 详细调试日志
-  console.log('🔔 [DEBUG] showBrowserNotification called', {
+// Display browser native notification
+const showBrowserNotification = (
+  notification: NewNotificationPayload,
+): void => {
+  // Detailed debug log
+  console.log("🔔 [DEBUG] showBrowserNotification called", {
     notificationId: notification.id,
     notificationType: notification.type,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 
-  // 环境检查
+  // Environment check
   if (!isNotificationSupported()) {
-    console.warn('❌ [DEBUG] Browser notifications not supported');
+    console.warn("❌ [DEBUG] Browser notifications not supported");
     return;
   }
-  console.log('✅ [DEBUG] Browser notifications are supported');
+  console.log("✅ [DEBUG] Browser notifications are supported");
 
-  // 权限检查
+  // Permission check
   const permission = getNotificationPermission();
-  console.log('🔍 [DEBUG] Notification permission status:', permission);
+  console.log("🔍 [DEBUG] Notification permission status:", permission);
 
-  if (permission !== 'granted') {
-    console.log('❌ [DEBUG] Notification permission not granted:', permission);
-    console.log('💡 [TIP] To enable notifications:');
-    console.log('  1. Click the address bar notification icon');
-    console.log('  2. Or go to browser settings > Site Settings > Notifications');
+  if (permission !== "granted") {
+    console.log("❌ [DEBUG] Notification permission not granted:", permission);
+    console.log("💡 [TIP] To enable notifications:");
+    console.log("  1. Click the address bar notification icon");
+    console.log(
+      "  2. Or go to browser settings > Site Settings > Notifications",
+    );
     return;
   }
-  console.log('✅ [DEBUG] Notification permission granted');
+  console.log("✅ [DEBUG] Notification permission granted");
 
-  // 页面可见性检查 - 仅在页面隐藏时显示原生通知
-  if (typeof document !== 'undefined') {
+  // Page visibility check - only show native notification when page is hidden
+  if (typeof document !== "undefined") {
     const visibilityState = document.visibilityState;
-    console.log('🔍 [DEBUG] Page visibility state:', visibilityState);
+    console.log("🔍 [DEBUG] Page visibility state:", visibilityState);
 
-    if (visibilityState !== 'hidden') {
-      console.log('⚠️ [DEBUG] Page is visible, skipping browser notification (this is correct behavior)');
-      console.log('💡 [TIP] Switch to another tab or minimize the window to test notifications');
+    if (visibilityState !== "hidden") {
+      console.log(
+        "⚠️ [DEBUG] Page is visible, skipping browser notification (this is correct behavior)",
+      );
+      console.log(
+        "💡 [TIP] Switch to another tab or minimize the window to test notifications",
+      );
       return;
     }
-    console.log('✅ [DEBUG] Page is hidden, will show browser notification');
+    console.log("✅ [DEBUG] Page is hidden, will show browser notification");
   }
 
-  // 通知类型过滤 - 仅对 mention 和 dm 显示原生通知
-  if (notification.type !== 'mention' && notification.type !== 'dm') {
-    console.log('⚠️ [DEBUG] Skipping browser notification for type:', notification.type);
+  // Notification type filter - only show native notification for mention and dm
+  if (notification.type !== "mention" && notification.type !== "dm") {
+    console.log(
+      "⚠️ [DEBUG] Skipping browser notification for type:",
+      notification.type,
+    );
     return;
   }
-  console.log('✅ [DEBUG] Notification type is valid:', notification.type);
+  console.log("✅ [DEBUG] Notification type is valid:", notification.type);
 
-  // 准备通知内容
-  const title = notification.title || 'New Message';
-  const messageContent = notification.content || '';
-  const avatarUrl = notification.user?.avatarUrl || '/favicon.ico';
-  const senderName = notification.user?.displayName || 'Unknown User';
+  // Prepare notification content
+  const title = notification.title || "New Message";
+  const messageContent = notification.content || "";
+  const avatarUrl = notification.user?.avatarUrl || "/favicon.ico";
+  const senderName = notification.user?.displayName || "Unknown User";
 
-  // 格式化消息内容（限制长度）
-  const formattedContent = messageContent.length > 50
-    ? `${messageContent.substring(0, 50)}...`
-    : messageContent;
+  // Format message content (limit length)
+  const formattedContent =
+    messageContent.length > 50
+      ? `${messageContent.substring(0, 50)}...`
+      : messageContent;
 
-  // 构建通知标签，用于去重
-  let notificationTag = '';
-  if (notification.type === 'mention' && notification.relatedChannelId) {
+  // Build notification tag for deduplication
+  let notificationTag = "";
+  if (notification.type === "mention" && notification.relatedChannelId) {
     notificationTag = `channel-${notification.relatedChannelId}`;
-  } else if (notification.type === 'dm' && notification.relatedDmConversationId) {
+  } else if (
+    notification.type === "dm" &&
+    notification.relatedDmConversationId
+  ) {
     notificationTag = `dm-${notification.relatedDmConversationId}`;
-  } else if (notification.type === 'dm' && notification.user?.id) {
+  } else if (notification.type === "dm" && notification.user?.id) {
     notificationTag = `dm-user-${notification.user.id}`;
   }
 
-  // 创建通知选项
+  // Create notification options
   const notificationOptions: NotificationOptions = {
     body: `${senderName}: ${formattedContent}`,
     icon: avatarUrl,
     tag: notificationTag,
-    badge: '/favicon.ico',
+    badge: "/favicon.ico",
     requireInteraction: false,
     silent: false,
   };
 
-  console.log('🔍 [DEBUG] Notification options:', notificationOptions);
+  console.log("🔍 [DEBUG] Notification options:", notificationOptions);
 
-  // 显示通知
+  // Display notification
   try {
-    console.log('🚀 [DEBUG] Creating notification...');
+    console.log("🚀 [DEBUG] Creating notification...");
     const browserNotification = new Notification(title, notificationOptions);
 
-    // 点击通知时的行为：聚焦页面并跳转到对应聊天
+    // Behavior when clicking notification: focus page and navigate to corresponding chat
     browserNotification.onclick = () => {
-      console.log('🔔 [DEBUG] Notification clicked');
-      // 聚焦到当前窗口
+      console.log("🔔 [DEBUG] Notification clicked");
+      // Focus on current window
       window.focus();
 
-      // 跳转到对应的聊天页面
-      if (notification.type === 'mention' && notification.relatedChannelId) {
-        // 跳转到频道
+      // Navigate to corresponding chat page
+      if (notification.type === "mention" && notification.relatedChannelId) {
+        // Navigate to channel
         window.location.href = `/dashboard?channel=${notification.relatedChannelId}`;
-      } else if (notification.type === 'dm' && notification.user?.id) {
-        // 跳转到 DM
+      } else if (notification.type === "dm" && notification.user?.id) {
+        // Navigate to DM
         window.location.href = `/dm/${notification.user.id}`;
       }
 
-      // 关闭通知
+      // Close notification
       browserNotification.close();
     };
 
-    console.log('✅ [SUCCESS] Browser notification displayed:', {
+    console.log("✅ [SUCCESS] Browser notification displayed:", {
       title,
       tag: notificationTag,
       type: notification.type,
       sender: senderName,
-      content: formattedContent
+      content: formattedContent,
     });
 
-    // 如果所有条件都满足但仍不显示通知，添加额外提示
+    // Add extra tips if all conditions are met but notification still doesn't show
     setTimeout(() => {
-      console.log('💡 [TIP] If you still don\'t see the notification:');
-      console.log('  1. Check your browser\'s notification center');
-      console.log('  2. Ensure notifications are not blocked for this site');
-      console.log('  3. Try the test notification button in the diagnostics panel');
+      console.log("💡 [TIP] If you still don't see the notification:");
+      console.log("  1. Check your browser's notification center");
+      console.log("  2. Ensure notifications are not blocked for this site");
+      console.log(
+        "  3. Try the test notification button in the diagnostics panel",
+      );
     }, 1000);
   } catch (error) {
-    console.error('❌ [ERROR] Error displaying browser notification:', error);
+    console.error("❌ [ERROR] Error displaying browser notification:", error);
   }
 };
 
@@ -174,19 +192,19 @@ export function useNotifications(options?: UseNotificationsOptions) {
   const { socket } = useSocket();
   const { userId } = options || {};
 
-  // 初始化时请求通知权限
+  // Request notification permission on initialization
   useEffect(() => {
     if (!userId) return;
 
     const initNotifications = async () => {
       const permission = getNotificationPermission();
 
-      if (permission === 'default') {
-        console.log('🔔 Requesting notification permission...');
+      if (permission === "default") {
+        console.log("🔔 Requesting notification permission...");
         const newPermission = await requestNotificationPermission();
-        console.log('🔔 Notification permission result:', newPermission);
+        console.log("🔔 Notification permission result:", newPermission);
       } else {
-        console.log('🔔 Notification permission status:', permission);
+        console.log("🔔 Notification permission status:", permission);
       }
     };
 
@@ -198,33 +216,34 @@ export function useNotifications(options?: UseNotificationsOptions) {
       return;
     }
 
-    console.log('🔔 Setting up notification listener for user:', userId);
+    console.log("🔔 Setting up notification listener for user:", userId);
 
-    // 监听新通知事件
+    // Listen for new notification events
     const handleNewNotification = (notification: NewNotificationPayload) => {
-      console.log('🔔 Received new notification:', notification);
+      console.log("🔔 Received new notification:", notification);
 
-      // 显示 Slack 风格的自定义 toast（始终显示）
+      // Display Slack-style custom toast (always display)
       showSlackToast(notification);
 
-      // 显示浏览器原生通知（仅在页面后台时）
+      // Display browser native notification (only when page is in background)
       showBrowserNotification(notification);
     };
 
-    // 注册监听器
-    socket.on('new-notification', handleNewNotification);
+    // Register listener
+    socket.on("new-notification", handleNewNotification);
 
     // Cleanup function
     return () => {
-      console.log('🔔 Removing notification listener for user:', userId);
-      socket.off('new-notification', handleNewNotification);
+      console.log("🔔 Removing notification listener for user:", userId);
+      socket.off("new-notification", handleNewNotification);
     };
   }, [socket, userId]);
 
-  // 暴露给组件的方法
-  const requestPermission = useCallback(async (): Promise<NotificationPermission> => {
-    return await requestNotificationPermission();
-  }, []);
+  // Methods exposed to component
+  const requestPermission =
+    useCallback(async (): Promise<NotificationPermission> => {
+      return await requestNotificationPermission();
+    }, []);
 
   const getPermission = useCallback((): NotificationPermission => {
     return getNotificationPermission();

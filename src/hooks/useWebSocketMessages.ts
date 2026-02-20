@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { useSocket } from './useSocket';
-import { Message } from '@/types/message';
+import { useEffect, useRef, useCallback, useState } from "react";
+import { useSocket } from "./useSocket";
+import { Message } from "@/types/message";
 
 interface UseWebSocketMessagesProps {
   dmConversationId?: string;
@@ -8,7 +8,13 @@ interface UseWebSocketMessagesProps {
   currentUserId: string;
   onNewMessage?: (message: Message) => void;
   onMessageUpdated?: (message: Message) => void;
-  onMessageDeleted?: (data: { id: string; channelId?: string; dmConversationId?: string; isDeleted: boolean; deletedAt?: string }) => void;
+  onMessageDeleted?: (data: {
+    id: string;
+    channelId?: string;
+    dmConversationId?: string;
+    isDeleted: boolean;
+    deletedAt?: string;
+  }) => void;
   isAtBottom?: boolean;
   shouldAutoScroll?: boolean;
 }
@@ -30,7 +36,7 @@ export function useWebSocketMessages({
   onMessageUpdated,
   onMessageDeleted,
   isAtBottom = true,
-  shouldAutoScroll = true
+  shouldAutoScroll = true,
 }: UseWebSocketMessagesProps) {
   const { socket, isConnected } = useSocket();
   const hasJoinedRoom = useRef(false);
@@ -39,12 +45,12 @@ export function useWebSocketMessages({
   const maxJoinAttempts = 3;
   const joinRetryTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // 使用 useRef 存储回调函数，避免依赖数组变化
+  // Use useRef to store callback functions to avoid dependency array changes
   const onNewMessageRef = useRef(onNewMessage);
   const onMessageUpdatedRef = useRef(onMessageUpdated);
   const onMessageDeletedRef = useRef(onMessageDeleted);
 
-  // 安全的更新回调函数引用
+  // Safely update callback function references
   useEffect(() => {
     onNewMessageRef.current = onNewMessage;
   }, [onNewMessage]);
@@ -57,73 +63,94 @@ export function useWebSocketMessages({
     onMessageDeletedRef.current = onMessageDeleted;
   }, [onMessageDeleted]);
 
-  // 调试信息
+  // Debug info
   const [debugInfo] = useState<WebSocketDebugInfo>({
     isConnected: false,
     messagesReceived: 0,
-    connectionErrors: []
+    connectionErrors: [],
   });
 
-  // 调试日志函数 - 优化版本：减少依赖变化
-  const log = useCallback((level: 'info' | 'warn' | 'error', message: string, data?: any) => {
-    const timestamp = new Date().toISOString();
-    const logMessage = `[${timestamp}] [WebSocket] ${message}`;
-    console[level](logMessage, data);
-  }, []); // 空依赖数组，确保函数引用稳定
+  // Debug log function - optimized version: reduce dependency changes
+  const log = useCallback(
+    (level: "info" | "warn" | "error", message: string, data?: any) => {
+      const timestamp = new Date().toISOString();
+      const logMessage = `[${timestamp}] [WebSocket] ${message}`;
+      console[level](logMessage, data);
+    },
+    [],
+  ); // Empty dependency array to ensure stable function reference
 
-  // 防止重复初始化的保护机制
+  // Protection mechanism to prevent duplicate initialization
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // 加入房间（带重试机制）- 优化版本：减少依赖变化
-  const joinRoom = useCallback((attempt = 1) => {
-    const roomId = dmConversationId || channelId;
-    if (!roomId) {
-      log('info', 'No room ID provided, skipping join');
-      return;
-    }
-
-    // 检查socket是否准备好
-    if (!socket) {
-      log('warn', `Socket not available for joining room ${roomId} (attempt ${attempt}/${maxJoinAttempts})`);
-      if (attempt < maxJoinAttempts) {
-        joinRetryTimeout.current = setTimeout(() => {
-          joinRoom(attempt + 1);
-        }, 200);
+  // Join room (with retry mechanism) - optimized version: reduce dependency changes
+  const joinRoom = useCallback(
+    (attempt = 1) => {
+      const roomId = dmConversationId || channelId;
+      if (!roomId) {
+        log("info", "No room ID provided, skipping join");
+        return;
       }
-      return;
-    }
 
-    // 使用socket.connected而不是isConnected状态
-    if (!socket.connected) {
-      log('warn', `Socket not connected for joining room ${roomId} (attempt ${attempt}/${maxJoinAttempts})`);
-      if (attempt < maxJoinAttempts) {
-        joinRetryTimeout.current = setTimeout(() => {
-          joinRoom(attempt + 1);
-        }, 200);
+      // Check if socket is ready
+      if (!socket) {
+        log(
+          "warn",
+          `Socket not available for joining room ${roomId} (attempt ${attempt}/${maxJoinAttempts})`,
+        );
+        if (attempt < maxJoinAttempts) {
+          joinRetryTimeout.current = setTimeout(() => {
+            joinRoom(attempt + 1);
+          }, 200);
+        }
+        return;
       }
-      return;
-    }
 
-    log('info', `Attempting to join room: ${dmConversationId ? 'DM' : 'Channel'} ${roomId} (attempt ${attempt}/${maxJoinAttempts})`);
+      // Use socket.connected instead of isConnected state
+      if (!socket.connected) {
+        log(
+          "warn",
+          `Socket not connected for joining room ${roomId} (attempt ${attempt}/${maxJoinAttempts})`,
+        );
+        if (attempt < maxJoinAttempts) {
+          joinRetryTimeout.current = setTimeout(() => {
+            joinRoom(attempt + 1);
+          }, 200);
+        }
+        return;
+      }
 
-    if (dmConversationId) {
-      socket.emit('join-dm', dmConversationId);
-      log('info', `✅ Successfully emitted join-dm event for room: ${dmConversationId}`);
-    } else if (channelId) {
-      socket.emit('join-channel', channelId);
-      log('info', `✅ Successfully emitted join-channel event for room: ${channelId}`);
-    }
-    hasJoinedRoom.current = true;
-    joinAttempts.current = 0;
-  }, [dmConversationId, channelId, log]); // 移除 socket 依赖，使用 useRef 访问
+      log(
+        "info",
+        `Attempting to join room: ${dmConversationId ? "DM" : "Channel"} ${roomId} (attempt ${attempt}/${maxJoinAttempts})`,
+      );
 
-  // 离开房间 - 优化版本：减少依赖变化
+      if (dmConversationId) {
+        socket.emit("join-dm", dmConversationId);
+        log(
+          "info",
+          `✅ Successfully emitted join-dm event for room: ${dmConversationId}`,
+        );
+      } else if (channelId) {
+        socket.emit("join-channel", channelId);
+        log(
+          "info",
+          `✅ Successfully emitted join-channel event for room: ${channelId}`,
+        );
+      }
+      hasJoinedRoom.current = true;
+      joinAttempts.current = 0;
+    },
+    [dmConversationId, channelId, log],
+  ); // Remove socket dependency, use useRef to access
+
+  // Leave room - optimized version: reduce dependency changes
   const leaveRoom = useCallback(() => {
     if (!socket || !hasJoinedRoom.current) {
       return;
     }
 
-    // 清理重试定时器
+    // Clean up retry timer
     if (joinRetryTimeout.current) {
       clearTimeout(joinRetryTimeout.current);
       joinRetryTimeout.current = null;
@@ -131,56 +158,56 @@ export function useWebSocketMessages({
 
     if (dmConversationId) {
       console.log(`📤 [WebSocket] Leaving DM room: ${dmConversationId}`);
-      socket.emit('leave-dm', dmConversationId);
+      socket.emit("leave-dm", dmConversationId);
     } else if (channelId) {
       console.log(`📤 [WebSocket] Leaving channel room: ${channelId}`);
-      socket.emit('leave-channel', channelId);
+      socket.emit("leave-channel", channelId);
     }
 
     hasJoinedRoom.current = false;
     joinAttempts.current = 0;
-  }, [dmConversationId, channelId]); // 移除 socket 依赖
+  }, [dmConversationId, channelId]); // Remove socket dependency
 
-  // 监听新消息 - 修复版本：只依赖 socket 实例，避免频繁重新挂载
+  // Listen for new messages - fixed version: only depend on socket instance to avoid frequent remounting
   useEffect(() => {
-    log('info', `Setting up message listeners. Socket: ${!!socket}`);
+    log("info", `Setting up message listeners. Socket: ${!!socket}`);
 
     if (!socket) {
-      log('warn', 'Socket not available, message listeners not set up');
+      log("warn", "Socket not available, message listeners not set up");
       return;
     }
 
     const handleNewMessage = (message: Message) => {
-      log('info', `📨 Raw new-message event received:`, message);
+      log("info", `📨 Raw new-message event received:`, message);
 
-      // 验证消息属于当前房间
+      // Verify message belongs to current room
       const isForCurrentRoom =
         (dmConversationId && message.dmConversationId === dmConversationId) ||
         (channelId && message.channelId === channelId);
 
-      log('info', `Message room validation:`, {
+      log("info", `Message room validation:`, {
         messageDM: message.dmConversationId,
         expectedDM: dmConversationId,
         messageChannel: message.channelId,
         expectedChannel: channelId,
-        isForCurrentRoom
+        isForCurrentRoom,
       });
 
       if (!isForCurrentRoom) {
-        log('info', `Message ignored - not for current room`);
+        log("info", `Message ignored - not for current room`);
         return;
       }
 
-      // 防止重复消息（通过消息ID检查）
+      // Prevent duplicate messages (by message ID check)
       if (previousMessageIds.current.has(message.id)) {
-        log('info', `⚠️ Duplicate message ignored: ${message.id}`);
+        log("info", `⚠️ Duplicate message ignored: ${message.id}`);
         return;
       }
 
-      // 记录消息ID
+      // Store message ID
       previousMessageIds.current.add(message.id);
 
-      // 限制历史记录大小（最多保留100个消息ID）
+      // Limit history size (keep max 100 message IDs)
       if (previousMessageIds.current.size > 100) {
         const firstId = previousMessageIds.current.values().next().value;
         if (firstId) {
@@ -188,80 +215,92 @@ export function useWebSocketMessages({
         }
       }
 
-      log('info', `✅ Message accepted and will be processed:`, {
+      log("info", `✅ Message accepted and will be processed:`, {
         messageId: message.id,
         content: message.content?.substring(0, 50),
-        fromUser: message.userId
+        fromUser: message.userId,
       });
 
-      // 调用回调函数 - 使用 ref 避免依赖变化
+      // Call callback function - use ref to avoid dependency changes
       if (onNewMessageRef.current) {
-        log('info', `Calling onNewMessage callback`);
+        log("info", `Calling onNewMessage callback`);
         onNewMessageRef.current(message);
       } else {
-        log('warn', 'No onNewMessage callback provided');
+        log("warn", "No onNewMessage callback provided");
       }
     };
 
-    // 监听消息更新
+    // Listen for message updates
     const handleMessageUpdated = (updatedMessage: Message) => {
       const isForCurrentRoom =
-        (dmConversationId && updatedMessage.dmConversationId === dmConversationId) ||
+        (dmConversationId &&
+          updatedMessage.dmConversationId === dmConversationId) ||
         (channelId && updatedMessage.channelId === channelId);
 
       if (!isForCurrentRoom) {
         return;
       }
 
-      log('info', `📝 Message updated:`, updatedMessage);
+      log("info", `📝 Message updated:`, updatedMessage);
 
       if (onMessageUpdatedRef.current) {
         onMessageUpdatedRef.current(updatedMessage);
       }
     };
 
-    // 监听消息删除
-    const handleMessageDeleted = (deleteData: { id: string; channelId?: string; dmConversationId?: string; isDeleted: boolean; deletedAt?: string }) => {
+    // Listen for message deletion
+    const handleMessageDeleted = (deleteData: {
+      id: string;
+      channelId?: string;
+      dmConversationId?: string;
+      isDeleted: boolean;
+      deletedAt?: string;
+    }) => {
       const { id } = deleteData;
-      log('info', `🗑️ Message deleted:`, deleteData);
+      log("info", `🗑️ Message deleted:`, deleteData);
 
       if (onMessageDeletedRef.current) {
         onMessageDeletedRef.current(deleteData);
       }
     };
 
-    // 监听线程回复创建 - 转换为标准的new-message事件
-    const handleThreadReplyCreated = (data: { threadId: string; message: Message; replyCount: number }) => {
-      log('info', `🧵 Thread reply created:`, data);
+    // Listen for thread reply creation - convert to standard new-message event
+    const handleThreadReplyCreated = (data: {
+      threadId: string;
+      message: Message;
+      replyCount: number;
+    }) => {
+      log("info", `🧵 Thread reply created:`, data);
 
-      // 验证线程回复属于当前房间
+      // Verify thread reply belongs to current room
       const isForCurrentRoom =
-        (dmConversationId && data.message.dmConversationId === dmConversationId) ||
+        (dmConversationId &&
+          data.message.dmConversationId === dmConversationId) ||
         (channelId && data.message.channelId === channelId);
 
-      log('info', `🔍 Room validation for thread reply:`, {
+      log("info", `🔍 Room validation for thread reply:`, {
         dmConversationId,
         channelId,
         messageDM: data.message.dmConversationId,
         messageChannel: data.message.channelId,
-        isForCurrentRoom
+        isForCurrentRoom,
       });
 
       if (!isForCurrentRoom) {
-        log('info', `Thread reply ignored - not for current room`);
+        log("info", `Thread reply ignored - not for current room`);
         return;
       }
 
-      // 防止重复消息
+      // Prevent duplicate messages
       if (previousMessageIds.current.has(data.message.id)) {
-        log('info', `⚠️ Duplicate thread reply ignored: ${data.message.id}`);
+        log("info", `⚠️ Duplicate thread reply ignored: ${data.message.id}`);
         return;
       }
 
-      // 记录消息ID
+      // Store message ID
       previousMessageIds.current.add(data.message.id);
 
-      // 限制历史记录大小
+      // Limit history size
       if (previousMessageIds.current.size > 100) {
         const firstId = previousMessageIds.current.values().next().value;
         if (firstId) {
@@ -269,90 +308,93 @@ export function useWebSocketMessages({
         }
       }
 
-      // 转换为标准的new-message事件并调用回调
+      // Convert to standard new-message event and call callback
       if (onNewMessageRef.current) {
-        log('info', `✅ Calling onNewMessage callback for thread reply: ${data.message.id}`);
+        log(
+          "info",
+          `✅ Calling onNewMessage callback for thread reply: ${data.message.id}`,
+        );
         onNewMessageRef.current(data.message);
       } else {
-        log('warn', `❌ No onNewMessage callback available for thread reply`);
+        log("warn", `❌ No onNewMessage callback available for thread reply`);
       }
     };
 
-    // 注册事件监听器
-    log('info', 'Registering socket event listeners...');
-    socket.on('new-message', handleNewMessage);
-    socket.on('message-updated', handleMessageUpdated);
-    socket.on('message-deleted', handleMessageDeleted);
-    socket.on('thread-reply-created', handleThreadReplyCreated);
-    log('info', '✅ Socket event listeners registered successfully');
+    // Register event listeners
+    log("info", "Registering socket event listeners...");
+    socket.on("new-message", handleNewMessage);
+    socket.on("message-updated", handleMessageUpdated);
+    socket.on("message-deleted", handleMessageDeleted);
+    socket.on("thread-reply-created", handleThreadReplyCreated);
+    log("info", "✅ Socket event listeners registered successfully");
 
     // Cleanup function
     return () => {
-      log('info', 'Cleaning up socket event listeners...');
-      socket.off('new-message', handleNewMessage);
-      socket.off('message-updated', handleMessageUpdated);
-      socket.off('message-deleted', handleMessageDeleted);
-      socket.off('thread-reply-created', handleThreadReplyCreated);
-      log('info', '✅ Socket event listeners cleaned up');
+      log("info", "Cleaning up socket event listeners...");
+      socket.off("new-message", handleNewMessage);
+      socket.off("message-updated", handleMessageUpdated);
+      socket.off("message-deleted", handleMessageDeleted);
+      socket.off("thread-reply-created", handleThreadReplyCreated);
+      log("info", "✅ Socket event listeners cleaned up");
     };
-  }, [socket, dmConversationId, channelId]); // 关键修复：移除 isConnected 依赖，只依赖 socket 和房间ID
+  }, [socket, dmConversationId, channelId]); // Key fix: remove isConnected dependency, only depend on socket and room ID
 
-  // 当房间ID变化时，重新加入房间 - 优化版本：减少依赖变化
+  // When room ID changes, rejoin room - optimized version: reduce dependency changes
   useEffect(() => {
     const roomId = dmConversationId || channelId;
-    log('info', `🔄 Room ID changed, preparing to join:`, {
+    log("info", `🔄 Room ID changed, preparing to join:`, {
       dmConversationId,
       channelId,
       roomId,
-      previousRoomJoined: hasJoinedRoom.current
+      previousRoomJoined: hasJoinedRoom.current,
     });
 
     if (!roomId) {
-      log('info', 'No room ID provided, skipping room join');
+      log("info", "No room ID provided, skipping room join");
       return;
     }
 
-    // 重置房间状态和重试计数器
+    // Reset room state and retry counter
     hasJoinedRoom.current = false;
     joinAttempts.current = 0;
 
-    // 清理之前的重试定时器
+    // Clean up previous retry timer
     if (joinRetryTimeout.current) {
       clearTimeout(joinRetryTimeout.current);
       joinRetryTimeout.current = null;
     }
 
-    // 延迟一点再加入，确保组件完全挂载
+    // Delay a bit to join, ensure component is fully mounted
     const timer = setTimeout(() => {
-      log('info', `⏰ Delayed join room triggered for: ${roomId}`);
-      joinRoom(1); // 使用带重试的joinRoom函数
+      log("info", `⏰ Delayed join room triggered for: ${roomId}`);
+      joinRoom(1); // Use joinRoom function with retry
     }, 100);
 
     return () => {
       clearTimeout(timer);
-      log('info', `🏠 Cleaning up room: ${roomId}`);
+      log("info", `🏠 Cleaning up room: ${roomId}`);
       if (socket && hasJoinedRoom.current) {
         if (dmConversationId) {
-          socket.emit('leave-dm', dmConversationId);
+          socket.emit("leave-dm", dmConversationId);
         } else if (channelId) {
-          socket.emit('leave-channel', channelId);
+          socket.emit("leave-channel", channelId);
         }
         hasJoinedRoom.current = false;
       }
-      // 清理重试定时器
+      // Clean up retry timer
       if (joinRetryTimeout.current) {
         clearTimeout(joinRetryTimeout.current);
         joinRetryTimeout.current = null;
       }
     };
-  }, [dmConversationId, channelId]); // 只依赖房间ID，大幅减少重新挂载
+  }, [dmConversationId, channelId]); // Only depend on room ID, significantly reduce remounting
 
-  // 组件卸载时清理
+  // Cleanup when component unmounts
   useEffect(() => {
     return () => {
       leaveRoom();
       previousMessageIds.current.clear();
-      // 清理重试定时器
+      // Clean up retry timer
       if (joinRetryTimeout.current) {
         clearTimeout(joinRetryTimeout.current);
         joinRetryTimeout.current = null;
@@ -363,6 +405,6 @@ export function useWebSocketMessages({
   return {
     joinRoom,
     leaveRoom,
-    isConnected
+    isConnected,
   };
 }

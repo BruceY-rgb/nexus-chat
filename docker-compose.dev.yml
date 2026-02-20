@@ -1,12 +1,12 @@
 # =====================================================
-# Mac本地开发环境配置
-# 使用Docker Compose开发配置
+# Mac local development environment configuration
+# Docker Compose development configuration
 # =====================================================
 
 version: '3.8'
 
 services:
-  # PostgreSQL数据库
+  # PostgreSQL database
   db:
     image: postgres:15-alpine
     container_name: slack_db_dev
@@ -28,7 +28,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Next.js开发应用
+  # Next.js development application
   app:
     build:
       context: .
@@ -70,14 +70,14 @@ services:
       LOG_FORMAT: ${LOG_FORMAT:-dev}
     ports:
       - "3000:3000"
-      - "24678:24678" # Next.js HMR端口
+      - "24678:24678" # Next.js HMR port
     depends_on:
       db:
         condition: service_healthy
     networks:
       - slack_network_dev
     volumes:
-      # 挂载源码实现热重载
+      # Mount source code for hot reload
       - .:/app
       - /app/node_modules
       - /app/.next

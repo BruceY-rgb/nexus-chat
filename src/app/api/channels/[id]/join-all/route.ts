@@ -1,87 +1,80 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
-import { unauthorizedResponse } from '@/lib/api-response';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { verifyToken } from "@/lib/auth";
+import { unauthorizedResponse } from "@/lib/api-response";
 
-// 批量加入频道 API - 将所有 team members 加入指定频道
+// Batch join channel API - add all team members to specified channel
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
-    const token = request.cookies.get('auth_token')?.value;
+    const token = request.cookies.get("auth_token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        unauthorizedResponse(),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse(), { status: 401 });
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
-      return NextResponse.json(
-        unauthorizedResponse('token无效'),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse("invalid token"), {
+        status: 401,
+      });
     }
 
     const channelId = params.id;
 
-    // 检查频道是否存在
+    // Check if channel exists
     const channel = await prisma.channel.findUnique({
-      where: { id: channelId }
+      where: { id: channelId },
     });
 
     if (!channel) {
-      return NextResponse.json(
-        { error: 'Channel not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    // 获取所有 team members
+    // Get all team members
     const teamMembers = await prisma.teamMember.findMany({
       where: {
-        status: 'active'
+        status: "active",
       },
       include: {
         user: {
           select: {
             id: true,
             displayName: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
 
-    // 获取已加入的频道成员
+    // Get existing channel members
     const existingMembers = await prisma.channelMember.findMany({
       where: {
-        channelId: channelId
+        channelId: channelId,
       },
       select: {
-        userId: true
-      }
+        userId: true,
+      },
     });
 
-    const existingMemberIds = new Set(existingMembers.map(m => m.userId));
+    const existingMemberIds = new Set(existingMembers.map((m) => m.userId));
 
-    // 筛选出未加入的成员
+    // Filter out members who have already joined
     const newMembers = teamMembers.filter(
-      tm => !existingMemberIds.has(tm.userId)
+      (tm) => !existingMemberIds.has(tm.userId),
     );
 
-    // 批量创建频道成员记录
+    // Batch create channel member records
     const createdMembers = await Promise.all(
-      newMembers.map(member =>
+      newMembers.map((member) =>
         prisma.channelMember.create({
           data: {
             channelId: channelId,
             userId: member.userId,
-            role: 'member'
+            role: "member",
           },
           include: {
             user: {
@@ -91,31 +84,31 @@ export async function POST(
                 displayName: true,
                 realName: true,
                 avatarUrl: true,
-                isOnline: true
-              }
-            }
-          }
-        })
-      )
+                isOnline: true,
+              },
+            },
+          },
+        }),
+      ),
     );
 
     return NextResponse.json({
       message: `Successfully added ${createdMembers.length} members to the channel`,
       channel: {
         id: channel.id,
-        name: channel.name
+        name: channel.name,
       },
-      addedMembers: createdMembers.map(member => ({
+      addedMembers: createdMembers.map((member) => ({
         id: member.user.id,
         displayName: member.user.displayName,
-        email: member.user.email
-      }))
+        email: member.user.email,
+      })),
     });
   } catch (error) {
-    console.error('Error joining all members to channel:', error);
+    console.error("Error joining all members to channel:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

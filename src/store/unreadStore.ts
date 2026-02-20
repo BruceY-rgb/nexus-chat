@@ -1,11 +1,11 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface UnreadState {
   // Unread message mapping: key is channelId or dmConversationId, value is unread count
   unreadMap: Record<string, number>;
-  // 静音的会话列表
+  // Muted conversation list
   mutedList: Set<string>;
-  // 总未读数
+  // Total unread count
   totalUnreadCount: number;
 
   // Actions
@@ -28,19 +28,19 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
   incrementUnread: (conversationId: string, count = 1) => {
     const { unreadMap, mutedList } = get();
 
-    // 如果已静音，不增加未读数
+    // If already muted, do not increment unread count
     if (mutedList.has(conversationId)) {
       return;
     }
 
     const newUnreadMap = {
       ...unreadMap,
-      [conversationId]: (unreadMap[conversationId] || 0) + count
+      [conversationId]: (unreadMap[conversationId] || 0) + count,
     };
 
     const totalUnreadCount = Object.values(newUnreadMap).reduce(
       (sum, count) => sum + count,
-      0
+      0,
     );
 
     set({ unreadMap: newUnreadMap, totalUnreadCount });
@@ -54,7 +54,7 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
 
     const newUnreadMap = {
       ...unreadMap,
-      [conversationId]: newCount
+      [conversationId]: newCount,
     };
 
     // If count is 0, delete the entry
@@ -64,7 +64,7 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
 
     const totalUnreadCount = Object.values(newUnreadMap).reduce(
       (sum, count) => sum + count,
-      0
+      0,
     );
 
     set({ unreadMap: newUnreadMap, totalUnreadCount });
@@ -81,7 +81,7 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
 
     const newUnreadMap = {
       ...unreadMap,
-      [conversationId]: Math.max(0, count)
+      [conversationId]: Math.max(0, count),
     };
 
     // If count is 0, delete the entry
@@ -91,7 +91,7 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
 
     const totalUnreadCount = Object.values(newUnreadMap).reduce(
       (sum, count) => sum + count,
-      0
+      0,
     );
 
     set({ unreadMap: newUnreadMap, totalUnreadCount });
@@ -105,7 +105,7 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
 
     const totalUnreadCount = Object.values(newUnreadMap).reduce(
       (sum, count) => sum + count,
-      0
+      0,
     );
 
     set({ unreadMap: newUnreadMap, totalUnreadCount });
@@ -132,15 +132,15 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
   },
 
   setUnreadFromDB: (data: Record<string, number>) => {
-    // 过滤掉已静音的会话
+    // Filter out muted conversations
     const { mutedList } = get();
     const filteredData = Object.fromEntries(
-      Object.entries(data).filter(([id]) => !mutedList.has(id))
+      Object.entries(data).filter(([id]) => !mutedList.has(id)),
     );
 
     const totalUnreadCount = Object.values(filteredData).reduce(
       (sum, count) => sum + count,
-      0
+      0,
     );
 
     set({ unreadMap: filteredData, totalUnreadCount });
@@ -153,22 +153,22 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
       return 0;
     }
     return unreadMap[conversationId] || 0;
-  }
+  },
 }));
 
-// 更新浏览器标题
+// Update browser title
 function updateBrowserTitle(totalUnreadCount: number) {
-  const baseTitle = 'Slack';
+  const baseTitle = "Slack";
   const newTitle =
     totalUnreadCount > 0 ? `(${totalUnreadCount}) ${baseTitle}` : baseTitle;
 
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     document.title = newTitle;
   }
 }
 
-// 监听 store 变化，自动更新标题
-if (typeof window !== 'undefined') {
+// Listen to store changes and auto-update title
+if (typeof window !== "undefined") {
   useUnreadStore.subscribe((state) => {
     updateBrowserTitle(state.totalUnreadCount);
   });

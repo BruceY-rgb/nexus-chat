@@ -1,27 +1,27 @@
 /**
- * 解析消息内容中的 @提及
- * 支持格式：
- * 1. Token 格式：@{userId:displayName}
- * 2. 传统格式：@username 或 @displayName
+ * Parse @mentions in message content
+ * Supports formats:
+ * 1. Token format: @{userId:displayName}
+ * 2. Traditional format: @username or @displayName
  */
 
 export interface ParsedMention {
-  mentionText: string; // 完整的提及文本
-  userId?: string; // Token 格式中的 userId
-  displayName: string; // 显示名称
+  mentionText: string; // Complete mention text
+  userId?: string; // userId in token format
+  displayName: string; // Display name
   startIndex: number;
   endIndex: number;
 }
 
 /**
- * 从消息内容中提取所有 @提及
- * @param content 消息内容
- * @returns 提及列表
+ * Extract all @mentions from message content
+ * @param content Message content
+ * @returns List of mentions
  */
 export function parseMentions(content: string): ParsedMention[] {
   const mentions: ParsedMention[] = [];
 
-  // 首先匹配 Token 格式：@{userId:displayName}
+  // First match token format: @{userId:displayName}
   const tokenPattern = /@\{([^:]+):([^}]+)\}/g;
   let match: RegExpExecArray | null;
   while ((match = tokenPattern.exec(content)) !== null) {
@@ -37,19 +37,19 @@ export function parseMentions(content: string): ParsedMention[] {
     }
   }
 
-  // 然后匹配传统格式：@username 或 @displayName（避免重复匹配 Token）
+  // Then match traditional format: @username or @displayName (avoid duplicating token matches)
   const traditionalPattern = /@([a-zA-Z0-9._-]+)/g;
   let traditionalMatch: RegExpExecArray | null;
   while ((traditionalMatch = traditionalPattern.exec(content)) !== null) {
     const mentionText = traditionalMatch[0];
     const displayName = traditionalMatch[1];
 
-    // 检查是否已经是 Token 格式
+    // Check if it's already in token format
     if (mentionText.includes('{')) {
       continue;
     }
 
-    // 避免重复添加
+    // Avoid duplicate additions
     const startIndex = traditionalMatch.index;
     if (startIndex !== null) {
       const isDuplicate = mentions.some(m => m.startIndex === startIndex);
@@ -64,32 +64,32 @@ export function parseMentions(content: string): ParsedMention[] {
     }
   }
 
-  // 按出现顺序排序
+  // Sort by order of appearance
   return mentions.sort((a, b) => a.startIndex - b.startIndex);
 }
 
 /**
- * 检查消息内容是否包含 @提及
- * @param content 消息内容
- * @returns 是否包含提及
+ * Check if message content contains @mentions
+ * @param content Message content
+ * @returns Whether it contains mentions
  */
 export function hasMentions(content: string): boolean {
   return /@\{[^:]+:[^}]+\}|@[a-zA-Z0-9._-]+/.test(content);
 }
 
 /**
- * 从提及列表中提取用户名
- * @param mentions 提及列表
- * @returns 用户名数组
+ * Extract usernames from mention list
+ * @param mentions Mention list
+ * @returns Array of usernames
  */
 export function extractUsernames(mentions: ParsedMention[]): string[] {
   return mentions.map(m => m.displayName);
 }
 
 /**
- * 从 Token 格式中提取 userId
- * @param mentions 提及列表
- * @returns userId 数组
+ * Extract userId from token format
+ * @param mentions Mention list
+ * @returns Array of userIds
  */
 export function extractUserIds(mentions: ParsedMention[]): string[] {
   return mentions
@@ -98,18 +98,18 @@ export function extractUserIds(mentions: ParsedMention[]): string[] {
 }
 
 /**
- * 将 Token 格式的提及转换为传统格式
- * @param content 消息内容
- * @returns 转换后的内容
+ * Convert token format mentions to traditional format
+ * @param content Message content
+ * @returns Converted content
  */
 export function convertTokensToTraditionalFormat(content: string): string {
   return content.replace(/@\{([^:]+):([^}]+)\}/g, '@$2');
 }
 
 /**
- * 从传统格式中提取 displayName
- * @param content 消息内容
- * @returns displayName 数组
+ * Extract displayNames from traditional format
+ * @param content Message content
+ * @returns Array of displayNames
  */
 export function extractDisplayNamesFromTraditional(content: string): string[] {
   const mentions = parseMentions(content);
@@ -119,9 +119,9 @@ export function extractDisplayNamesFromTraditional(content: string): string[] {
 }
 
 /**
- * 验证 Token 格式是否有效
- * @param token 要验证的 Token
- * @returns 是否有效
+ * Validate if token format is valid
+ * @param token Token to validate
+ * @returns Whether it's valid
  */
 export function isValidMentionToken(token: string): boolean {
   return /^@\{[a-zA-Z0-9-]+:[^}]+\}$/.test(token);

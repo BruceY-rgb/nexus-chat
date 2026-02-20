@@ -1,13 +1,13 @@
-# Traefik v3.x 配置文件
-# 用于 WebSocket 和反向代理
+# Traefik v3.x configuration file
+# For WebSocket and reverse proxy
 
 api:
   dashboard: true
-  insecure: true  # 仅开发环境，生产环境应使用安全配置
+  insecure: true  # Development only, use secure config in production
 
-# 定义入口点
+# Define entry points
 entryPoints:
-  # HTTP 入口点 - 自动重定向到 HTTPS
+  # HTTP entrypoint - auto redirect to HTTPS
   web:
     address: ":80"
     http:
@@ -16,45 +16,45 @@ entryPoints:
           to: websecure
           scheme: https
 
-  # HTTPS 入口点
+  # HTTPS entrypoint
   websecure:
     address: ":443"
 
-# Let's Encrypt 证书自动签发
+# Let's Encrypt certificate auto-issuance
 certificatesResolvers:
   letsencrypt:
     acme:
-      email: your-email@example.com  # 替换为你的邮箱
+      email: your-email@example.com  # Replace with your email
       storage: /letsencrypt/acme.json
       httpChallenge:
         entryPoint: web
 
-# 启用 Docker 提供程序
+# Enable Docker provider
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
-    network: dokploy-network  # 使用 Dokploy 的网络
+    network: dokploy-network  # Use Dokploy's network
 
-# 启用文件提供程序（用于静态配置）
+# Enable file provider (for static configuration)
 providers:
   file:
     filename: /etc/traefik/traefik.yml
     watch: true
 
-# 日志配置
+# Logging configuration
 log:
   level: INFO
   filePath: "/var/log/traefik/traefik.log"
 
-# 访问日志
+# Access logging
 accessLog:
   filePath: "/var/log/traefik/access.log"
 
-# 全局配置
+# Global configuration
 global:
   sendAnonymousUsage: false
 
 ---
-# 动态配置文件示例 - 创建单独文件
-# 这个文件应该保存为 traefik-dynamic.yml
+# Dynamic configuration file example - create separate file
+# This file should be saved as traefik-dynamic.yml

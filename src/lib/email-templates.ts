@@ -1,5 +1,5 @@
 // =====================================================
-// 邮件模板
+// Email Templates
 // =====================================================
 
 interface VerificationEmailData {
@@ -9,17 +9,19 @@ interface VerificationEmailData {
 }
 
 /**
- * 生成HTML邮件模板
+ * Generate HTML email template
  */
-export function generateVerificationEmailHTML(data: VerificationEmailData): string {
-  const { email, code, appName = 'Slack聊天应用' } = data;
+export function generateVerificationEmailHTML(
+  data: VerificationEmailData,
+): string {
+  const { email, code, appName = "Slack Chat App" } = data;
 
   return `
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>你的登录验证码 - ${appName}</title>
+  <title>Your Login Verification Code - ${appName}</title>
 </head>
 
 <body style="margin:0; padding:0; background-color:#f6f6f6;">
@@ -40,7 +42,7 @@ export function generateVerificationEmailHTML(data: VerificationEmailData): stri
                     ${appName}
                   </td>
                   <td align="right" style="font-size:12px; color:#9e9ea2;">
-                    登录验证
+                    Login Verification
                   </td>
                 </tr>
               </table>
@@ -63,11 +65,11 @@ export function generateVerificationEmailHTML(data: VerificationEmailData): stri
               font-size:15px;
               line-height:1.6;
             ">
-              <p style="margin:0 0 12px;">你好 👋</p>
+              <p style="margin:0 0 12px;">Hello 👋</p>
 
               <p style="margin:0 0 24px;">
-                我们刚刚收到了你的登录请求。  
-                Please enter下面的验证码以继续：
+                We received a login request from your account.
+                Enter the verification code below to continue:
               </p>
 
               <!-- Code block -->
@@ -88,7 +90,7 @@ export function generateVerificationEmailHTML(data: VerificationEmailData): stri
                       font-size:13px;
                       color:#696969;
                     ">
-                      5 分钟内有效
+                      Valid for 5 minutes
                     </div>
                   </td>
                 </tr>
@@ -100,7 +102,7 @@ export function generateVerificationEmailHTML(data: VerificationEmailData): stri
                 font-size:13px;
                 color:#696969;
               ">
-                如果你没有尝试登录，可以放心忽略这封邮件。
+                If you did not attempt to log in, you can safely ignore this email.
               </p>
             </td>
           </tr>
@@ -121,7 +123,7 @@ export function generateVerificationEmailHTML(data: VerificationEmailData): stri
               color:#9e9ea2;
             ">
               <p style="margin:0;">
-                此邮件由系统自动发送，请勿回复。
+                This email was sent automatically. Please do not reply.
               </p>
             </td>
           </tr>
@@ -147,36 +149,38 @@ export function generateVerificationEmailHTML(data: VerificationEmailData): stri
 }
 
 /**
- * 生成纯文本邮件模板（作为备用）
+ * Generate plain text email template (as fallback)
  */
-export function generateVerificationEmailText(data: VerificationEmailData): string {
-  const { email, code, appName = 'Slack聊天应用' } = data;
+export function generateVerificationEmailText(
+  data: VerificationEmailData,
+): string {
+  const { email, code, appName = "Slack Chat App" } = data;
 
   return `
-${appName} - 登录验证码
+${appName} - Login Verification Code
 
-您好，
+Hello,
 
-我们收到了您的登录请求。请使用以下验证码完成登录：
+We received your login request. Please use the following code to complete your login:
 
-验证码：${code}
+Verification Code: ${code}
 
-请在 5 分钟内使用此验证码。
+Please use this code within 5 minutes.
 
-安全提醒：
-• 此验证码仅限本人使用，请勿泄露给他人
-• 如果您未发起登录请求，请忽略此邮件
-• 为保障账户安全，请勿将验证码告诉任何人
+Security Notice:
+- This verification code is for your personal use only, do not share it with others
+- If you did not initiate a login request, please ignore this email
+- For account security, never share your verification code with anyone
 
-此邮件由系统自动发送，请勿回复。
+This email was sent automatically. Please do not reply.
 
-© 2026 ${appName}. 保留所有权利。
+© 2026 ${appName}. All rights reserved.
 `;
 }
 
 /**
- * 邮件主题模板
+ * Email subject template
  */
-export function getVerificationEmailSubject(appName = 'Slack聊天应用'): string {
-  return `${appName} - 登录验证码`;
+export function getVerificationEmailSubject(appName = "Slack Chat App"): string {
+  return `${appName} - Login Verification Code`;
 }

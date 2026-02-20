@@ -1,163 +1,157 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
-import { unauthorizedResponse } from '@/lib/api-response';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { verifyToken } from "@/lib/auth";
+import { unauthorizedResponse } from "@/lib/api-response";
 
-// 离开频道 API
+// Leave Channel API
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
-    const token = request.cookies.get('auth_token')?.value;
+    const token = request.cookies.get("auth_token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        unauthorizedResponse(),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse(), { status: 401 });
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
-      return NextResponse.json(
-        unauthorizedResponse('token无效'),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse("Invalid token"), {
+        status: 401,
+      });
     }
 
     const currentUserId = decoded.userId;
     const channelId = params.id;
 
-    // 检查频道是否存在
+    // Check if channel exists
     const channel = await prisma.channel.findUnique({
-      where: { id: channelId }
+      where: { id: channelId },
     });
 
     if (!channel) {
-      return NextResponse.json(
-        { error: 'Channel not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    // 检查是否是成员
+    // Check if is a member
     const channelMember = await prisma.channelMember.findFirst({
       where: {
         channelId,
-        userId: currentUserId
-      }
+        userId: currentUserId,
+      },
     });
 
     if (!channelMember) {
       return NextResponse.json(
-        { error: 'Not a member of this channel' },
-        { status: 400 }
+        { error: "Not a member of this channel" },
+        { status: 400 },
       );
     }
 
-    // 检查是否是频道创建者
+    // Check if is channel creator
     const isOwner = channel.createdById === currentUserId;
 
-    // 如果是频道创建者，检查剩余成员数量
+    // If channel creator, check remaining member count
     if (isOwner) {
-      // 获取频道的成员总数
+      // Get total member count of channel
       const memberCount = await prisma.channelMember.count({
-        where: { channelId }
+        where: { channelId },
       });
 
-      // 如果删除当前成员后频道为空，则删除整个频道
+      // If channel becomes empty after removing current member, delete the entire channel
       if (memberCount <= 1) {
         await prisma.$transaction([
-          // 删除频道成员关系
+          // Delete channel member relationship
           prisma.channelMember.delete({
             where: {
-              id: channelMember.id
-            }
+              id: channelMember.id,
+            },
           }),
-          // 软删除频道
+          // Soft delete channel
           prisma.channel.update({
             where: {
-              id: channelId
+              id: channelId,
             },
             data: {
-              deletedAt: new Date()
-            }
-          })
+              deletedAt: new Date(),
+            },
+          }),
         ]);
 
         return NextResponse.json({
-          message: 'You were the last member. The channel has been deleted.',
+          message: "You were the last member. The channel has been deleted.",
           channelId,
-          channelDeleted: true
+          channelDeleted: true,
         });
       } else {
-        // 有其他成员，转移所有权给另一个成员
-        // 获取除当前用户外的其他成员
+        // There are other members, transfer ownership to another member
+        // Get other members except current user
         const otherMembers = await prisma.channelMember.findMany({
           where: {
             channelId,
-            userId: { not: currentUserId }
+            userId: { not: currentUserId },
           },
-          take: 1
+          take: 1,
         });
 
         if (otherMembers.length > 0) {
           const newOwner = otherMembers[0];
 
           await prisma.$transaction([
-            // 删除当前成员
+            // Delete current member
             prisma.channelMember.delete({
               where: {
-                id: channelMember.id
-              }
+                id: channelMember.id,
+              },
             }),
-            // 转移所有权
+            // Transfer ownership
             prisma.channel.update({
               where: {
-                id: channelId
+                id: channelId,
               },
               data: {
-                createdById: newOwner.userId
-              }
+                createdById: newOwner.userId,
+              },
             }),
-            // 更新新所有者的角色
+            // Update new owner's role
             prisma.channelMember.update({
               where: {
-                id: newOwner.id
+                id: newOwner.id,
               },
               data: {
-                role: 'owner'
-              }
-            })
+                role: "owner",
+              },
+            }),
           ]);
 
           return NextResponse.json({
-            message: 'You left the channel. Ownership has been transferred to another member.',
+            message:
+              "You left the channel. Ownership has been transferred to another member.",
             channelId,
-            ownershipTransferred: true
+            ownershipTransferred: true,
           });
         }
       }
     }
 
-    // 普通成员离开频道
+    // Regular member leaves channel
     await prisma.channelMember.delete({
       where: {
-        id: channelMember.id
-      }
+        id: channelMember.id,
+      },
     });
 
     return NextResponse.json({
-      message: 'Successfully left the channel',
-      channelId
+      message: "Successfully left the channel",
+      channelId,
     });
   } catch (error) {
-    console.error('Error leaving channel:', error);
+    console.error("Error leaving channel:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

@@ -1,6 +1,6 @@
 // =====================================================
-// 邮件发送服务
-// 使用 Resend API 发送验证码邮件
+// Email Service
+// Send verification emails using Resend API
 // =====================================================
 
 import { Resend } from 'resend';
@@ -10,14 +10,14 @@ import {
   getVerificationEmailSubject,
 } from './email-templates';
 
-// 邮件发送配置
+// Email configuration
 interface EmailConfig {
   from: string;
   replyTo?: string;
   appName?: string;
 }
 
-// 验证码邮件数据
+// Verification email data
 interface VerificationEmailData {
   to: string;
   email: string;
@@ -25,43 +25,43 @@ interface VerificationEmailData {
   appName?: string;
 }
 
-// 邮件发送结果
+// Email result
 interface EmailResult {
   success: boolean;
   messageId?: string;
   error?: string;
 }
 
-// 初始化 Resend 客户端
+// Initialize Resend client
 function getResendClient(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
-    console.error('❌ RESEND_API_KEY 环境变量未配置');
+    console.error('RESEND_API_KEY environment variable is not configured');
     return null;
   }
 
   try {
     return new Resend(apiKey);
   } catch (error) {
-    console.error('❌ Resend 客户端初始化失败:', error);
+    console.error('Failed to initialize Resend client:', error);
     return null;
   }
 }
 
 /**
- * 获取邮件配置
+ * Get email configuration
  */
 function getEmailConfig(): EmailConfig {
-  const from = process.env.EMAIL_FROM || 'Slack聊天应用 <noreply@your-domain.com>';
+  const from = process.env.EMAIL_FROM || 'Slack Chat App <noreply@your-domain.com>';
   const replyTo = process.env.EMAIL_REPLY_TO;
-  const appName = process.env.APP_NAME || 'Slack聊天应用';
+  const appName = process.env.APP_NAME || 'Slack Chat App';
 
   return { from, replyTo, appName };
 }
 
 /**
- * 发送验证码邮件
+ * Send verification email
  */
 export async function sendVerificationEmail(data: VerificationEmailData): Promise<EmailResult> {
   const resend = getResendClient();
@@ -69,7 +69,7 @@ export async function sendVerificationEmail(data: VerificationEmailData): Promis
   if (!resend) {
     return {
       success: false,
-      error: '邮件服务未正确配置',
+      error: 'Email service is not properly configured',
     };
   }
 
@@ -77,7 +77,7 @@ export async function sendVerificationEmail(data: VerificationEmailData): Promis
   const config = getEmailConfig();
 
   try {
-    console.log(`📧 准备发送验证码邮件到: ${email}`);
+    console.log(`Preparing to send verification email to: ${email}`);
 
     const htmlContent = generateVerificationEmailHTML({
       email,
@@ -101,20 +101,20 @@ export async function sendVerificationEmail(data: VerificationEmailData): Promis
       text: textContent,
     };
 
-    // 添加回复地址（如果有）
+    // Add reply address (if available)
     if (config.replyTo) {
       emailOptions.reply_to = config.replyTo;
     }
 
     const response = await resend.emails.send(emailOptions);
 
-    console.log('✅ 邮件发送成功:', response);
+    console.log('Email sent successfully:', response);
 
     if (response.error) {
-      console.error('❌ Resend API 返回错误:', response.error);
+      console.error('Resend API returned error:', response.error);
       return {
         success: false,
-        error: response.error.message || '邮件发送失败',
+        error: response.error.message || 'Failed to send email',
       };
     }
 
@@ -123,16 +123,16 @@ export async function sendVerificationEmail(data: VerificationEmailData): Promis
       messageId: response.data?.id,
     };
   } catch (error: any) {
-    console.error('❌ 发送验证码邮件失败:', error);
+    console.error('Failed to send verification email:', error);
     return {
       success: false,
-      error: error?.message || '邮件发送失败',
+      error: error?.message || 'Failed to send email',
     };
   }
 }
 
 /**
- * 验证邮件地址格式（简单验证）
+ * Validate email address format (simple validation)
  */
 export function validateEmailAddress(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -140,20 +140,20 @@ export function validateEmailAddress(email: string): boolean {
 }
 
 /**
- * 清理邮箱地址（移除空格等）
+ * Sanitize email address (remove whitespace, etc.)
  */
 export function sanitizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
 /**
- * 检查是否可以发送邮件（基于环境配置）
+ * Check if email can be sent (based on environment configuration)
  */
 export function isEmailServiceReady(): boolean {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
-    console.warn('⚠️  RESEND_API_KEY 未配置，无法发送邮件');
+    console.warn('RESEND_API_KEY is not configured, cannot send emails');
     return false;
   }
 

@@ -1,38 +1,40 @@
 // =====================================================
-// 获取当前用户信息 API
+// Get Current User Info API
 // GET /api/auth/me
 // =====================================================
 
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
-import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { verifyToken } from "@/lib/auth";
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+} from "@/lib/api-response";
 
-// 强制动态渲染 - 因为这个API使用了 cookies
-export const dynamic = 'force-dynamic';
+// Force dynamic rendering - because this API uses cookies
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    // 优先使用 httpOnly token, 备用 ws_token
-    const token = request.cookies.get('auth_token')?.value || request.cookies.get('ws_token')?.value;
+    // Prefer httpOnly token, fallback to ws_token
+    const token =
+      request.cookies.get("auth_token")?.value ||
+      request.cookies.get("ws_token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        unauthorizedResponse(),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse(), { status: 401 });
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
-      return NextResponse.json(
-        unauthorizedResponse('token无效'),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse("Invalid token"), {
+        status: 401,
+      });
     }
 
-    // 获取用户信息
+    // Get user info
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: {
@@ -43,19 +45,21 @@ export async function GET(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        errorResponse('用户不存在', 'USER_NOT_FOUND'),
-        { status: 404 }
+        errorResponse("User not found", "USER_NOT_FOUND"),
+        {
+          status: 404,
+        },
       );
     }
 
-    if (user.status !== 'active') {
+    if (user.status !== "active") {
       return NextResponse.json(
-        errorResponse('账户已被禁用', 'ACCOUNT_DISABLED'),
-        { status: 403 }
+        errorResponse("Account has been disabled", "ACCOUNT_DISABLED"),
+        { status: 403 },
       );
     }
 
-    // 更新在线状态
+    // Update online status
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -73,19 +77,18 @@ export async function GET(request: NextRequest) {
           realName: user.realName,
           avatarUrl: user.avatarUrl,
           status: user.status,
-          role: user.teamMemberships?.role || 'member',
+          role: user.teamMemberships?.role || "member",
           isOnline: user.isOnline,
           lastSeenAt: user.lastSeenAt,
           timezone: user.timezone,
           notificationSettings: user.notificationSettings,
         },
-      })
+      }),
     );
   } catch (error) {
-    console.error('获取用户信息错误:', error);
-    return NextResponse.json(
-      errorResponse('Failed to get user information'),
-      { status: 500 }
-    );
+    console.error("Error getting user info:", error);
+    return NextResponse.json(errorResponse("Failed to get user information"), {
+      status: 500,
+    });
   }
 }

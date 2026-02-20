@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
 export interface ConversationAttachment {
   id: string;
@@ -32,99 +32,115 @@ interface UseConversationFilesReturn {
   deleteAttachment: (attachmentId: string) => Promise<boolean>;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  filter: 'all' | 'image' | 'document' | 'video';
-  setFilter: (filter: 'all' | 'image' | 'document' | 'video') => void;
+  filter: "all" | "image" | "document" | "video";
+  setFilter: (filter: "all" | "image" | "document" | "video") => void;
   filteredAttachments: ConversationAttachment[];
 }
 
 export function useConversationFiles(
   conversationId: string | null,
-  conversationType: 'channel' | 'dm' | null
+  conversationType: "channel" | "dm" | null,
 ): UseConversationFilesReturn {
   const [attachments, setAttachments] = useState<ConversationAttachment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'image' | 'document' | 'video'>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "image" | "document" | "video">(
+    "all",
+  );
 
-  const fetchAttachments = useCallback(async (reset = true) => {
-    if (!conversationId || !conversationType) return;
+  const fetchAttachments = useCallback(
+    async (reset = true) => {
+      if (!conversationId || !conversationType) return;
 
-    setIsLoading(true);
-    setError(null);
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const params = new URLSearchParams({
-        conversationId,
-        conversationType
-      });
+      try {
+        const params = new URLSearchParams({
+          conversationId,
+          conversationType,
+        });
 
-      const response = await fetch(`/api/attachments?${params}`);
+        const response = await fetch(`/api/attachments?${params}`);
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch attachments: ${response.statusText}`);
-      }
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch attachments: ${response.statusText}`,
+          );
+        }
 
-      const data = await response.json();
-      setAttachments(data.data || []);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [conversationId, conversationType]);
-
-  const deleteAttachment = useCallback(async (attachmentId: string): Promise<boolean> => {
-    try {
-      const params = new URLSearchParams({ id: attachmentId });
-      const response = await fetch(`/api/attachments?${params}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || 'Failed to delete attachment');
+        setAttachments(data.data || []);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("Unknown error"));
+      } finally {
+        setIsLoading(false);
       }
+    },
+    [conversationId, conversationType],
+  );
 
-      // 删除成功后更新本地状态
-      setAttachments(prev => prev.filter(att => att.id !== attachmentId));
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Delete failed'));
-      return false;
-    }
-  }, []);
+  const deleteAttachment = useCallback(
+    async (attachmentId: string): Promise<boolean> => {
+      try {
+        const params = new URLSearchParams({ id: attachmentId });
+        const response = await fetch(`/api/attachments?${params}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || "Failed to delete attachment");
+        }
+
+        // Update local state after successful deletion
+        setAttachments((prev) => prev.filter((att) => att.id !== attachmentId));
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("Delete failed"));
+        return false;
+      }
+    },
+    [],
+  );
 
   const refetch = useCallback(async () => {
     await fetchAttachments();
   }, [fetchAttachments]);
 
-  // 根据filter过滤附件
-  const filteredAttachments = attachments.filter(attachment => {
-    // 搜索过滤
-    if (searchQuery && !attachment.fileName.toLowerCase().includes(searchQuery.toLowerCase())) {
+  // Filter attachments based on filter
+  const filteredAttachments = attachments.filter((attachment) => {
+    // Search filter
+    if (
+      searchQuery &&
+      !attachment.fileName.toLowerCase().includes(searchQuery.toLowerCase())
+    ) {
       return false;
     }
 
-    // 类型过滤
-    if (filter === 'all') return true;
-    if (filter === 'image') return attachment.mimeType.startsWith('image/');
-    if (filter === 'video') return attachment.mimeType.startsWith('video/');
-    if (filter === 'document') {
+    // Type filter
+    if (filter === "all") return true;
+    if (filter === "image") return attachment.mimeType.startsWith("image/");
+    if (filter === "video") return attachment.mimeType.startsWith("video/");
+    if (filter === "document") {
       const docTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml',
-        'text/plain'
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml",
+        "text/plain",
       ];
-      return docTypes.some(type => attachment.mimeType.includes(type) || attachment.mimeType === type);
+      return docTypes.some(
+        (type) =>
+          attachment.mimeType.includes(type) || attachment.mimeType === type,
+      );
     }
     return true;
   });
 
-  // 当conversationId或conversationType改变时重新获取
+  // Refetch when conversationId or conversationType changes
   useEffect(() => {
     if (conversationId && conversationType) {
       fetchAttachments();
@@ -143,6 +159,6 @@ export function useConversationFiles(
     setSearchQuery,
     filter,
     setFilter,
-    filteredAttachments
+    filteredAttachments,
   };
 }

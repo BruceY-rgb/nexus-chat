@@ -1,63 +1,59 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
-import { unauthorizedResponse } from '@/lib/api-response';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { verifyToken } from "@/lib/auth";
+import { unauthorizedResponse } from "@/lib/api-response";
 
-// 获取频道列表 API
+// Get Channel List API
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth_token')?.value;
+    const token = request.cookies.get("auth_token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        unauthorizedResponse(),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse(), { status: 401 });
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
-      return NextResponse.json(
-        unauthorizedResponse('token无效'),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse("Invalid token"), {
+        status: 401,
+      });
     }
 
     const currentUserId = decoded.userId;
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') || 'all'; // 'all', 'joined', 'public', 'private'
-    const search = searchParams.get('search') || '';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const type = searchParams.get("type") || "all"; // 'all', 'joined', 'public', 'private'
+    const search = searchParams.get("search") || "";
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
     const offset = (page - 1) * limit;
 
-    // 构建查询条件
+    // Build query conditions
     let where: any = {
-      deletedAt: null
+      deletedAt: null,
     };
 
-    // 根据类型过滤
-    if (type === 'joined') {
-      // 只获取已加入的频道
+    // Filter by type
+    if (type === "joined") {
+      // Only get joined channels
       where.members = {
         some: {
-          userId: currentUserId
-        }
+          userId: currentUserId,
+        },
       };
-    } else if (type === 'public') {
+    } else if (type === "public") {
       where.isPrivate = false;
-    } else if (type === 'private') {
+    } else if (type === "private") {
       where.isPrivate = true;
-      // 私有频道只能看到自己加入的
+      // Private channels only show joined ones
       where.members = {
         some: {
-          userId: currentUserId
-        }
+          userId: currentUserId,
+        },
       };
     }
 
-    // 搜索过滤
+    // Search filter
     if (search) {
       where.AND = where.AND || [];
       where.AND.push({
@@ -65,20 +61,20 @@ export async function GET(request: NextRequest) {
           {
             name: {
               contains: search,
-              mode: 'insensitive'
-            }
+              mode: "insensitive",
+            },
           },
           {
             description: {
               contains: search,
-              mode: 'insensitive'
-            }
-          }
-        ]
+              mode: "insensitive",
+            },
+          },
+        ],
       });
     }
 
-    // 获取频道列表
+    // Get channel list
     const [channels, total] = await Promise.all([
       prisma.channel.findMany({
         where,
@@ -92,40 +88,38 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               displayName: true,
-              avatarUrl: true
-            }
+              avatarUrl: true,
+            },
           },
           _count: {
             select: {
-              members: true
-            }
+              members: true,
+            },
           },
           members: {
             where: {
-              userId: currentUserId
+              userId: currentUserId,
             },
             select: {
               id: true,
               role: true,
-              joinedAt: true
-            }
-          }
+              joinedAt: true,
+            },
+          },
         },
-        orderBy: [
-          { createdAt: 'desc' }
-        ],
+        orderBy: [{ createdAt: "desc" }],
         skip: offset,
-        take: limit
+        take: limit,
       }),
-      prisma.channel.count({ where })
+      prisma.channel.count({ where }),
     ]);
 
-    // 格式化返回数据
+    // Format return data
     const formattedChannels = channels.map((channel: any) => ({
       ...channel,
       isJoined: channel.members.length > 0,
       memberCount: channel._count.members,
-      members: undefined // 移除members字段，避免冗余
+      members: undefined, // Remove members field to avoid redundancy
     }));
 
     return NextResponse.json({
@@ -136,72 +130,68 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
         hasNext: page * limit < total,
-        hasPrevious: page > 1
-      }
+        hasPrevious: page > 1,
+      },
     });
   } catch (error) {
-    console.error('Error fetching channels:', error);
+    console.error("Error fetching channels:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
 
-// 创建频道 API
+// Create Channel API
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth_token')?.value;
+    const token = request.cookies.get("auth_token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        unauthorizedResponse(),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse(), { status: 401 });
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
-      return NextResponse.json(
-        unauthorizedResponse('token无效'),
-        { status: 401 }
-      );
+      return NextResponse.json(unauthorizedResponse("Invalid token"), {
+        status: 401,
+      });
     }
 
     const currentUserId = decoded.userId;
     const body = await request.json();
     const { name, description, isPrivate } = body;
 
-    // 验证输入
-    if (!name || typeof name !== 'string' || name.trim() === '') {
+    // Validate input
+    if (!name || typeof name !== "string" || name.trim() === "") {
       return NextResponse.json(
-        { error: 'Channel name is required' },
-        { status: 400 }
+        { error: "Channel name is required" },
+        { status: 400 },
       );
     }
 
-    // 检查频道名称是否已存在
+    // Check if channel name already exists
     const existingChannel = await prisma.channel.findUnique({
-      where: { name: name.trim() }
+      where: { name: name.trim() },
     });
 
     if (existingChannel) {
       return NextResponse.json(
-        { error: 'Channel name already exists' },
-        { status: 400 }
+        { error: "Channel name already exists" },
+        { status: 400 },
       );
     }
 
-    // 创建频道和成员关系（使用事务确保原子性）
+    // Create channel and member relationship (using transaction to ensure atomicity)
     const channel = await prisma.$transaction(async (tx) => {
-      // 创建频道
+      // Create channel
       const newChannel = await tx.channel.create({
         data: {
           name: name.trim(),
           description: description?.trim() || null,
           isPrivate: isPrivate || false,
-          createdById: currentUserId
+          createdById: currentUserId,
         },
         select: {
           id: true,
@@ -213,36 +203,39 @@ export async function POST(request: NextRequest) {
             select: {
               id: true,
               displayName: true,
-              avatarUrl: true
-            }
-          }
-        }
+              avatarUrl: true,
+            },
+          },
+        },
       });
 
-      // 自动将创建者添加为频道成员
+      // Automatically add creator as channel member
       await tx.channelMember.create({
         data: {
           channelId: newChannel.id,
           userId: currentUserId,
-          role: 'owner'
-        }
+          role: "owner",
+        },
       });
 
       return newChannel;
     });
 
-    return NextResponse.json({
-      channel: {
-        ...channel,
-        isJoined: true,
-        memberCount: 1
-      }
-    }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating channel:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      {
+        channel: {
+          ...channel,
+          isJoined: true,
+          memberCount: 1,
+        },
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    console.error("Error creating channel:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

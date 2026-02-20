@@ -1,44 +1,50 @@
 // =====================================================
-// 用户登录 API（支持密码或验证码登录）
+// User Login API (supports password or verification code login)
 // POST /api/auth/login
 // =====================================================
 
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyPassword, generateToken, createUserSession } from '@/lib/auth';
-import { validateInput, loginSchema, verificationLoginSchema } from '@/lib/validation';
-import { successResponse, errorResponse, validationErrorResponse } from '@/lib/api-response';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { verifyPassword, generateToken, createUserSession } from "@/lib/auth";
+import {
+  validateInput,
+  loginSchema,
+  verificationLoginSchema,
+} from "@/lib/validation";
+import {
+  successResponse,
+  errorResponse,
+  validationErrorResponse,
+} from "@/lib/api-response";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const loginType = body.code ? 'verification' : 'password';
+    const loginType = body.code ? "verification" : "password";
 
     let validation;
 
-    // 根据登录类型验证输入
-    if (loginType === 'password') {
+    // Validate input based on login type
+    if (loginType === "password") {
       validation = validateInput(loginSchema, body);
       if (!validation.success) {
-        return NextResponse.json(
-          validationErrorResponse(validation.errors),
-          { status: 400 }
-        );
+        return NextResponse.json(validationErrorResponse(validation.errors), {
+          status: 400,
+        });
       }
     } else {
       validation = validateInput(verificationLoginSchema, body);
       if (!validation.success) {
-        return NextResponse.json(
-          validationErrorResponse(validation.errors),
-          { status: 400 }
-        );
+        return NextResponse.json(validationErrorResponse(validation.errors), {
+          status: 400,
+        });
       }
     }
 
     const { email } = validation.data;
-    const passwordOrCode = loginType === 'password' ? body.password : body.code;
+    const passwordOrCode = loginType === "password" ? body.password : body.code;
 
-    // 查找用户
+    // Find user
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
@@ -49,60 +55,77 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        errorResponse('邮箱或密码错误', 'INVALID_CREDENTIALS'),
-        { status: 401 }
+        errorResponse("Invalid email or password", "INVALID_CREDENTIALS"),
+        { status: 401 },
       );
     }
 
-    // 检查用户状态
-    if (user.status !== 'active') {
+    // Check user status
+    if (user.status !== "active") {
       return NextResponse.json(
-        errorResponse('Account has been disabled, please contact administrator', 'ACCOUNT_DISABLED'),
-        { status: 403 }
+        errorResponse(
+          "Account has been disabled, please contact administrator",
+          "ACCOUNT_DISABLED",
+        ),
+        { status: 403 },
       );
     }
 
-    // 验证登录凭据
-    if (loginType === 'password') {
-      // 密码登录
+    // Verify login credentials
+    if (loginType === "password") {
+      // Password login
       if (!user.passwordHash) {
         return NextResponse.json(
-          errorResponse('This account has no password set, please use verification code to login', 'NO_PASSWORD'),
-          { status: 401 }
+          errorResponse(
+            "This account has no password set, please use verification code to login",
+            "NO_PASSWORD",
+          ),
+          { status: 401 },
         );
       }
 
-      const isValidPassword = await verifyPassword(passwordOrCode, user.passwordHash);
+      const isValidPassword = await verifyPassword(
+        passwordOrCode,
+        user.passwordHash,
+      );
       if (!isValidPassword) {
         return NextResponse.json(
-          errorResponse('邮箱或密码错误', 'INVALID_CREDENTIALS'),
-          { status: 401 }
+          errorResponse("Invalid email or password", "INVALID_CREDENTIALS"),
+          { status: 401 },
         );
       }
     } else {
-      // 验证码登录
+      // Verification code login
       if (!user.emailVerificationCode || !user.emailCodeExpiresAt) {
         return NextResponse.json(
-          errorResponse('Verification code not sent, please get the code first', 'NO_VERIFICATION_CODE'),
-          { status: 401 }
+          errorResponse(
+            "Verification code not sent, please get the code first",
+            "NO_VERIFICATION_CODE",
+          ),
+          { status: 401 },
         );
       }
 
       if (new Date() > user.emailCodeExpiresAt) {
         return NextResponse.json(
-          errorResponse('Verification code has expired, please get it again', 'CODE_EXPIRED'),
-          { status: 401 }
+          errorResponse(
+            "Verification code has expired, please get it again",
+            "CODE_EXPIRED",
+          ),
+          { status: 401 },
         );
       }
 
       if (user.emailVerificationCode !== passwordOrCode) {
         return NextResponse.json(
-          errorResponse('验证码错误', 'INVALID_CODE'),
-          { status: 401 }
+          errorResponse("Invalid verification code", "INVALID_CODE"),
+          {
+            status: 401,
+          },
         );
       }
 
-      // 验证码使用后立即清除
+      // Clear verification code immediately after use
       await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -112,7 +135,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 更新在线状态
+    // Update online status
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -121,10 +144,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 生成 token 和会话
+    // Generate token and session
     const token = generateToken(user.id);
-    const userAgent = request.headers.get('user-agent') || undefined;
-    const ipAddress = request.ip || request.headers.get('x-forwarded-for') || undefined;
+    const userAgent = request.headers.get("user-agent") || undefined;
+    const ipAddress =
+      request.ip || request.headers.get("x-forwarded-for") || undefined;
 
     await createUserSession(user.id, token, ipAddress, userAgent);
 
@@ -139,39 +163,39 @@ export async function POST(request: NextRequest) {
             realName: user.realName,
             avatarUrl: user.avatarUrl,
             status: user.status,
-            role: user.teamMemberships?.role || 'member',
+            role: user.teamMemberships?.role || "member",
             isOnline: true,
             notificationSettings: user.notificationSettings,
           },
         },
-        '登录成功'
-      )
+        "Login successful",
+      ),
     );
 
-    // 设置 cookie (httpOnly, 用于 API 认证)
-    response.cookies.set('auth_token', token, {
+    // Set cookie (httpOnly, for API authentication)
+    response.cookies.set("auth_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7天
-      path: '/',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
     });
 
-    // 同时设置一个非 httpOnly 的 token 供 WebSocket 使用
-    response.cookies.set('ws_token', token, {
-      httpOnly: false, // JavaScript 可以访问
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7天
-      path: '/',
+    // Also set a non-httpOnly token for WebSocket use
+    response.cookies.set("ws_token", token, {
+      httpOnly: false, // JavaScript can access
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
     });
 
     return response;
   } catch (error) {
-    console.error('登录错误:', error);
+    console.error("Login error:", error);
     return NextResponse.json(
-      errorResponse('Login failed, please try again later'),
-      { status: 500 }
+      errorResponse("Login failed, please try again later"),
+      { status: 500 },
     );
   }
 }

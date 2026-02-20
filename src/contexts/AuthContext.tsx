@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
 // =====================================================
-// 认证上下文
+// Authentication Context
 // =====================================================
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@prisma/client';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { User } from "@prisma/client";
 
 interface AuthUser {
   id: string;
@@ -52,31 +58,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 获取当前用户信息
+  // Fetch current user information
   useEffect(() => {
     fetchCurrentUser();
   }, []);
 
   const fetchCurrentUser = async () => {
     try {
-      console.log('🔵 [AUTH] 获取当前用户信息...');
+      console.log("🔵 [AUTH] Fetching current user information...");
 
-      const response = await fetch('/api/auth/me', {
-        credentials: 'include',
+      const response = await fetch("/api/auth/me", {
+        credentials: "include",
       });
 
-      console.log('🟡 [AUTH] me 响应状态:', response.status, response.statusText);
+      console.log(
+        "🟡 [AUTH] me response status:",
+        response.status,
+        response.statusText,
+      );
 
       if (response.ok) {
         const data = await response.json();
-        console.log('🟢 [AUTH] 获取用户信息成功:', data);
+        console.log("🟢 [AUTH] Successfully fetched user information:", data);
         setUser(data.data.user);
       } else {
-        console.log('🟡 [AUTH] 未登录或会话已过期');
+        console.log("🟡 [AUTH] Not logged in or session expired");
         setUser(null);
       }
     } catch (error) {
-      console.error('🔴 [AUTH] Failed to get user information:', error);
+      console.error("🔴 [AUTH] Failed to get user information:", error);
       setUser(null);
     } finally {
       setLoading(false);
@@ -85,108 +95,133 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (loginData: LoginData) => {
     try {
-      console.log('🔵 [AUTH] 尝试登录:', { email: loginData.email, mode: loginData.code ? 'verification' : 'password' });
+      console.log("🔵 [AUTH] Attempting login:", {
+        email: loginData.email,
+        mode: loginData.code ? "verification" : "password",
+      });
 
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify(loginData),
       });
 
-      console.log('🟡 [AUTH] 响应状态:', response.status, response.statusText);
+      console.log(
+        "🟡 [AUTH] Response status:",
+        response.status,
+        response.statusText,
+      );
 
-      // 首先检查响应是否为 ok
+      // First check if response is ok
       if (!response.ok) {
-        // 如果不是 ok，尝试获取错误文本
+        // If not ok, try to get error text
         const errorText = await response.text();
-        console.error('🔴 [AUTH] 响应错误:', errorText);
+        console.error("🔴 [AUTH] Response error:", errorText);
 
         try {
-          // 尝试解析为 JSON
+          // Try to parse as JSON
           const errorData = JSON.parse(errorText);
-          throw new Error(errorData.message || `登录失败 (${response.status})`);
+          throw new Error(
+            errorData.message || `Login failed (${response.status})`,
+          );
         } catch (parseError) {
-          // 如果解析失败，说明返回的不是 JSON
-          console.error('🔴 [AUTH] 响应不是 JSON 格式:', parseError);
-          throw new Error(`服务器返回了非 JSON 响应 (${response.status}): ${errorText.substring(0, 200)}`);
+          // If parsing fails, it means the response is not JSON
+          console.error("🔴 [AUTH] Response is not JSON format:", parseError);
+          throw new Error(
+            `Server returned non-JSON response (${response.status}): ${errorText.substring(0, 200)}`,
+          );
         }
       }
 
-      // 响应 ok，解析 JSON
-      console.log('🟢 [AUTH] 响应成功，解析 JSON...');
+      // Response ok, parse JSON
+      console.log("🟢 [AUTH] Response successful, parsing JSON...");
       const data = await response.json();
-      console.log('🟢 [AUTH] 用户数据:', data);
+      console.log("🟢 [AUTH] User data:", data);
 
       if (!data.data || !data.data.user) {
-        console.error('🔴 [AUTH] Response format error:', data);
-        throw new Error('Response format error');
+        console.error("🔴 [AUTH] Response format error:", data);
+        throw new Error("Response format error");
       }
 
       setUser(data.data.user);
-      console.log('🟢 [AUTH] 登录成功');
+      console.log("🟢 [AUTH] Login successful");
     } catch (error: any) {
-      console.error('🔴 [AUTH] 登录过程出错:', error);
+      console.error("🔴 [AUTH] Login process error:", error);
       throw error;
     }
   };
 
   const register = async (registerData: RegisterData) => {
     try {
-      console.log('🔵 [AUTH] 尝试注册:', { email: registerData.email, displayName: registerData.displayName });
+      console.log("🔵 [AUTH] Attempting registration:", {
+        email: registerData.email,
+        displayName: registerData.displayName,
+      });
 
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify(registerData),
       });
 
-      console.log('🟡 [AUTH] 注册响应状态:', response.status, response.statusText);
+      console.log(
+        "🟡 [AUTH] Registration response status:",
+        response.status,
+        response.statusText,
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('🔴 [AUTH] 注册响应错误:', errorText);
+        console.error("🔴 [AUTH] Registration response error:", errorText);
 
         try {
           const errorData = JSON.parse(errorText);
-          throw new Error(errorData.message || `注册失败 (${response.status})`);
+          throw new Error(
+            errorData.message || `Registration failed (${response.status})`,
+          );
         } catch (parseError) {
-          console.error('🔴 [AUTH] 注册响应不是 JSON 格式:', parseError);
-          throw new Error(`服务器返回了非 JSON 响应 (${response.status}): ${errorText.substring(0, 200)}`);
+          console.error(
+            "🔴 [AUTH] Registration response is not JSON format:",
+            parseError,
+          );
+          throw new Error(
+            `Server returned non-JSON response (${response.status}): ${errorText.substring(0, 200)}`,
+          );
         }
       }
 
       const data = await response.json();
-      console.log('🟢 [AUTH] 注册成功:', data);
+      console.log("🟢 [AUTH] Registration successful:", data);
 
       if (!data.data || !data.data.user) {
-        console.error('🔴 [AUTH] 注册Response format error:', data);
-        throw new Error('Response format error');
+        console.error("🔴 [AUTH] Registration response format error:", data);
+        throw new Error("Response format error");
       }
 
       setUser(data.data.user);
-      console.log('🟢 [AUTH] 用户已设置');
+      console.log("🟢 [AUTH] User has been set");
     } catch (error: any) {
-      console.error('🔴 [AUTH] 注册过程出错:', error);
+      console.error("🔴 [AUTH] Registration process error:", error);
       throw error;
     }
   };
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
       });
 
       setUser(null);
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
@@ -197,18 +232,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, logout, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
 
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

@@ -1,63 +1,63 @@
 /**
- * 生成第三方头像 URL
- * 使用 DiceBear API (https://api.dicebear.com/) 生成高质量的默认头像
- * 无需部署文件，完全基于 URL
+ * Generate third-party avatar URL
+ * Use DiceBear API (https://api.dicebear.com/) to generate high-quality default avatars
+ * No file deployment needed, entirely URL-based
  */
 
 /**
- * 可用的头像风格
+ * Available avatar styles
  */
 export type AvatarStyle =
-  | 'identicon'     // 几何图形风格（默认）
-  | 'avataaars'    // 可爱卡通风格
-  | 'botttsNeutral' // 机器人风格
-  | 'micah'         // 扁平化人物风格
-  | 'lorelei'       // 女性化人物风格
-  | 'shapes'       // 抽象几何形状
-  | 'thumbs'       // 点赞手势风格
-  | 'pixel-art'   // 像素艺术风格
-  | 'fun-emoji'   // 趣味表情符号
-  | 'big-ears'    // 大耳朵风格
-  | 'big-smile'   // 大笑脸风格
-  | 'croodles'    // 涂鸦风格
-  | 'miniavs'     // 迷你头像
-  | 'adventurer'  // 冒险者风格
-  | 'adventurer-neutral' // 中性冒险者风格
-  | 'avataaars-neutral'  // 中性卡通风格
-  | 'bottts'      // 机器人风格（彩色）
-  | 'croodles-neutral'  // 中性涂鸦风格
-  | 'lucide'      // Lucide 图标风格
-  | 'micah-neutral'     // 中性扁平化人物风格
-  | 'notionists'  // Notion 风格
-  | 'notionists-neutral' // 中性 Notion 风格
-  | 'open-peeps'  // 开放人物风格
-  | 'personas'    // 人物风格
-  | 'pixel-art-neutral'; // 中性像素艺术风格
+  | 'identicon'     // Geometric shapes style (default)
+  | 'avataaars'    // Cute cartoon style
+  | 'botttsNeutral' // Robot style
+  | 'micah'         // Flat person style
+  | 'lorelei'       // Feminine person style
+  | 'shapes'       // Abstract geometric shapes
+  | 'thumbs'       // Thumbs up gesture style
+  | 'pixel-art'   // Pixel art style
+  | 'fun-emoji'   // Fun emoji style
+  | 'big-ears'    // Big ears style
+  | 'big-smile'   // Big smile style
+  | 'croodles'    // Doodle style
+  | 'miniavs'     // Mini avatar style
+  | 'adventurer'  // Adventurer style
+  | 'adventurer-neutral' // Neutral adventurer style
+  | 'avataaars-neutral'  // Neutral cartoon style
+  | 'bottts'      // Robot style (colorful)
+  | 'croodles-neutral'  // Neutral doodle style
+  | 'lucide'      // Lucide icon style
+  | 'micah-neutral'     // Neutral flat person style
+  | 'notionists'  // Notion style
+  | 'notionists-neutral' // Neutral Notion style
+  | 'open-peeps'  // Open people style
+  | 'personas'    // Person style
+  | 'pixel-art-neutral'; // Neutral pixel art style
 
 /**
- * 生成头像 URL
- * @param seed - 用于生成头像的种子（通常使用用户 ID、邮箱或用户名）
- * @param size - 头像尺寸（像素），默认 40px
- * @param style - 头像风格，默认 'identicon'
- * @returns 头像图片的 URL
+ * Generate avatar URL
+ * @param seed - Seed for generating avatar (usually user ID, email or username)
+ * @param size - Avatar size in pixels, default 40px
+ * @param style - Avatar style, default 'identicon'
+ * @returns URL of the avatar image
  */
 export function generateAvatarUrl(
   seed: string,
   size: number = 40,
   style: AvatarStyle = 'identicon'
 ): string {
-  // 确保种子不为空
+  // Ensure seed is not empty
   if (!seed || seed.trim() === '') {
     seed = 'default-user';
   }
 
-  // 构建 DiceBear API URL
+  // Build DiceBear API URL
   const baseUrl = 'https://api.dicebear.com/7.x';
   const params = new URLSearchParams({
     seed: seed.trim(),
     size: size.toString(),
     backgroundType: 'gradientLinear',
-    // 可选：添加更多自定义参数
+    // Optional: Add more custom parameters
     // radius: '10',
   });
 
@@ -65,29 +65,29 @@ export function generateAvatarUrl(
 }
 
 /**
- * 根据用户信息生成头像 URL
- * @param user - 用户对象，包含 id、displayName 或 email
- * @param size - 头像尺寸，默认 40px
- * @param style - 头像风格，默认 'identicon'
- * @returns 头像图片的 URL
+ * Generate avatar URL based on user information
+ * @param user - User object containing id, displayName or email
+ * @param size - Avatar size, default 40px
+ * @param style - Avatar style, default 'identicon'
+ * @returns URL of the avatar image
  */
 export function generateUserAvatarUrl(
   user: { id: string; displayName?: string | null; email?: string },
   size: number = 40,
   style: AvatarStyle = 'identicon'
 ): string {
-  // 优先级：displayName > email > id
+  // Priority: displayName > email > id
   const seed = user.displayName || user.email || user.id;
   return generateAvatarUrl(seed, size, style);
 }
 
 /**
- * 获取头像 URL（如果用户有自定义头像则使用，否则生成默认头像）
- * @param avatarUrl - 用户自定义头像 URL（可能为 null 或 undefined）
- * @param user - 用户对象
- * @param size - 头像尺寸，默认 40px
- * @param style - 头像风格，默认 'identicon'
- * @returns 最终使用的头像 URL
+ * Get avatar URL (use custom avatar if user has one, otherwise generate default)
+ * @param avatarUrl - User's custom avatar URL (may be null or undefined)
+ * @param user - User object
+ * @param size - Avatar size, default 40px
+ * @param style - Avatar style, default 'identicon'
+ * @returns Final avatar URL to use
  */
 export function getAvatarUrl(
   avatarUrl: string | null | undefined,
@@ -95,17 +95,17 @@ export function getAvatarUrl(
   size: number = 40,
   style: AvatarStyle = 'identicon'
 ): string {
-  // 如果有自定义头像且不为空，则使用自定义头像
+  // If custom avatar exists and is not empty, use custom avatar
   if (avatarUrl && avatarUrl.trim() !== '') {
     return avatarUrl;
   }
 
-  // 否则生成默认头像
+  // Otherwise generate default avatar
   return generateUserAvatarUrl(user, size, style);
 }
 
 /**
- * 预定义的常用尺寸常量
+ * Predefined common size constants
  */
 export const AvatarSizes = {
   XSMALL: 16,
@@ -118,7 +118,7 @@ export const AvatarSizes = {
 } as const;
 
 /**
- * 预定义的头像风格常量
+ * Predefined avatar style constants
  */
 export const AvatarStyles = {
   IDENTICON: 'identicon' as AvatarStyle,
