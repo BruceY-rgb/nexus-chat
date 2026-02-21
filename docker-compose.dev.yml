@@ -14,8 +14,8 @@ services:
     container_name: slack_db_dev
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-yangsmac}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-ysx050223}
+      POSTGRES_USER: ${DB_USER:-YczyNrXz}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Z9AhAMuheqjKq3VN3w2Y}
       POSTGRES_DB: ${DB_NAME:-slack_chat}
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
@@ -37,9 +37,9 @@ services:
     container_name: slack_db_init_dev
     restart: "no"
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD:-ysx050223}@db:5432/${DB_NAME:-slack_chat}?schema=public
-      DB_USER: ${DB_USER:-yangsmac}
-      DB_PASSWORD: ${DB_PASSWORD:-ysx050223}
+      DATABASE_URL: postgresql://${DB_USER:-YczyNrXz}:${DB_PASSWORD:-Z9AhAMuheqjKq3VN3w2Y}@db:5432/${DB_NAME:-slack_chat}?schema=public
+      DB_USER: ${DB_USER:-YczyNrXz}
+      DB_PASSWORD: ${DB_PASSWORD:-Z9AhAMuheqjKq3VN3w2Y}
       DB_NAME: ${DB_NAME:-slack_chat}
     depends_on:
       db:
@@ -47,8 +47,8 @@ services:
     networks:
       - slack_network_dev
     volumes:
-      - ./db/init.sql:/init.sql:ro
-      - ./db/slack-init.sql:/slack-init.sql:ro
+      - ./db/init.sql:/init.sql
+      - ./db/slack-init.sql:/slack-init.sql
     entrypoint: ["sh", "-c"]
     command:
       - |

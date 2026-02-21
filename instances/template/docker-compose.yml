@@ -36,17 +36,15 @@ services:
     container_name: ${INSTANCE_NAME:-slack}_db_init
     restart: "no"
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD:-ysx050223}@db:5432/${DB_NAME:-slack_chat}?schema=public
-      DB_USER: ${DB_USER:-yangsmac}
-      DB_PASSWORD: ${DB_PASSWORD:-ysx050223}
+      DATABASE_URL: postgresql://${DB_USER:-YczyNrXz}:${DB_PASSWORD:-Z9AhAMuheqjKq3VN3w2Y}@db:5432/${DB_NAME:-slack_chat}?schema=public
+      DB_USER: ${DB_USER:-YczyNrXz}
+      DB_PASSWORD: ${DB_PASSWORD:-Z9AhAMuheqjKq3VN3w2Y}
       DB_NAME: ${DB_NAME:-slack_chat}
     depends_on:
       db:
         condition: service_healthy
     networks:
       - slack_network
-    volumes:
-      - ./db/init.sql:/init.sql:ro
     entrypoint: ["sh", "-c"]
     command:
       - |
@@ -58,7 +56,9 @@ services:
         npx prisma db push --accept-data-loss || true
         echo "Database schema synchronized!"
         echo "Applying init.sql (triggers and indexes)..."
-        PGPASSWORD=$DB_PASSWORD psql -h db -U $DB_USER -d $DB_NAME -f /init.sql || true
+        PGPASSWORD=$DB_PASSWORD psql -h db -U $DB_USER -d $DB_NAME -f ./db/init.sql || true
+        echo "Applying Slack data init.sql..."
+        PGPASSWORD=$DB_PASSWORD psql -h db -U $DB_USER -d $DB_NAME -f ./db/slack-init.sql --set ON_ERROR_STOP=on || true
         echo "Init SQL applied!"
         exit 0
 
