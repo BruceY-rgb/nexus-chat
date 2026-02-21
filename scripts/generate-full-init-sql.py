@@ -82,7 +82,7 @@ for i in range(0, len(users_list), batch_size):
     sql_content += "INSERT INTO users (id, email, password_hash, display_name, real_name, avatar_url, created_at, status, email_verified_at, updated_at) VALUES\n"
     values = []
     for u in batch:
-        values.append(f"('{u['id']}', '{u['email']}', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjqQBrkHx3.5F5R5JvY5Y5Y5Y5Y5Y5', '{u['display_name']}', '{u['real_name']}', '{u['avatar_url']}', NOW(), '{u['status']}', NOW(), NOW())")
+        values.append(f"('{u['id']}', '{u['email']}', '$2a$10$nFidPm8fyhwtQ4ni22.q6uwlU9NaB.pZkZeVSMjoX1gVGqThSiGN6', '{u['display_name']}', '{u['real_name']}', '{u['avatar_url']}', NOW(), '{u['status']}', NOW(), NOW())")
     sql_content += ',\n'.join(values) + ';\n\n'
 
 print(f"Generated {len(users_list)} users")
