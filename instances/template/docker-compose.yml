@@ -44,7 +44,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - slack_network_dev
+      - slack_network
     volumes:
       - ./db/init.sql:/init.sql:ro
     entrypoint: ["sh", "-c"]
