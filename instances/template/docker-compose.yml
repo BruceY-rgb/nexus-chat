@@ -32,7 +32,7 @@ services:
   db-init:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: slack_db_init_dev
     restart: "no"
     environment:
