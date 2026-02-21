@@ -31,8 +31,8 @@ services:
   # Database initialization service - runs Prisma migrations
   db-init:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: Dockerfile.dev
     container_name: slack_db_init_dev
     restart: "no"
     environment:
