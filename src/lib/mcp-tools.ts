@@ -387,6 +387,127 @@ registerTool({
 });
 
 registerTool({
+  name: "get_channel_permissions",
+  description: "Get current user's role and permissions in a channel",
+  parameters: z.object({
+    channelId: z.string(),
+    userToken: z.string().optional(),
+  }),
+  execute: async (args, context): Promise<ToolResult> => {
+    try {
+      const { channelId } = args as { channelId: string; userToken?: string };
+      const userToken =
+        (args as { userToken?: string }).userToken || context.userToken;
+
+      if (!userToken) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ error: "userToken is required" }),
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const result = await apiExecutor.get<{
+        id: string;
+        name: string;
+        isPrivate: boolean;
+        members: Array<{
+          role: string;
+          user: {
+            id: string;
+            displayName: string;
+            avatarUrl?: string;
+            realName?: string;
+            isOnline: boolean;
+          };
+        }>;
+      }>(`/api/channels/${channelId}`, userToken);
+
+      // Get current user's info from token context or find in members
+      const userResponse = await apiExecutor.get<{ user: { id: string } }>(
+        "/api/auth/me",
+        userToken,
+      );
+      const currentUserId = userResponse.user.id;
+
+      // Find current user's role in the channel
+      const currentUserMember = result.members.find(
+        (m) => m.user.id === currentUserId,
+      );
+
+      if (!currentUserMember) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                isMember: false,
+                role: null,
+                permissions: {
+                  canEdit: false,
+                  canDelete: false,
+                  canInvite: false,
+                  canRemove: false,
+                  canManageSettings: false,
+                  canSendMessages: false,
+                  canAddReactions: false,
+                },
+              }),
+            },
+          ],
+        };
+      }
+
+      const role = currentUserMember.role;
+      const isOwner = role === "owner";
+      const isAdmin = role === "admin";
+
+      // Permission calculations
+      const permissions = {
+        canEdit: isOwner || isAdmin,
+        canDelete: isOwner,
+        canInvite: isOwner || isAdmin,
+        canRemove: isOwner || isAdmin,
+        canManageSettings: isOwner,
+        canSendMessages: true,
+        canAddReactions: true,
+      };
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              isMember: true,
+              role: role,
+              channelId: result.id,
+              channelName: result.name,
+              isPrivate: result.isPrivate,
+              permissions: permissions,
+            }),
+          },
+        ],
+      };
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      return {
+        content: [
+          { type: "text", text: JSON.stringify({ error: errorMessage }) },
+        ],
+        isError: true,
+      };
+    }
+  },
+});
+
+registerTool({
   name: "create_channel",
   description: "Create a new channel",
   parameters: z.object({

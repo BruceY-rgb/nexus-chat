@@ -1,6 +1,6 @@
 #!/bin/bash
 # MCP Tools Comprehensive Test Script
-# Tests all 52 MCP tools via HTTP JSON-RPC 2.0
+# Tests all 53 MCP tools via HTTP JSON-RPC 2.0
 
 MCP_URL="http://localhost:3002/mcp/messages"
 
@@ -11,10 +11,11 @@ LOGIN_RESP=$(curl -s "$MCP_URL" -H "Content-Type: application/json" -d '{
   "method": "tools/call",
   "params": {
     "name": "login",
-    "arguments": {"email":"slackbot@slack-import.local","password":"password123"}
+    "arguments": {"email":"admin@chat.com","password":"admin123"}
   }
 }')
 TOKEN=$(echo "$LOGIN_RESP" | python3 -c "import sys,json; r=json.load(sys.stdin); t=json.loads(r['result']['content'][0]['text']); print(t.get('token',''))" 2>/dev/null)
+MY_USER_ID=$(echo "$LOGIN_RESP" | python3 -c "import sys,json; r=json.load(sys.stdin); t=json.loads(r['result']['content'][0]['text']); print(t.get('userId',''))" 2>/dev/null)
 
 if [ -z "$TOKEN" ]; then
   echo "FATAL: Could not get auth token from login"
@@ -22,6 +23,7 @@ if [ -z "$TOKEN" ]; then
   exit 1
 fi
 echo "Got token: ${TOKEN:0:30}..."
+echo "My user ID: $MY_USER_ID"
 
 PASS=0
 FAIL=0
@@ -74,16 +76,16 @@ call_mcp 1 "health_check" '{}' "Health check (no auth)"
 
 # ===== 2. Auth Tools =====
 echo "=== Auth Tools (7 tools) ==="
-call_mcp 2 "login" '{"email":"slackbot@slack-import.local","password":"password123"}' "Login"
+call_mcp 2 "login" '{"email":"admin@chat.com","password":"admin123"}' "Login"
 call_mcp 3 "get_me" "{\"userToken\":\"$TOKEN\"}" "Get current user"
 call_mcp 4 "get_profile" "{\"userToken\":\"$TOKEN\"}" "Get profile"
 call_mcp 5 "update_profile" "{\"userToken\":\"$TOKEN\",\"displayName\":\"Slackbot\"}" "Update profile"
-call_mcp 6 "send_verification" '{"email":"slackbot@slack-import.local"}' "Send verification email"
+call_mcp 6 "send_verification" '{"email":"admin@chat.com"}' "Send verification email"
 # register - tested separately to avoid side effects
 call_mcp 7 "register" '{"email":"mcp-test-'$RANDOM'@test.local","password":"TestPass123","displayName":"MCP Test User"}' "Register new user"
 
 # ===== 3. Channel Tools =====
-echo "=== Channel Tools (11 tools) ==="
+echo "=== Channel Tools (12 tools) ==="
 call_mcp 10 "list_channels" "{\"userToken\":\"$TOKEN\"}" "List all channels"
 
 # Parse first channel ID
@@ -103,7 +105,13 @@ text=r['result']['content'][0]['text']
 data=json.loads(text)
 channels = data if isinstance(data, list) else data.get('channels', data.get('data', []))
 if channels and isinstance(channels, list):
-    print(channels[0].get('id',''))
+    # Prefer a channel the user has joined
+    for ch in channels:
+        if ch.get('isJoined'):
+            print(ch.get('id',''))
+            break
+    else:
+        print(channels[0].get('id',''))
 else:
     print('')
 " 2>/dev/null)
@@ -174,7 +182,7 @@ r=json.load(sys.stdin)
 text=r['result']['content'][0]['text']
 data=json.loads(text)
 users = data if isinstance(data, list) else data.get('users', data.get('data', []))
-my_id='c8ae290b-1d01-434d-928c-24df473de8b3'
+my_id='$MY_USER_ID'
 for u in users:
     if u.get('id') != my_id:
         print(u['id'])
@@ -185,7 +193,112 @@ echo "Other user ID: $OTHER_USER_ID"
 call_mcp 16 "invite_channel_member" "{\"channelId\":\"$NEW_CHANNEL_ID\",\"userId\":\"$OTHER_USER_ID\",\"userToken\":\"$TOKEN\"}" "Invite member to channel"
 call_mcp 17 "join_all_channel_members" "{\"channelId\":\"$NEW_CHANNEL_ID\",\"userToken\":\"$TOKEN\"}" "Join all members"
 call_mcp 18 "remove_channel_member" "{\"channelId\":\"$NEW_CHANNEL_ID\",\"userId\":\"$OTHER_USER_ID\",\"userToken\":\"$TOKEN\"}" "Remove member from channel"
-call_mcp 19 "delete_channel" "{\"channelId\":\"$NEW_CHANNEL_ID\",\"userToken\":\"$TOKEN\"}" "Delete channel"
+
+# Test get_channel_permissions - owner should have full permissions
+call_mcp 19 "get_channel_permissions" "{\"channelId\":\"$NEW_CHANNEL_ID\",\"userToken\":\"$TOKEN\"}" "Get channel permissions (owner)"
+
+# Verify owner permissions fields
+PERM_RESP=$(curl -s "$MCP_URL" -H "Content-Type: application/json" -d "{
+  \"jsonrpc\": \"2.0\",
+  \"id\": 110,
+  \"method\": \"tools/call\",
+  \"params\": {
+    \"name\": \"get_channel_permissions\",
+    \"arguments\": {\"channelId\":\"$NEW_CHANNEL_ID\",\"userToken\":\"$TOKEN\"}
+  }
+}")
+PERM_OK=$(echo "$PERM_RESP" | python3 -c "
+import sys,json
+r=json.load(sys.stdin)
+text=r['result']['content'][0]['text']
+data=json.loads(text)
+p=data.get('permissions',{})
+role=data.get('role','')
+is_member=data.get('isMember',False)
+# Owner should have all permissions
+if is_member and role=='owner' and p.get('canEdit') and p.get('canDelete') and p.get('canInvite') and p.get('canRemove') and p.get('canManageSettings') and p.get('canSendMessages') and p.get('canAddReactions'):
+    print('PASS')
+else:
+    print('FAIL: isMember=%s role=%s perms=%s' % (is_member, role, p))
+" 2>/dev/null)
+if [ "$PERM_OK" = "PASS" ]; then
+  PASS=$((PASS+1))
+  RESULTS="${RESULTS}PASS|get_channel_permissions|Owner has all permissions verified|\n"
+  echo "[PASS] Owner permissions verified: all permissions granted"
+else
+  FAIL=$((FAIL+1))
+  RESULTS="${RESULTS}FAIL|get_channel_permissions|Owner permissions check|$PERM_OK\n"
+  echo "[FAIL] Owner permissions check: $PERM_OK"
+fi
+
+# Test non-member permissions - create a channel, leave it, then check
+PERM_TEST_CH_RESP=$(curl -s "$MCP_URL" -H "Content-Type: application/json" -d "{
+  \"jsonrpc\": \"2.0\",
+  \"id\": 111,
+  \"method\": \"tools/call\",
+  \"params\": {
+    \"name\": \"create_channel\",
+    \"arguments\": {\"name\":\"mcp-perm-test-$(date +%s)\",\"userToken\":\"$TOKEN\"}
+  }
+}")
+PERM_TEST_CH_ID=$(echo "$PERM_TEST_CH_RESP" | python3 -c "
+import sys,json
+r=json.load(sys.stdin)
+text=r['result']['content'][0]['text']
+data=json.loads(text)
+print(data.get('id', data.get('channel',{}).get('id','')) if isinstance(data,dict) else '')
+" 2>/dev/null)
+
+# Leave the channel
+curl -s "$MCP_URL" -H "Content-Type: application/json" -d "{
+  \"jsonrpc\": \"2.0\", \"id\": 112, \"method\": \"tools/call\",
+  \"params\": {\"name\": \"leave_channel\", \"arguments\": {\"channelId\":\"$PERM_TEST_CH_ID\",\"userToken\":\"$TOKEN\"}}
+}" > /dev/null
+
+# Check non-member permissions
+NONMEM_RESP=$(curl -s "$MCP_URL" -H "Content-Type: application/json" -d "{
+  \"jsonrpc\": \"2.0\",
+  \"id\": 113,
+  \"method\": \"tools/call\",
+  \"params\": {
+    \"name\": \"get_channel_permissions\",
+    \"arguments\": {\"channelId\":\"$PERM_TEST_CH_ID\",\"userToken\":\"$TOKEN\"}
+  }
+}")
+NONMEM_OK=$(echo "$NONMEM_RESP" | python3 -c "
+import sys,json
+r=json.load(sys.stdin)
+text=r['result']['content'][0]['text']
+data=json.loads(text)
+p=data.get('permissions',{})
+is_member=data.get('isMember',False)
+# Non-member should have NO permissions
+if not is_member and not p.get('canEdit') and not p.get('canDelete') and not p.get('canInvite') and not p.get('canRemove') and not p.get('canManageSettings') and not p.get('canSendMessages') and not p.get('canAddReactions'):
+    print('PASS')
+else:
+    print('FAIL: isMember=%s perms=%s' % (is_member, p))
+" 2>/dev/null)
+if [ "$NONMEM_OK" = "PASS" ]; then
+  PASS=$((PASS+1))
+  RESULTS="${RESULTS}PASS|get_channel_permissions|Non-member has no permissions|\n"
+  echo "[PASS] Non-member permissions verified: all permissions denied"
+else
+  FAIL=$((FAIL+1))
+  RESULTS="${RESULTS}FAIL|get_channel_permissions|Non-member permissions check|$NONMEM_OK\n"
+  echo "[FAIL] Non-member permissions check: $NONMEM_OK"
+fi
+
+# Cleanup perm test channel - rejoin first to delete
+curl -s "$MCP_URL" -H "Content-Type: application/json" -d "{
+  \"jsonrpc\": \"2.0\", \"id\": 114, \"method\": \"tools/call\",
+  \"params\": {\"name\": \"join_channel\", \"arguments\": {\"channelId\":\"$PERM_TEST_CH_ID\",\"userToken\":\"$TOKEN\"}}
+}" > /dev/null
+curl -s "$MCP_URL" -H "Content-Type: application/json" -d "{
+  \"jsonrpc\": \"2.0\", \"id\": 115, \"method\": \"tools/call\",
+  \"params\": {\"name\": \"delete_channel\", \"arguments\": {\"channelId\":\"$PERM_TEST_CH_ID\",\"userToken\":\"$TOKEN\"}}
+}" > /dev/null
+
+call_mcp 20 "delete_channel" "{\"channelId\":\"$NEW_CHANNEL_ID\",\"userToken\":\"$TOKEN\"}" "Delete channel"
 call_mcp 20 "leave_channel" "{\"channelId\":\"$JOIN_CH_ID\",\"userToken\":\"$TOKEN\"}" "Leave channel"
 
 # ===== 4. Message Tools =====

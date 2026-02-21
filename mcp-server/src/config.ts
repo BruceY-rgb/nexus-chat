@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // 从项目根目录加载 .env 文件
-dotenv.config({ path: path.resolve(__dirname, ".env") });
+dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 
 const configSchema = z.object({
   INTERNAL_API_URL: z.string().url().default("http://localhost:3000"),

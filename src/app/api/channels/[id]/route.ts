@@ -24,7 +24,8 @@ export async function GET(
       where: { id: params.id },
       include: {
         members: {
-          include: {
+          select: {
+            role: true,
             user: {
               select: {
                 id: true,
