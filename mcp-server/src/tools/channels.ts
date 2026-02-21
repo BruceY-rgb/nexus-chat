@@ -77,6 +77,11 @@ const removeChannelMemberSchema = z.object({
   userToken: z.string(),
 });
 
+const getChannelPermissionsSchema = z.object({
+  channelId: z.string(),
+  userToken: z.string(),
+});
+
 export const channelTools: ToolDefinition[] = [
   {
     name: "list_channels",
@@ -425,6 +430,110 @@ export const channelTools: ToolDefinition[] = [
         const data = await response.json();
         return {
           content: [{ type: "text", text: JSON.stringify(data) }],
+        };
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        return {
+          content: [
+            { type: "text", text: JSON.stringify({ error: errorMessage }) },
+          ],
+          isError: true,
+        };
+      }
+    },
+  },
+  {
+    name: "get_channel_permissions",
+    description: "获取当前用户在频道中的角色和权限",
+    parameters: getChannelPermissionsSchema,
+    execute: async (args, _context): Promise<ToolResult> => {
+      try {
+        const validatedArgs = getChannelPermissionsSchema.parse(args);
+
+        // Get channel details with members
+        const channel = await apiExecutor.get<{
+          id: string;
+          name: string;
+          isPrivate: boolean;
+          members: Array<{
+            role: string;
+            user: {
+              id: string;
+              displayName: string;
+              avatarUrl?: string;
+              realName?: string;
+              isOnline: boolean;
+            };
+          }>;
+        }>(`/api/channels/${validatedArgs.channelId}`, validatedArgs.userToken);
+
+        // Get current user info
+        const currentUserResp = await apiExecutor.get<{ user: { id: string } }>(
+          "/api/auth/me",
+          validatedArgs.userToken,
+        );
+        const currentUserId = currentUserResp.user.id;
+
+        // Find current user's role in the channel
+        const currentMember = channel.members.find(
+          (m) => m.user.id === currentUserId,
+        );
+
+        if (!currentMember) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  success: true,
+                  isMember: false,
+                  role: null,
+                  permissions: {
+                    canEdit: false,
+                    canDelete: false,
+                    canInvite: false,
+                    canRemove: false,
+                    canManageSettings: false,
+                    canSendMessages: false,
+                    canAddReactions: false,
+                  },
+                }),
+              },
+            ],
+          };
+        }
+
+        const role = currentMember.role;
+        const isOwner = role === "owner";
+        const isAdmin = role === "admin";
+
+        // Permission calculations
+        const permissions = {
+          canEdit: isOwner || isAdmin,
+          canDelete: isOwner,
+          canInvite: isOwner || isAdmin,
+          canRemove: isOwner || isAdmin,
+          canManageSettings: isOwner,
+          canSendMessages: true,
+          canAddReactions: true,
+        };
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                isMember: true,
+                role: role,
+                channelId: channel.id,
+                channelName: channel.name,
+                isPrivate: channel.isPrivate,
+                permissions: permissions,
+              }),
+            },
+          ],
         };
       } catch (error: unknown) {
         const errorMessage =
