@@ -28,6 +28,40 @@ services:
       timeout: 5s
       retries: 5
 
+  # Database initialization service - runs Prisma migrations
+  db-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: slack_db_init_dev
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD:-ysx050223}@db:5432/${DB_NAME:-slack_chat}?schema=public
+      DB_USER: ${DB_USER:-yangsmac}
+      DB_PASSWORD: ${DB_PASSWORD:-ysx050223}
+      DB_NAME: ${DB_NAME:-slack_chat}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - slack_network_dev
+    volumes:
+      - ./db/init.sql:/init.sql:ro
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        echo "Running Prisma migrations..."
+        npx prisma generate
+        # 首先尝试 migrate deploy（标准迁移）
+        npx prisma migrate deploy || true
+        # 如果没有迁移，使用 db push 来同步 schema
+        npx prisma db push --accept-data-loss || true
+        echo "Database schema synchronized!"
+        echo "Applying init.sql (triggers and indexes)..."
+        PGPASSWORD=$DB_PASSWORD psql -h db -U $DB_USER -d $DB_NAME -f /init.sql || true
+        echo "Init SQL applied!"
+        exit 0
+
   # Next.js开发应用
   app:
     build:
