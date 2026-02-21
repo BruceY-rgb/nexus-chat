@@ -33,16 +33,6 @@ if [ ! -d "$INSTANCE_DIR" ]; then
     exit 1
 fi
 
-# 确认删除
-echo -e "${YELLOW}警告: 此操作将删除实例 '$INSTANCE_NAME' 及其所有数据!${NC}"
-echo ""
-read -p "确认删除? (yes/no): " confirm
-
-if [ "$confirm" != "yes" ]; then
-    echo "取消删除"
-    exit 0
-fi
-
 # 切换到实例目录
 cd "$INSTANCE_DIR"
 
