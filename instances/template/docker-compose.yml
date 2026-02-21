@@ -33,7 +33,7 @@ services:
     build:
       context: ../..
       dockerfile: Dockerfile.dev
-    container_name: slack_db_init_dev
+    container_name: ${INSTANCE_NAME:-slack}_db_init
     restart: "no"
     environment:
       DATABASE_URL: postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD:-ysx050223}@db:5432/${DB_NAME:-slack_chat}?schema=public
