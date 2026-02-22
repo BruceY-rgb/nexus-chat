@@ -14,10 +14,10 @@ interface ExtendedSocketIOServer extends SocketIOServer {
   broadcastThreadReplyDelete: (replyId: string, threadId: string, channelId?: string, dmConversationId?: string) => void;
 }
 
-// User connection information
+// User connection information - supports multiple sockets per user (multi-tab)
 interface ConnectedUser {
   userId: string;
-  socketId: string;
+  socketIds: Set<string>;
   channels: Set<string>;
   dmConversations: Set<string>;
 }
@@ -217,14 +217,16 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
       });
     });
 
-    // Initialize user connection information
+    // Initialize or update user connection information (multi-tab support)
     if (!connectedUsers.has(userId)) {
       connectedUsers.set(userId, {
         userId,
-        socketId: socket.id,
+        socketIds: new Set([socket.id]),
         channels: new Set(),
         dmConversations: new Set()
       });
+    } else {
+      connectedUsers.get(userId)!.socketIds.add(socket.id);
     }
 
     // Join user's own notification room
@@ -389,6 +391,7 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
     socket.on('get-online-users', () => {
       const onlineUsers = Array.from(connectedUsers.values()).map(user => ({
         userId: user.userId,
+        connectionCount: user.socketIds.size,
         channels: Array.from(user.channels),
         dmConversations: Array.from(user.dmConversations)
       }));
@@ -408,13 +411,19 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
       console.log(`[Disconnect] User disconnected:`, disconnectInfo);
 
       try {
-        // Update user online status
-        updateUserPresence(userId, false);
+        const userInfo = connectedUsers.get(userId);
+        if (userInfo) {
+          userInfo.socketIds.delete(socket.id);
 
-        // Clean up user information
-        connectedUsers.delete(userId);
-
-        console.log(`[Cleanup] User ${userId} data cleaned up`);
+          // Only mark offline when the last socket for this user disconnects
+          if (userInfo.socketIds.size === 0) {
+            updateUserPresence(userId, false);
+            connectedUsers.delete(userId);
+            console.log(`[Cleanup] User ${userId} fully disconnected, data cleaned up`);
+          } else {
+            console.log(`[Cleanup] User ${userId} still has ${userInfo.socketIds.size} active connection(s)`);
+          }
+        }
       } catch (error) {
         console.error(`[Disconnect] Error during cleanup:`, {
           userId,
