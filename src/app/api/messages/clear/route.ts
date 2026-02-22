@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
-        unauthorizedResponse('token无效'),
+        unauthorizedResponse('Invalid token'),
         { status: 401 }
       );
     }
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: '消息清空成功',
+        message: 'Messages cleared successfully',
         clearedCount: messageIds.length
       });
     }
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
 
           return NextResponse.json({
             success: true,
-            message: '消息清空成功',
+            message: 'Messages cleared successfully',
             clearedCount: messageIds.length
           });
         }
@@ -303,7 +303,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          message: '消息清空成功',
+          message: 'Messages cleared successfully',
           clearedCount: messageIds.length
         });
       }
@@ -311,7 +311,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: '没有消息需要清空',
+      message: 'No messages to clear',
       clearedCount: 0
     });
   } catch (error) {

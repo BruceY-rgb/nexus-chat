@@ -118,11 +118,11 @@ export default function SearchBox({ className = '' }: SearchBoxProps) {
 
     if (diffInHours < 1) {
       const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-      return `${diffInMinutes}分钟前`;
+      return `${diffInMinutes}m ago`;
     } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}小时前`;
+      return `${Math.floor(diffInHours)}h ago`;
     } else {
-      return date.toLocaleDateString('zh-CN', {
+      return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
@@ -230,12 +230,12 @@ export default function SearchBox({ className = '' }: SearchBoxProps) {
           {isSearching ? (
             <div className="p-4 text-center text-text-secondary">
               <div className="inline-block w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin mr-2" />
-              搜索中...
+              Searching...
             </div>
           ) : results.length > 0 ? (
             <>
               <div className="p-2 text-xs font-medium text-text-secondary border-b border-border">
-                搜索结果 ({results.length})
+                Results ({results.length})
               </div>
               <div className="py-2">
                 {results.map((result, index) => (
@@ -293,7 +293,7 @@ export default function SearchBox({ className = '' }: SearchBoxProps) {
             </>
           ) : (
             <div className="p-4 text-center text-text-secondary">
-              未找到匹配的消息
+              No matching messages found
             </div>
           )}
         </div>

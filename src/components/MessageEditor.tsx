@@ -60,7 +60,7 @@ export default function MessageEditor({
     try {
       await onSave(message.id, trimmedContent);
     } catch (error) {
-      console.error('保存消息失败:', error);
+      console.error('Failed to save message:', error);
       // 这里可以添加错误提示
     } finally {
       setIsSaving(false);

@@ -24,7 +24,7 @@ export async function GET(
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
-        unauthorizedResponse('token无效'),
+        unauthorizedResponse('Invalid token'),
         { status: 401 }
       );
     }
@@ -36,7 +36,7 @@ export async function GET(
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(targetUserId)) {
       return NextResponse.json(
-        { error: '无效的用户ID格式' },
+        { error: 'Invalid user ID format' },
         { status: 400 }
       );
     }
@@ -49,7 +49,7 @@ export async function GET(
 
     if (!targetUser) {
       return NextResponse.json(
-        { error: '用户不存在' },
+        { error: 'User not found' },
         { status: 404 }
       );
     }
@@ -62,7 +62,7 @@ export async function GET(
 
     if (!currentUser) {
       return NextResponse.json(
-        { error: '当前用户不存在' },
+        { error: 'Current user not found' },
         { status: 404 }
       );
     }
@@ -166,11 +166,11 @@ export async function GET(
       ]);
 
       if (!currentUserExists) {
-        throw new Error('当前用户不存在');
+        throw new Error('Current user not found');
       }
 
       if (!targetUserExists) {
-        throw new Error('目标用户不存在');
+        throw new Error('Target user not found');
       }
 
       // 创建新对话
@@ -227,12 +227,12 @@ export async function GET(
     // 提供更具体的错误信息
     if (error.code === 'P2003') {
       return NextResponse.json(
-        { error: '外键约束错误：用户不存在' },
+        { error: 'Foreign key constraint error: user not found' },
         { status: 400 }
       );
     }
 
-    if (error.message?.includes('用户不存在')) {
+    if (error.message?.includes('not found')) {
       return NextResponse.json(
         { error: error.message },
         { status: 404 }

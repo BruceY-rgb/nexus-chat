@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
-        unauthorizedResponse('token无效'),
+        unauthorizedResponse('Invalid token'),
         { status: 401 }
       );
     }
