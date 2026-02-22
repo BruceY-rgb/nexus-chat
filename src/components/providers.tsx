@@ -7,6 +7,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { SocketProvider } from '@/hooks/useSocket';
 import NotificationProvider from '@/components/NotificationProvider';
 import { useState } from 'react';
 
@@ -26,8 +27,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {children}
-        <NotificationProvider />
+        <SocketProvider>
+          {children}
+          <NotificationProvider />
+        </SocketProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

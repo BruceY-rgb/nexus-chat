@@ -67,18 +67,17 @@ services:
       - "traefik.http.routers.slack-app.entrypoints=websecure"
       - "traefik.http.routers.slack-app.tls=true"
 
-      # WebSocket support - fix configuration
+      # WebSocket support - only apply upgrade headers to /socket.io path
       - "traefik.http.services.slack-app.loadbalancer.server.port=3000"
-      # Proper WebSocket upgrade header configuration
-      - "traefik.http.middlewares.slack-websocket.headers.customrequestheaders.Upgrade=websocket"
-      - "traefik.http.middlewares.slack-websocket.headers.customrequestheaders.Connection=upgrade"
 
-      # Application middleware
-      - "traefik.http.routers.slack-app.middlewares=slack-websocket"
+      # WebSocket router - separate from main app router, only matches /socket.io path
+      - "traefik.http.routers.slack-ws.rule=Host(`slack.rlenv.data4o.ai`) && PathPrefix(`/socket.io`)"
+      - "traefik.http.routers.slack-ws.entrypoints=websecure"
+      - "traefik.http.routers.slack-ws.tls=true"
+      - "traefik.http.routers.slack-ws.service=slack-app"
 
-      # Additional WebSocket support configuration
-      - "traefik.http.middlewares.slack-websocket.headers.customresponseheaders.Upgrade=websocket"
-      - "traefik.http.middlewares.slack-websocket.headers.customresponseheaders.Connection=upgrade"
+      # Main app router - no WebSocket middleware
+      - "traefik.http.routers.slack-app.middlewares="
 
     networks:
       - dokploy-network
