@@ -155,10 +155,10 @@ export default function MarkdownRenderer({
                     <button
                       onClick={() => navigator.clipboard.writeText(String(children))}
                       className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-white flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-700"
-                      title="复制代码"
+                      title="Copy code"
                     >
                       <Copy size={14} />
-                      复制
+                      Copy
                     </button>
                   </div>
                   <pre className="bg-gray-800 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm font-mono">

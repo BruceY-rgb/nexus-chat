@@ -208,7 +208,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
       }, 0);
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('发送消息失败，请重试');
+      alert('Failed to send message, please try again');
     } finally {
       setIsSending(false);
     }
@@ -247,11 +247,11 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
   // 渲染连接状态
   const renderConnectionStatus = () => {
     const statusMap = {
-      connecting: '🔄 连接中...',
-      connected: '✅ 已连接',
-      reconnecting: '🔄 重连中...',
-      disconnected: '❌ 已断开',
-      error: '⚠️ 连接错误'
+      connecting: 'Connecting...',
+      connected: 'Connected',
+      reconnecting: 'Reconnecting...',
+      disconnected: 'Disconnected',
+      error: 'Connection error'
     };
 
     return (
@@ -266,7 +266,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
       {/* 头部 - 固定不滚动 */}
       <div className="flex-shrink-0 flex items-center justify-between p-4 border-b bg-white">
         <h2 className="text-lg font-semibold">
-          {channelId ? '频道聊天' : '私聊'}
+          {channelId ? 'Channel Chat' : 'Direct Message'}
         </h2>
         {renderConnectionStatus()}
       </div>
@@ -276,7 +276,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
         {isLoading ? (
           <div className="text-center text-gray-500">Loading...</div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-gray-500">还没有消息</div>
+          <div className="text-center text-gray-500">No messages yet</div>
         ) : (
           messages.map((message) => (
             <div key={message.id} className="flex items-start space-x-3">
@@ -307,7 +307,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
         {/* 打字指示器 */}
         {typingUsers.length > 0 && (
           <div className="text-sm text-gray-500 italic">
-            {typingUsers.map(u => u.displayName).join(', ')} 正在输入...
+            {typingUsers.map(u => u.displayName).join(', ')} is typing...
           </div>
         )}
 
@@ -322,7 +322,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
             value={newMessage}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={isConnected ? "输入消息..." : "连接中..."}
+            placeholder={isConnected ? "Type a message..." : "Connecting..."}
             disabled={!isConnected || isSending}
             rows={1}
             className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 resize-none overflow-hidden"

@@ -62,10 +62,10 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
               />
             </div>
             <h2 className="text-2xl font-semibold text-text-primary mb-4">
-              这是你的空间
+              This is your space
             </h2>
             <p className="text-text-secondary max-w-2xl mx-auto leading-relaxed">
-              起草消息、列出待办事项或保持随时可用的链接和文件。
+              Draft messages, make a to-do list, or keep links and files handy.
             </p>
             <div className="mt-6">
               <Button
@@ -89,7 +89,7 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
                     d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
                   />
                 </svg>
-                编辑个人档案
+                Edit Profile
               </Button>
             </div>
           </div>
@@ -115,10 +115,10 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
                     />
                   </svg>
                 </div>
-                <h3 className="font-medium text-text-primary">快速笔记</h3>
+                <h3 className="font-medium text-text-primary">Quick Notes</h3>
               </div>
               <p className="text-sm text-text-secondary">
-                记录想法和点子
+                Jot down thoughts and ideas
               </p>
             </div>
 
@@ -141,10 +141,10 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
                     />
                   </svg>
                 </div>
-                <h3 className="font-medium text-text-primary">待办事项</h3>
+                <h3 className="font-medium text-text-primary">To-Do List</h3>
               </div>
               <p className="text-sm text-text-secondary">
-                跟踪任务和截止日期
+                Track tasks and deadlines
               </p>
             </div>
 
@@ -167,10 +167,10 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
                     />
                   </svg>
                 </div>
-                <h3 className="font-medium text-text-primary">文件和链接</h3>
+                <h3 className="font-medium text-text-primary">Files & Links</h3>
               </div>
               <p className="text-sm text-text-secondary">
-                保存重要文件和链接
+                Save important files and links
               </p>
             </div>
           </div>
@@ -178,7 +178,7 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
           {/* 最近活动 */}
           <div className="mt-12">
             <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-4">
-              最近活动
+              Recent Activity
             </h3>
             {messages.length > 0 ? (
               <div className="space-y-4">

@@ -62,7 +62,7 @@ function MessageItemBase({
       {showReadIndicator === message.id && (
         <div className="flex items-center justify-center my-4 animate-fade-in">
           <div className="bg-blue-500/90 text-white px-4 py-1 rounded-full text-xs font-medium shadow-lg">
-            上次阅读到这里
+            Last read here
           </div>
         </div>
       )}

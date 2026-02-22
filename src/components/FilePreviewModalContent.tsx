@@ -286,7 +286,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
               {attachment.fileName}
             </h3>
             <p className="text-white/60 text-sm">
-              {formatFileSize(attachment.fileSize)} • 缩放: {(scale * 100).toFixed(0)}%
+              {formatFileSize(attachment.fileSize)} • Zoom: {(scale * 100).toFixed(0)}%
             </p>
           </div>
           <div className="flex items-center gap-2 ml-4">
@@ -296,21 +296,21 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 <button
                   onClick={handleZoomOut}
                   className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-                  title="缩小 (-)"
+                  title="Zoom out (-)"
                 >
                   <ZoomOut size={18} className="text-white/60" />
                 </button>
                 <button
                   onClick={handleReset}
                   className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-                  title="重置 (0)"
+                  title="Reset (0)"
                 >
                   <RotateCcw size={18} className="text-white/60" />
                 </button>
                 <button
                   onClick={handleZoomIn}
                   className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-                  title="放大 (+)"
+                  title="Zoom in (+)"
                 >
                   <ZoomIn size={18} className="text-white/60" />
                 </button>
@@ -320,7 +320,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-              title="全屏 (F)"
+              title="Fullscreen (F)"
             >
               {isFullscreen ? <Minimize size={18} className="text-white/60" /> : <Maximize size={18} className="text-white/60" />}
             </button>
@@ -328,14 +328,14 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
             <button
               onClick={handleDownload}
               className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-              title="下载"
+              title="Download"
             >
               <Download size={18} className="text-white/60" />
             </button>
             <button
               onClick={onClose}
               className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
-              title="关闭 (ESC)"
+              title="Close (ESC)"
             >
               <X size={18} className="text-white/60" />
             </button>
@@ -347,7 +347,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
           <div className="p-4 bg-red-500/20 border-b border-red-500/30">
             <div className="flex items-center gap-2 text-red-400">
               <AlertCircle size={18} />
-              <span className="text-sm">文件URL无法访问，请检查网络连接或文件是否已被删除</span>
+              <span className="text-sm">File URL is not accessible. Please check your network connection or if the file has been deleted.</span>
             </div>
           </div>
         )}
@@ -375,12 +375,12 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1D] z-10">
                   <div className="flex flex-col items-center gap-2">
                     <AlertCircle size={32} className="text-red-400" />
-                    <div className="text-white/60 text-sm">图片加载失败</div>
+                    <div className="text-white/60 text-sm">Failed to load image</div>
                     <button
                       onClick={handleDownload}
                       className="px-4 py-2 bg-[#1164A3] text-white rounded hover:bg-[#0D4A7C] transition-colors text-sm"
                     >
-                      下载查看
+                      Download to view
                     </button>
                   </div>
                 </div>
@@ -401,7 +401,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
               {scale > 1 && !previewError && (
                 <div className="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-2 rounded text-sm flex items-center gap-2">
                   <Move3D size={16} />
-                  拖拽移动
+                  Drag to move
                 </div>
               )}
             </div>
@@ -412,7 +412,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1D] z-10">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 size={32} className="text-white/60 animate-spin" />
-                    <div className="text-white/60 text-sm">加载 PDF 中...（最多等待10秒）</div>
+                    <div className="text-white/60 text-sm">Loading PDF... (up to 10 seconds)</div>
                   </div>
                 </div>
               )}
@@ -420,13 +420,13 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1D] z-10">
                   <div className="flex flex-col items-center gap-2">
                     <AlertCircle size={32} className="text-red-400" />
-                    <div className="text-white/60 text-sm mb-4">PDF 预览加载失败或超时</div>
+                    <div className="text-white/60 text-sm mb-4">PDF preview failed or timed out</div>
                     <div className="flex gap-2">
                       <button
                         onClick={handleDownload}
                         className="px-4 py-2 bg-[#1164A3] text-white rounded hover:bg-[#0D4A7C] transition-colors text-sm"
                       >
-                        下载查看
+                        Download to view
                       </button>
                     </div>
                   </div>
@@ -435,7 +435,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
               <iframe
                 src={attachment.filePath}
                 className={`w-full h-full border-0 ${previewLoading || previewError ? 'opacity-0' : 'opacity-100'}`}
-                title={`${attachment.fileName} - PDF 预览`}
+                title={`${attachment.fileName} - PDF Preview`}
                 onLoad={handleIframeLoad}
                 onError={handleIframeError}
               />
@@ -450,7 +450,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 className="max-w-full max-h-full"
                 title={attachment.fileName}
               >
-                您的浏览器不支持视频播放
+                Your browser does not support video playback
               </video>
             </div>
           ) : isText ? (
@@ -460,26 +460,26 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 size={32} className="text-white/60 animate-spin" />
-                    <div className="text-white/60 text-sm">加载文本内容中...</div>
+                    <div className="text-white/60 text-sm">Loading text content...</div>
                   </div>
                 </div>
               ) : previewError ? (
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="flex flex-col items-center gap-2">
                     <AlertCircle size={32} className="text-red-400" />
-                    <div className="text-white/60 text-sm">文本加载失败</div>
+                    <div className="text-white/60 text-sm">Failed to load text</div>
                     <button
                       onClick={handleDownload}
                       className="px-4 py-2 bg-[#1164A3] text-white rounded hover:bg-[#0D4A7C] transition-colors text-sm"
                     >
-                      下载查看
+                      Download to view
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="p-6">
                   <pre className="text-sm text-white/90 whitespace-pre-wrap break-words font-mono" style={{ maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}>
-                    <code>{textContent || '无法加载文件内容'}</code>
+                    <code>{textContent || 'Unable to load file content'}</code>
                   </pre>
                 </div>
               )}
@@ -491,7 +491,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1D] z-10">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 size={32} className="text-white/60 animate-spin" />
-                    <div className="text-white/60 text-sm">加载 Office 预览中...（最多等待10秒）</div>
+                    <div className="text-white/60 text-sm">Loading Office preview... (up to 10 seconds)</div>
                   </div>
                 </div>
               )}
@@ -499,12 +499,12 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1D] z-10">
                   <div className="flex flex-col items-center gap-2">
                     <AlertCircle size={32} className="text-red-400" />
-                    <div className="text-white/60 text-sm">Office 预览加载失败或超时</div>
+                    <div className="text-white/60 text-sm">Office preview failed or timed out</div>
                     <button
                       onClick={handleDownload}
                       className="px-4 py-2 bg-[#1164A3] text-white rounded hover:bg-[#0D4A7C] transition-colors text-sm"
                     >
-                      下载查看
+                      Download to view
                     </button>
                   </div>
                 </div>
@@ -512,7 +512,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
               <iframe
                 src={iframeSrc || ''}
                 className={`w-full h-full border-0 ${previewLoading || previewError ? 'opacity-0' : 'opacity-100'}`}
-                title={`${attachment.fileName} - Office Online 预览`}
+                title={`${attachment.fileName} - Office Online Preview`}
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                 referrerPolicy="no-referrer"
                 onLoad={handleIframeLoad}
@@ -529,12 +529,12 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 <line x1="16" y1="17" x2="8" y2="17" strokeWidth="2"/>
                 <polyline points="10 9 9 9 8 9" strokeWidth="2"/>
               </svg>
-              <p className="text-center mb-4">此文件类型不支持预览</p>
+              <p className="text-center mb-4">This file type is not supported for preview</p>
               <button
                 onClick={handleDownload}
                 className="px-4 py-2 bg-[#1164A3] text-white rounded hover:bg-[#0D4A7C] transition-colors"
               >
-                下载文件
+                Download file
               </button>
             </div>
           )}

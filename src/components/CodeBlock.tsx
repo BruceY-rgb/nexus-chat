@@ -57,24 +57,24 @@ export default function CodeBlock({
             {language || 'auto-detected'}
           </span>
           <span className="text-gray-500">
-            {lines.length} 行
+            {lines.length} lines
           </span>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowLineNumbers(!showLineNumbersState)}
             className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-white p-1 rounded hover:bg-gray-700"
-            title={showLineNumbersState ? '隐藏行号' : '显示行号'}
+            title={showLineNumbersState ? 'Hide line numbers' : 'Show line numbers'}
           >
             {showLineNumbersState ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
           <button
             onClick={handleCopy}
             className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-white px-2 py-1 rounded hover:bg-gray-700 flex items-center gap-1"
-            title="复制代码"
+            title="Copy code"
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}
-            {copied ? '已复制' : '复制'}
+            {copied ? 'Copied' : 'Copy'}
           </button>
         </div>
       </div>

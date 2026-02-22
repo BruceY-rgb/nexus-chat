@@ -18,7 +18,7 @@ export async function GET(
     // 验证 token
     const decoded = verifyToken(token);
     if (!decoded) {
-      return NextResponse.json(unauthorizedResponse("token无效"), {
+      return NextResponse.json(unauthorizedResponse("Invalid token"), {
         status: 401,
       });
     }

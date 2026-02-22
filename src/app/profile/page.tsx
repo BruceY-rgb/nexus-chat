@@ -3,7 +3,7 @@
 // 强制动态渲染 - 因为这个页面使用了客户端状态管理
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Card, Avatar } from '@/components/ui';
@@ -22,8 +22,10 @@ export default function ProfilePage() {
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<ProfileData>({
     displayName: '',
@@ -110,6 +112,81 @@ export default function ProfilePage() {
     }
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file (JPG, PNG, etc.)');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be smaller than 5MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setError('');
+
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('files', file);
+
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        credentials: 'include',
+        body: uploadFormData,
+      });
+
+      if (!uploadResponse.ok) {
+        const data = await uploadResponse.json();
+        throw new Error(data.error || 'Failed to upload image');
+      }
+
+      const uploadData = await uploadResponse.json();
+      const uploadedFile = uploadData.files?.[0];
+
+      if (!uploadedFile?.url) {
+        throw new Error('Upload succeeded but no URL returned');
+      }
+
+      // Update avatar URL in form and save to server
+      const newAvatarUrl = uploadedFile.url;
+      setFormData(prev => ({ ...prev, avatarUrl: newAvatarUrl }));
+
+      // Save the avatar URL to profile immediately
+      const profileResponse = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ ...formData, avatarUrl: newAvatarUrl }),
+      });
+
+      if (!profileResponse.ok) {
+        throw new Error('Failed to update profile with new avatar');
+      }
+
+      const profileData = await profileResponse.json();
+      updateUser(profileData.data.user);
+      setSuccess('Avatar updated successfully');
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload avatar');
+    } finally {
+      setUploadingAvatar(false);
+      // Reset file input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -151,14 +228,23 @@ export default function ProfilePage() {
                 size="xl"
                 fallback={formData.displayName}
               />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
               <button
-                className="absolute bottom-0 right-0 p-2 bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-                onClick={() => {
-                  // TODO: Implement avatar upload feature
-                  console.log('Avatar upload feature to be implemented');
-                }}
+                className="absolute bottom-0 right-0 p-2 bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                onClick={handleAvatarClick}
+                disabled={uploadingAvatar}
               >
-                <Camera className="w-4 h-4 text-white" />
+                {uploadingAvatar ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Camera className="w-4 h-4 text-white" />
+                )}
               </button>
             </div>
             <div className="text-center">

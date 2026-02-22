@@ -160,7 +160,7 @@ export default function NewDirectMessageModal({
         <div className="max-h-96 overflow-y-auto py-2">
           {isSearching ? (
             <div className="px-4 py-8 text-center text-sm text-gray-500">
-              搜索中...
+              Searching...
             </div>
           ) : displayMembers.length > 0 ? (
             <div className="space-y-0.5">

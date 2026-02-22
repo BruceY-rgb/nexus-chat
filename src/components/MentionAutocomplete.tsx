@@ -204,7 +204,7 @@ export default function MentionAutocomplete({
         }}
       >
         <div className="text-white/60 text-sm px-2 py-1.5 text-center">
-          未找到匹配的成员
+          No matching members found
         </div>
       </div>
     );
@@ -285,7 +285,7 @@ export default function MentionAutocomplete({
       {/* 底部提示 */}
       <div className="border-t border-[#3A3A3D] px-3 py-2">
         <div className="text-xs text-white/50 flex items-center justify-between">
-          <span>↑↓ 选择 • Enter 确认 • Esc 关闭</span>
+          <span>↑↓ Navigate • Enter Select • Esc Close</span>
         </div>
       </div>
     </div>
