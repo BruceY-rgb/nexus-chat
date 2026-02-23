@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Attachment } from '@/types/message';
+import { getProxyUrl } from '@/lib/file-proxy';
 import {
   X,
   Download,
@@ -14,6 +15,14 @@ import {
   AlertCircle,
   Loader2
 } from 'lucide-react';
+
+// Helper to get the correct file URL (bypass CORS)
+function getFileUrl(attachment: Attachment): string {
+  if (attachment.thumbnailUrl) {
+    return attachment.thumbnailUrl;
+  }
+  return getProxyUrl(attachment.filePath);
+}
 
 interface FilePreviewContentProps {
   attachment: Attachment;
@@ -51,7 +60,9 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
-        const response = await fetch(attachment.filePath, {
+        // Use proxy URL to bypass CORS
+        const proxyUrl = getFileUrl(attachment);
+        const response = await fetch(proxyUrl, {
           method: 'HEAD',
           signal: controller.signal
         });
@@ -67,7 +78,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
     };
 
     checkFileUrl();
-  }, [attachment.filePath]);
+  }, [attachment]);
 
   // 处理键盘事件
   useEffect(() => {
@@ -113,7 +124,8 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
   useEffect(() => {
     if (attachment && (isPDF || isOfficeDoc)) {
       const timer = setTimeout(() => {
-        let src = attachment.filePath;
+        // Use proxy URL for CORS bypass
+        let src = getFileUrl(attachment);
 
         // 为 PDF 添加 inline 参数，强制内联显示
         if (isPDF) {
@@ -121,9 +133,9 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
           src = `${src}${separator}response-content-disposition=inline`;
         }
 
-        // Office 文档预览
+        // Office 文档预览 - 需要原始文件URL
         if (isOfficeDoc) {
-          src = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(attachment.filePath)}`;
+          src = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(getFileUrl(attachment))}`;
         }
 
         setIframeSrc(src);
@@ -137,7 +149,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
   useEffect(() => {
     if (attachment && isText) {
       setLoadingText(true);
-      fetch(attachment.filePath)
+      fetch(getFileUrl(attachment))
         .then(response => response.text())
         .then(content => {
           setTextContent(content);
@@ -168,7 +180,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
     }
 
     const link = document.createElement('a');
-    link.href = attachment.filePath;
+    link.href = getFileUrl(attachment);
     link.download = attachment.fileName;
     document.body.appendChild(link);
     link.click();
@@ -386,7 +398,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 </div>
               )}
               <img
-                src={attachment.thumbnailUrl || attachment.filePath}
+                src={getFileUrl(attachment)}
                 alt={attachment.fileName}
                 className={`max-w-none transition-transform duration-200 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} ${previewLoading || previewError ? 'opacity-0' : 'opacity-100'}`}
                 style={{
@@ -433,7 +445,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
                 </div>
               )}
               <iframe
-                src={attachment.filePath}
+                src={getFileUrl(attachment)}
                 className={`w-full h-full border-0 ${previewLoading || previewError ? 'opacity-0' : 'opacity-100'}`}
                 title={`${attachment.fileName} - PDF Preview`}
                 onLoad={handleIframeLoad}
@@ -444,7 +456,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
             // 视频预览
             <div className="w-full h-full flex items-center justify-center bg-black">
               <video
-                src={attachment.filePath}
+                src={getFileUrl(attachment)}
                 controls
                 autoPlay
                 className="max-w-full max-h-full"

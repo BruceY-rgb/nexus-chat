@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Attachment } from '@/types/message';
+import { getProxyUrl } from '@/lib/file-proxy';
 import {
   Download,
   Eye,
@@ -11,6 +12,14 @@ import {
   Table,
   Archive
 } from 'lucide-react';
+
+// Helper to get the correct file URL
+function getFileUrl(attachment: { thumbnailUrl?: string | null; filePath: string }): string {
+  if (attachment.thumbnailUrl) {
+    return attachment.thumbnailUrl;
+  }
+  return getProxyUrl(attachment.filePath);
+}
 
 // 动态导入 FilePreviewModal，禁用 SSR
 const FilePreviewModal = dynamic(
@@ -107,7 +116,7 @@ export default function AttachmentCard({ attachment }: AttachmentCardProps) {
           <div className={`flex-shrink-0 w-12 h-12 rounded flex items-center justify-center ${getFileIconBg()}`}>
             {isImage ? (
               <img
-                src={attachment.thumbnailUrl || attachment.filePath}
+                src={getFileUrl(attachment)}
                 alt={attachment.fileName}
                 className="w-full h-full object-cover rounded"
                 onError={(e) => {

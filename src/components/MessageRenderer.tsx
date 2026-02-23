@@ -8,6 +8,7 @@ import AttachmentCard from './AttachmentCard';
 import MarkdownRenderer from './MarkdownRenderer';
 import { MarkdownProcessor } from '@/lib/markdown';
 import { convertShortcodesToEmoji } from '@/lib/emoji';
+import { getProxyUrl } from '@/lib/file-proxy';
 import { X } from 'lucide-react';
 
 interface MessageRendererProps {
@@ -129,6 +130,17 @@ interface MentionedUser {
 }
 
 /**
+ * Helper to get the correct file URL (using proxy to bypass CORS)
+ */
+function getFileUrl(attachment: { thumbnailUrl?: string | null; filePath: string }): string {
+  // Prefer thumbnailUrl if available, otherwise use filePath with proxy
+  if (attachment.thumbnailUrl) {
+    return attachment.thumbnailUrl;
+  }
+  return getProxyUrl(attachment.filePath);
+}
+
+/**
  * 将消息内容中的 @提及高亮显示
  * 支持 Token 化提及和传统文本提及
  */
@@ -152,7 +164,7 @@ export default function MessageRenderer({
   // 获取当前选中的图片
   const imageAttachments = message.attachments?.filter(att => att.mimeType.startsWith('image/')) || [];
   const selectedImage = selectedImageIndex !== null ? {
-    src: imageAttachments[selectedImageIndex].thumbnailUrl || imageAttachments[selectedImageIndex].filePath,
+    src: getFileUrl(imageAttachments[selectedImageIndex]),
     alt: imageAttachments[selectedImageIndex].fileName
   } : null;
 
@@ -328,7 +340,7 @@ export default function MessageRenderer({
                 return (
                   <div className="relative group cursor-pointer rounded-lg overflow-hidden max-w-md">
                     <img
-                      src={imageAttachments[0].thumbnailUrl || imageAttachments[0].filePath}
+                      src={getFileUrl(imageAttachments[0])}
                       alt={imageAttachments[0].fileName}
                       className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
                       style={{ maxHeight: '400px' }}
@@ -372,7 +384,7 @@ export default function MessageRenderer({
                         }}
                       >
                         <img
-                          src={attachment.thumbnailUrl || attachment.filePath}
+                          src={getFileUrl(attachment)}
                           alt={attachment.fileName}
                           className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
                           style={{ aspectRatio: '1', maxHeight: '200px' }}
@@ -406,7 +418,7 @@ export default function MessageRenderer({
                       onClick={() => setSelectedImageIndex(0)}
                     >
                       <img
-                        src={imageAttachments[0].thumbnailUrl || imageAttachments[0].filePath}
+                        src={getFileUrl(imageAttachments[0])}
                         alt={imageAttachments[0].fileName}
                         className="w-full h-full object-cover hover:opacity-90 transition-opacity"
                         style={{ aspectRatio: '1', maxHeight: '400px' }}
@@ -425,7 +437,7 @@ export default function MessageRenderer({
                         }}
                       >
                         <img
-                          src={attachment.thumbnailUrl || attachment.filePath}
+                          src={getFileUrl(attachment)}
                           alt={attachment.fileName}
                           className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
                           style={{ aspectRatio: '1' }}
@@ -466,7 +478,7 @@ export default function MessageRenderer({
                         }}
                       >
                         <img
-                          src={attachment.thumbnailUrl || attachment.filePath}
+                          src={getFileUrl(attachment)}
                           alt={attachment.fileName}
                           className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
                           style={{ aspectRatio: '1' }}
@@ -507,7 +519,7 @@ export default function MessageRenderer({
                         }}
                       >
                         <img
-                          src={attachment.thumbnailUrl || attachment.filePath}
+                          src={getFileUrl(attachment)}
                           alt={attachment.fileName}
                           className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
                           style={{ aspectRatio: '1' }}
