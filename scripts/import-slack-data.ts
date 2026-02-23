@@ -294,6 +294,13 @@ async function importUsers(slackData: SlackData): Promise<UserMapping[]> {
       });
 
       if (existingUser) {
+        // Update slackUserId if not already set
+        if (!existingUser.slackUserId) {
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: { slackUserId: slackUser.id },
+          });
+        }
         userMappings.push({
           slackUserId: slackUser.id,
           localUserId: existingUser.id,
@@ -315,6 +322,7 @@ async function importUsers(slackData: SlackData): Promise<UserMapping[]> {
             slackUser.real_name ||
             slackUser.name,
           avatarUrl: slackUser.profile.image_72 || null,
+          slackUserId: slackUser.id,
           emailVerifiedAt: new Date(),
         },
       });

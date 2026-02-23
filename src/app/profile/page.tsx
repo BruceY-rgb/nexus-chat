@@ -153,12 +153,12 @@ export default function ProfilePage() {
       const uploadData = await uploadResponse.json();
       const uploadedFile = uploadData.files?.[0];
 
-      if (!uploadedFile?.url) {
+      if (!uploadedFile?.fileUrl) {
         throw new Error('Upload succeeded but no URL returned');
       }
 
       // Update avatar URL in form and save to server
-      const newAvatarUrl = uploadedFile.url;
+      const newAvatarUrl = uploadedFile.fileUrl;
       setFormData(prev => ({ ...prev, avatarUrl: newAvatarUrl }));
 
       // Save the avatar URL to profile immediately

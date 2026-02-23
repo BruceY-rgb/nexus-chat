@@ -74,51 +74,81 @@ const EmojiText = ({ text }: { text: string }) => {
   );
 };
 
-/**
- * 处理Token格式@提及的组件
- */
-const MentionWrapper = ({
-  children,
-  members,
-  currentUserId
-}: {
-  children: React.ReactNode;
-  members: TeamMember[];
-  currentUserId: string;
-}) => {
-  const text = String(children);
-  const tokenInfo = MarkdownProcessor.extractToken(text);
-
-  if (tokenInfo) {
-    const { userId, displayName } = tokenInfo;
-    const member = members.find(m => m.id === userId);
-    const actualDisplayName = member?.displayName || displayName;
-
-    return (
-      <MentionToken
-        userId={userId}
-        displayName={actualDisplayName}
-        isCurrentUserMentioned={userId === currentUserId}
-        onRemove={() => {}}
-        isEditing={false}
-      />
-    );
-  }
-
-  // 如果不是Token格式，正常渲染内容（包括Emoji）
-  return <EmojiText text={text} />;
-};
-
 export default function MarkdownRenderer({
   content,
   members = [],
   currentUserId,
   className = ''
 }: MarkdownRendererProps) {
-  // 预处理：保护Token格式@提及
+  console.log("[MarkdownRenderer] Received members:", members);
+  // Preprocess: convert Slack format markup, then protect Token @mentions
   const protectedContent = useMemo(() => {
-    return MarkdownProcessor.protectTokens(content || '');
-  }, [content]);
+    let processed = content || '';
+    // Convert Slack format (<url|label>, <@UXXXX>, &amp; etc.) to standard markdown
+    // Pass members to enable user ID → username mapping
+    if (MarkdownProcessor.hasSlackFormat(processed)) {
+      processed = MarkdownProcessor.convertSlackFormat(processed, members);
+    }
+    return MarkdownProcessor.protectTokens(processed);
+  }, [content, members]);
+
+  /**
+   * Process React children from ReactMarkdown, replacing any
+   * [[MENTION_TOKEN:userId:displayName]] text segments with MentionToken components.
+   * This is needed because ReactMarkdown renders plain text as text nodes inside <p>,
+   * not as <span> elements, so the span handler never fires for mention tokens.
+   */
+  const processMentionTokens = (children: React.ReactNode): React.ReactNode => {
+    return React.Children.map(children, (child) => {
+      if (typeof child === 'string') {
+        const tokenPattern = /\[\[MENTION_TOKEN:([^:]+):([^\]]+)\]\]/g;
+        const parts: React.ReactNode[] = [];
+        let lastIndex = 0;
+        let match;
+
+        while ((match = tokenPattern.exec(child)) !== null) {
+          // Text before the token
+          if (match.index > lastIndex) {
+            parts.push(child.slice(lastIndex, match.index));
+          }
+          // The mention token
+          const userId = match[1];
+          const displayName = match[2];
+          // First try to match by slackUserId, then fall back to id
+          const member = members.find(m => m.slackUserId === userId || m.id === userId);
+          const actualDisplayName = member?.displayName || displayName;
+          parts.push(
+            <MentionToken
+              key={`mention-${match.index}`}
+              userId={userId}
+              displayName={actualDisplayName}
+              isCurrentUserMentioned={userId === currentUserId}
+              onRemove={() => {}}
+              isEditing={false}
+            />
+          );
+          lastIndex = match.index + match[0].length;
+        }
+
+        if (parts.length === 0) {
+          return child; // No tokens found, return original string
+        }
+        // Remaining text after last token
+        if (lastIndex < child.length) {
+          parts.push(child.slice(lastIndex));
+        }
+        return <>{parts}</>;
+      }
+      // If it's a React element, recurse into its children
+      if (React.isValidElement(child) && child.props.children) {
+        return React.cloneElement(child, {
+          ...child.props,
+          children: processMentionTokens(child.props.children),
+        });
+      }
+      return child;
+    });
+  };
 
   // 智能检测是否包含Markdown语法
   const hasMarkdownSyntax = useMemo(() => {
@@ -198,7 +228,7 @@ export default function MarkdownRenderer({
               className="border-l-4 border-gray-600 pl-4 italic text-gray-300 my-2 bg-gray-800/50 py-2"
               {...props}
             >
-              {children}
+              {processMentionTokens(children)}
             </blockquote>
           ),
 
@@ -265,27 +295,27 @@ export default function MarkdownRenderer({
 
           li: ({ node, children, ...props }) => (
             <li className="text-gray-200 text-sm leading-relaxed" {...props}>
-              {children}
+              {processMentionTokens(children)}
             </li>
           ),
 
           // 段落组件
           p: ({ node, children, ...props }) => (
             <p className="text-gray-200 text-sm leading-relaxed mb-2" {...props}>
-              {children}
+              {processMentionTokens(children)}
             </p>
           ),
 
           // 强调组件
           strong: ({ node, children, ...props }) => (
             <strong className="font-bold text-white" {...props}>
-              {children}
+              {processMentionTokens(children)}
             </strong>
           ),
 
           em: ({ node, children, ...props }) => (
             <em className="italic text-gray-300" {...props}>
-              {children}
+              {processMentionTokens(children)}
             </em>
           ),
 
@@ -296,17 +326,9 @@ export default function MarkdownRenderer({
             </s>
           ),
 
-          // 处理Token格式@提及和Emoji
+          // Emoji handling for span elements
           span: ({ node, children, ...props }) => {
             const text = String(children);
-            // 检查是否包含Token标记
-            if (text.includes('[[MENTION_TOKEN:')) {
-              return (
-                <MentionWrapper members={members} currentUserId={currentUserId}>
-                  {children}
-                </MentionWrapper>
-              );
-            }
             // 检查是否包含Emoji
             if (/(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})/u.test(text)) {
               return (

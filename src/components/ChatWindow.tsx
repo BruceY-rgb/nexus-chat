@@ -37,8 +37,11 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
   const [newMessage, setNewMessage] = useState('');
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { socket, isConnected, connectionStatus, joinChannel, leaveChannel, joinDM, leaveDM, sendTypingStart, sendTypingStop } = useSocket();
@@ -48,10 +51,14 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, []);
 
+  const isInitialLoadRef = useRef(true);
+
   useEffect(() => {
-    // 延迟执行以确保DOM已渲染
+    // Only scroll to bottom on initial load, not when loading older messages
+    if (!isInitialLoadRef.current) return;
     const timer = setTimeout(() => {
       scrollToBottom();
+      isInitialLoadRef.current = false;
     }, 100);
     return () => clearTimeout(timer);
   }, [messages, scrollToBottom]);
@@ -67,14 +74,18 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
   }, []);
 
   // 加载历史消息
+  const PAGE_SIZE = 50;
+
   const loadMessages = useCallback(async () => {
     if (!channelId && !dmConversationId) return;
 
     setIsLoading(true);
+    setHasMore(true);
     try {
       const params = new URLSearchParams();
       if (channelId) params.append('channelId', channelId);
       if (dmConversationId) params.append('dmConversationId', dmConversationId);
+      params.append('limit', String(PAGE_SIZE));
 
       const response = await fetch(`/api/messages?${params}`, {
         credentials: 'include'
@@ -85,13 +96,63 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
       }
 
       const data = await response.json();
-      setMessages(data.reverse()); // 反转数组，最早的消息在前面
+      setMessages(data.reverse());
+      setHasMore(data.length >= PAGE_SIZE);
     } catch (error) {
       console.error('Error loading messages:', error);
     } finally {
       setIsLoading(false);
     }
   }, [channelId, dmConversationId]);
+
+  const loadOlderMessages = useCallback(async () => {
+    if ((!channelId && !dmConversationId) || isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const container = scrollContainerRef.current;
+      const prevScrollHeight = container?.scrollHeight || 0;
+
+      const params = new URLSearchParams();
+      if (channelId) params.append('channelId', channelId);
+      if (dmConversationId) params.append('dmConversationId', dmConversationId);
+      params.append('limit', String(PAGE_SIZE));
+      params.append('offset', String(messages.length));
+
+      const response = await fetch(`/api/messages?${params}`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        setIsLoadingMore(false);
+        return;
+      }
+
+      const data = await response.json();
+      setHasMore(data.length >= PAGE_SIZE);
+      if (data.length > 0) {
+        setMessages((prev) => [...data.reverse(), ...prev]);
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight - prevScrollHeight;
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error loading older messages:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [channelId, dmConversationId, isLoadingMore, hasMore, messages.length]);
+
+  // Scroll handler for loading more messages
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container || isLoadingMore || !hasMore) return;
+    if (container.scrollTop < 100) {
+      loadOlderMessages();
+    }
+  }, [isLoadingMore, hasMore, loadOlderMessages]);
 
   // 加入房间
   useEffect(() => {
@@ -272,7 +333,17 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
       </div>
 
       {/* 消息列表 - 独立滚动 */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 message-scroll">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 message-scroll"
+      >
+        {isLoadingMore && (
+          <div className="text-center py-2">
+            <div className="inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-gray-500 text-xs ml-2">Loading older messages...</span>
+          </div>
+        )}
         {isLoading ? (
           <div className="text-center text-gray-500">Loading...</div>
         ) : messages.length === 0 ? (

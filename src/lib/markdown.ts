@@ -1,6 +1,65 @@
 import { TeamMember } from "@/types";
+import { convertShortcodesToEmoji } from "./emoji";
 
 export class MarkdownProcessor {
+  /**
+   * Convert Slack-format markup to standard markdown.
+   * Handles:
+   * - <url|label> → [label](url)
+   * - <url> → [url](url)
+   * - <@UXXXX> → **@username** (styled mention)
+   * - &amp; &lt; &gt; → decoded HTML entities
+   * - :emoji_name: → Unicode emoji
+   */
+  static convertSlackFormat(
+    content: string,
+    members: { id: string; slackUserId?: string | null; displayName: string }[] = [],
+  ): string {
+    if (!content) return content;
+
+    let result = content;
+
+    // 1. Convert Slack links: <url|label> → [label](url)
+    result = result.replace(
+      /<(https?:\/\/[^|>]+)\|([^>]+)>/g,
+      (_, url, label) => `[${label}](${url})`,
+    );
+
+    // 2. Convert bare Slack links: <url> → [url](url)
+    result = result.replace(
+      /<(https?:\/\/[^>]+)>/g,
+      (_, url) => `[${url}](${url})`,
+    );
+
+    // 3. Convert Slack mentions: <@UXXXX> → @{UXXXX:username} for later token processing
+    // If user is found in members, use their displayName; otherwise use the ID
+    result = result.replace(/<@([A-Z0-9]+)>/g, (_, slackUserId) => {
+      // First try to match by slackUserId, then fall back to id
+      const member = members.find(m => m.slackUserId === slackUserId || m.id === slackUserId);
+      const displayName = member?.displayName || slackUserId;
+      return `@{${slackUserId}:${displayName}}`;
+    });
+
+    // 4. Decode HTML entities from Slack
+    result = result.replace(/&amp;/g, "&");
+    result = result.replace(/&lt;/g, "<");
+    result = result.replace(/&gt;/g, ">");
+
+    // 5. Convert emoji shortcodes: :emoji_name: → Unicode emoji
+    result = convertShortcodesToEmoji(result);
+
+    return result;
+  }
+
+  /**
+   * Check if content contains Slack-format markup
+   */
+  static hasSlackFormat(content: string): boolean {
+    return /<(?:https?:\/\/|@[A-Z0-9])/.test(content) ||
+      /&amp;|&lt;|&gt;/.test(content) ||
+      /:[a-z0-9_+\-]+:/.test(content);
+  }
+
   /**
    * Preprocess message content, protect token format @mentions
    * Temporarily replace @{userId:displayName} format with markers for later processing
@@ -41,6 +100,8 @@ export class MarkdownProcessor {
    * 2. If contains other Markdown syntax, use Markdown rendering
    */
   static shouldUseMarkdown(content: string): boolean {
+    // If contains Slack format markup, always use Markdown rendering
+    if (this.hasSlackFormat(content)) return true;
     // If contains token format but no other Markdown syntax, fallback to existing rendering
     if (/@\{[^}]+\}/.test(content) && !this.hasMarkdownSyntax(content)) {
       return false;

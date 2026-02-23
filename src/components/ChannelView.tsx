@@ -38,6 +38,8 @@ export default function ChannelView({
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [showMembersList, setShowMembersList] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -191,6 +193,7 @@ export default function ChannelView({
       const response = await fetch(`/api/channels/${channel.id}/members`);
       if (response.ok) {
         const data = await response.json();
+        console.log("[ChannelView] Members from API:", data.members);
         setMembers(data.members || []);
       }
     } catch (error) {
@@ -249,6 +252,8 @@ export default function ChannelView({
   };
 
   // Get channel messages
+  const PAGE_SIZE = 50;
+
   const fetchMessages = async () => {
     if (!channel?.id || !isJoined) {
       setMessages([]);
@@ -257,7 +262,8 @@ export default function ChannelView({
 
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/messages?channelId=${channel.id}`);
+      setHasMore(true);
+      const response = await fetch(`/api/messages?channelId=${channel.id}&limit=${PAGE_SIZE}`);
 
       if (!response.ok) {
         setMessages([]);
@@ -267,6 +273,7 @@ export default function ChannelView({
 
       const data = await response.json();
       setMessages(data.reverse());
+      setHasMore(data.length >= PAGE_SIZE);
       setIsLoading(false);
     } catch (err) {
       console.error("Error fetching messages:", err);
@@ -274,6 +281,41 @@ export default function ChannelView({
       setIsLoading(false);
     }
   };
+
+  const fetchOlderMessages = useCallback(async () => {
+    if (!channel?.id || !isJoined || isLoadingMore || !hasMore) return;
+
+    try {
+      setIsLoadingMore(true);
+      const container = document.getElementById("messages-scroll-container");
+      const prevScrollHeight = container?.scrollHeight || 0;
+
+      const response = await fetch(
+        `/api/messages?channelId=${channel.id}&limit=${PAGE_SIZE}&offset=${messages.length}`,
+      );
+
+      if (!response.ok) {
+        setIsLoadingMore(false);
+        return;
+      }
+
+      const data = await response.json();
+      setHasMore(data.length >= PAGE_SIZE);
+      if (data.length > 0) {
+        setMessages((prev) => [...data.reverse(), ...prev]);
+        // Restore scroll position after prepending
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight - prevScrollHeight;
+          }
+        });
+      }
+      setIsLoadingMore(false);
+    } catch (err) {
+      console.error("Error fetching older messages:", err);
+      setIsLoadingMore(false);
+    }
+  }, [channel?.id, isJoined, isLoadingMore, hasMore, messages.length]);
 
   // Get messages when join state changes
   useEffect(() => {
@@ -713,6 +755,9 @@ export default function ChannelView({
                         messages={messages}
                         currentUserId={user?.id || ""}
                         isLoading={isLoading}
+                        isLoadingMore={isLoadingMore}
+                        hasMore={hasMore}
+                        onLoadMore={fetchOlderMessages}
                         className="h-full w-full"
                         channelId={channel?.id}
                         onScrollPositionChange={handleScrollPositionChange}
@@ -720,6 +765,7 @@ export default function ChannelView({
                         onDeleteMessage={handleDeleteMessage}
                         onThreadReply={handleThreadReply}
                         onQuote={handleQuote}
+                        members={members}
                       />
                     </div>
 

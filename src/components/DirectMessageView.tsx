@@ -28,6 +28,8 @@ export default function DirectMessageView({
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversation, setConversation] = useState<DMConversation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
     "messages" | "canvas" | "files" | "shared"
@@ -264,11 +266,14 @@ export default function DirectMessageView({
   };
 
   // Get message list
+  const PAGE_SIZE = 50;
+
   const fetchMessages = async (conversationId: string) => {
     try {
       setIsLoading(true);
+      setHasMore(true);
       const response = await fetch(
-        `/api/messages?dmConversationId=${conversationId}`,
+        `/api/messages?dmConversationId=${conversationId}&limit=${PAGE_SIZE}`,
       );
 
       if (!response.ok) {
@@ -276,7 +281,8 @@ export default function DirectMessageView({
       }
 
       const data = await response.json();
-      setMessages(data.reverse()); // Reverse to show newest messages
+      setMessages(data.reverse());
+      setHasMore(data.length >= PAGE_SIZE);
       setIsLoading(false);
     } catch (err) {
       console.error("Error fetching messages:", err);
@@ -284,6 +290,40 @@ export default function DirectMessageView({
       setIsLoading(false);
     }
   };
+
+  const fetchOlderMessages = useCallback(async () => {
+    if (!conversation?.id || isLoadingMore || !hasMore) return;
+
+    try {
+      setIsLoadingMore(true);
+      const container = document.getElementById("messages-scroll-container");
+      const prevScrollHeight = container?.scrollHeight || 0;
+
+      const response = await fetch(
+        `/api/messages?dmConversationId=${conversation.id}&limit=${PAGE_SIZE}&offset=${messages.length}`,
+      );
+
+      if (!response.ok) {
+        setIsLoadingMore(false);
+        return;
+      }
+
+      const data = await response.json();
+      setHasMore(data.length >= PAGE_SIZE);
+      if (data.length > 0) {
+        setMessages((prev) => [...data.reverse(), ...prev]);
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight - prevScrollHeight;
+          }
+        });
+      }
+      setIsLoadingMore(false);
+    } catch (err) {
+      console.error("Error fetching older messages:", err);
+      setIsLoadingMore(false);
+    }
+  }, [conversation?.id, isLoadingMore, hasMore, messages.length]);
 
   // Initial load
   useEffect(() => {
@@ -467,6 +507,9 @@ export default function DirectMessageView({
                   messages={messages}
                   currentUserId={currentUserId}
                   isLoading={isLoading}
+                  isLoadingMore={isLoadingMore}
+                  hasMore={hasMore}
+                  onLoadMore={fetchOlderMessages}
                   className="h-full w-full"
                   dmConversationId={
                     conversation?.id && !conversation.id.startsWith("self-")
