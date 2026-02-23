@@ -7,6 +7,7 @@ import MentionToken from './MentionToken';
 import AttachmentCard from './AttachmentCard';
 import MarkdownRenderer from './MarkdownRenderer';
 import { MarkdownProcessor } from '@/lib/markdown';
+import { convertShortcodesToEmoji } from '@/lib/emoji';
 import { X } from 'lucide-react';
 
 interface MessageRendererProps {
@@ -248,24 +249,27 @@ export default function MessageRenderer({
    * 和混合文本中的中等尺寸 Emoji
    */
   const EmojiText = ({ text }: { text: string }) => {
+    // Convert Slack :shortcode: to Unicode emoji first
+    const convertedText = convertShortcodesToEmoji(text);
+
     // 匹配各种 Unicode 范围的 Emoji 字符
     // 包括：基本多语言平面、补充多语言平面、杂项符号、表情符号等
     const emojiRegex = /(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})/gu;
 
     // 检查是否是纯 Emoji 文本（去除空格和换行后）
-    const isPureEmoji = text.replace(/\s/g, '').match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})+$/u);
+    const isPureEmoji = convertedText.replace(/\s/g, '').match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})+$/u);
 
     if (isPureEmoji) {
       // 纯 Emoji 消息：统一14px字体大小
       return (
         <span style={{ fontSize: '14px', lineHeight: '1.5' }}>
-          {text}
+          {convertedText}
         </span>
       );
     }
 
     // 混合文本：按字符分割并渲染
-    const parts = [...text];
+    const parts = [...convertedText];
 
     return (
       <>

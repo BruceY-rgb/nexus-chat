@@ -12,7 +12,7 @@ import {
 import { useSearchParams } from "next/navigation";
 import { Message } from "@/types/message";
 import { format, formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import MessageItem from "./MessageItem";
 import { useReadProgress } from "@/hooks/useReadProgress";
 
@@ -20,6 +20,9 @@ interface MessageListProps {
   messages: Message[];
   currentUserId: string;
   isLoading?: boolean;
+  isLoadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
   className?: string;
   channelId?: string;
   dmConversationId?: string;
@@ -28,6 +31,7 @@ interface MessageListProps {
   onDeleteMessage?: (messageId: string) => Promise<void>;
   onThreadReply?: (message: Message) => void;
   onQuote?: (message: Message) => void;
+  members?: { id: string; displayName: string }[];
 }
 
 export interface MessageListRef {
@@ -40,6 +44,9 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       messages,
       currentUserId,
       isLoading = false,
+      isLoadingMore = false,
+      hasMore = false,
+      onLoadMore,
       className = "",
       channelId,
       dmConversationId,
@@ -48,12 +55,25 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       onDeleteMessage,
       onThreadReply,
       onQuote,
+      members,
     },
     ref,
   ) => {
     const searchParams = useSearchParams();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const topSentinelRef = useRef<HTMLDivElement>(null);
+    const isInitialLoadRef = useRef(true);
+    const prevChannelRef = useRef(channelId);
+    const prevDmRef = useRef(dmConversationId);
+
+    // Reset initial load flag when channel/conversation changes
+    if (prevChannelRef.current !== channelId || prevDmRef.current !== dmConversationId) {
+      isInitialLoadRef.current = true;
+      prevChannelRef.current = channelId;
+      prevDmRef.current = dmConversationId;
+    }
+
     const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
     const [showReadIndicator] = useState<string | null>(null);
     const [highlightedMessageId, setHighlightedMessageId] = useState<
@@ -180,6 +200,24 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       };
     }, [onScrollPositionChange, messages]);
 
+    // Infinite scroll: load more when scrolling near top
+    useEffect(() => {
+      const sentinel = topSentinelRef.current;
+      if (!sentinel || !onLoadMore || !hasMore || isLoadingMore) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            onLoadMore();
+          }
+        },
+        { rootMargin: "200px" },
+      );
+
+      observer.observe(sentinel);
+      return () => observer.disconnect();
+    }, [onLoadMore, hasMore, isLoadingMore]);
+
     // Listen for scroll and automatically report read progress
     useEffect(() => {
       const observer = new IntersectionObserver(
@@ -237,9 +275,12 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
           setHighlightedMessageId(null);
         }, 2000);
       } else {
-        // When no specific message, scroll to bottom and clear highlight
+        // When no specific message, scroll to bottom only on initial load
         setHighlightedMessageId(null);
-        scrollToBottom();
+        if (isInitialLoadRef.current) {
+          scrollToBottom();
+          isInitialLoadRef.current = false;
+        }
       }
     }, [searchParams, messages]);
 
@@ -284,12 +325,12 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
         const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
         if (diffInHours < 24) {
-          return format(date, "HH:mm", { locale: zhCN });
+          return format(date, "HH:mm", { locale: enUS });
         } else if (diffInHours < 168) {
           // 7 days
-          return format(date, "MM/dd HH:mm", { locale: zhCN });
+          return format(date, "MM/dd HH:mm", { locale: enUS });
         } else {
-          return format(date, "yyyy/MM/dd HH:mm", { locale: zhCN });
+          return format(date, "yyyy/MM/dd HH:mm", { locale: enUS });
         }
       },
       [],
@@ -320,9 +361,9 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
         } else if (diffInDays === 1) {
           return "Yesterday";
         } else if (diffInDays < 7) {
-          return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
+          return formatDistanceToNow(date, { addSuffix: true, locale: enUS });
         } else {
-          return format(date, "yyyy-MM-dd", { locale: zhCN });
+          return format(date, "yyyy-MM-dd", { locale: enUS });
         }
       },
       [],
@@ -440,6 +481,14 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
         id="messages-scroll-container"
       >
         <div className="max-w-4xl mx-auto w-full">
+          {/* Top sentinel for infinite scroll */}
+          <div ref={topSentinelRef} className="h-1" />
+          {isLoadingMore && (
+            <div className="text-center py-3">
+              <div className="inline-block w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-text-secondary text-xs mt-1">Loading older messages...</p>
+            </div>
+          )}
           {Object.entries(messageGroups).map(([dateKey, dayMessages]) => (
             <div key={dateKey}>
               {/* Date divider */}
@@ -477,6 +526,7 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
                       formatMessageTime={formatMessageTime}
                       messageRefs={messageRefs}
                       scrollContainerRef={scrollContainerRef}
+                      members={members}
                     />
                   );
                 })}

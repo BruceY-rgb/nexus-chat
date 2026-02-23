@@ -5,7 +5,7 @@
 """
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 print("Loading slack-data.json...")
 with open('/Users/yangsmac/Desktop/Slack/slack-data.json', 'r') as f:
@@ -45,6 +45,16 @@ def escape_sql(s):
     if s is None:
         return ''
     return str(s).replace("'", "''")
+
+# Convert Slack timestamp to PostgreSQL timestamp string
+def slack_ts_to_pg(ts_str):
+    """Convert Slack ts like '1770773385.109779' to PostgreSQL timestamp."""
+    try:
+        ts_float = float(ts_str)
+        dt = datetime.fromtimestamp(ts_float, tz=timezone.utc)
+        return dt.strftime('%Y-%m-%d %H:%M:%S+00')
+    except (ValueError, TypeError, OSError):
+        return None
 
 # 生成用户数据 - 使用批量插入
 users_list = []
@@ -127,6 +137,23 @@ sql_content += ',\n'.join(channel_values) + ';\n\n'
 
 print(f"Generated {len(channels_list)} channels")
 
+# Build Slack ID → local user lookup for resolving <@UXXXX> mentions
+import re
+slack_id_to_user = {u['slack_id']: u for u in users_list}
+
+def resolve_slack_mentions(text):
+    """Convert <@UXXXX> to @{localUUID:displayName} token format.
+    For unresolvable users, strip the angle brackets leaving @UXXXX."""
+    def replace_mention(m):
+        sid = m.group(1)
+        u = slack_id_to_user.get(sid)
+        if u:
+            name = u['display_name'] or u['real_name'] or u['name']
+            return f"@{{{u['id']}:{name}}}"
+        # User not in export — strip <> but keep @ID for readable fallback
+        return f"@{sid}"
+    return re.sub(r'<@([A-Z0-9]+)>', replace_mention, text)
+
 # 3. Messages
 print("Generating messages...")
 sql_content += "-- 消息数据\n"
@@ -141,7 +168,10 @@ for channel_id, msgs in data['messages'].items():
 
     for msg in msgs:
         msg_type = msg.get('type', 'message')
-        text = escape_sql(msg.get('text', ''))  # 转义单引号并保留实际的换行符
+        raw_text = msg.get('text', '')
+        # Resolve <@UXXXX> Slack mentions to @{localUUID:displayName} tokens
+        resolved_text = resolve_slack_mentions(raw_text)
+        text = escape_sql(resolved_text)
         user_slack_id = msg.get('user', '')
 
         # 找到对应的用户 UUID
@@ -157,12 +187,16 @@ for channel_id, msgs in data['messages'].items():
         # 生成消息 UUID
         msg_uuid = str(uuid.uuid5(uuid.NAMESPACE_URL, f"{channel_id}-{msg.get('ts', '')}"))
 
+        # Convert Slack timestamp to real datetime
+        pg_ts = slack_ts_to_pg(msg.get('ts', ''))
+
         all_messages.append({
             'id': msg_uuid,
             'channel_id': channel_uuid,
             'user_id': user_uuid,
             'content': text,
-            'message_type': msg_type
+            'message_type': msg_type,
+            'ts': pg_ts
         })
 
 # 批量插入消息
@@ -172,7 +206,8 @@ for i in range(0, len(all_messages), batch_size):
     sql_content += "INSERT INTO messages (id, content, message_type, channel_id, user_id, created_at, updated_at, is_thread_root) VALUES\n"
     values = []
     for m in batch:
-        values.append(f"('{m['id']}', '{m['content']}', '{m['message_type']}', '{m['channel_id']}', '{m['user_id']}', NOW(), NOW(), false)")
+        ts_val = f"'{m['ts']}'" if m.get('ts') else 'NOW()'
+        values.append(f"('{m['id']}', '{m['content']}', '{m['message_type']}', '{m['channel_id']}', '{m['user_id']}', {ts_val}, {ts_val}, false)")
     sql_content += ',\n'.join(values) + ';\n\n'
 
 print(f"Generated {len(all_messages)} messages")

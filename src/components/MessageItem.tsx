@@ -26,6 +26,7 @@ interface MessageItemProps {
   formatMessageTime: (dateString: string | null | undefined) => string;
   messageRefs: React.MutableRefObject<{ [key: string]: HTMLDivElement | null }>;
   scrollContainerRef: React.RefObject<HTMLDivElement>;
+  members?: { id: string; displayName: string }[];
 }
 
 /**
@@ -49,6 +50,7 @@ function MessageItemBase({
   formatMessageTime,
   messageRefs,
   scrollContainerRef,
+  members,
 }: MessageItemProps) {
   // 在组件顶层调用 useReactions hook
   const { reactions, toggleReaction, pendingReactions } = useReactions(
@@ -180,6 +182,7 @@ function MessageItemBase({
                   <MessageRenderer
                     message={message}
                     currentUserId={currentUserId}
+                    members={members}
                   />
                 </div>
               )}
