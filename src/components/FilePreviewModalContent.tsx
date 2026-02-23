@@ -18,8 +18,9 @@ import {
 
 // Helper to get the correct file URL (bypass CORS)
 function getFileUrl(attachment: Attachment): string {
+  // Always use proxy URL to bypass CORS - for both filePath and thumbnailUrl
   if (attachment.thumbnailUrl) {
-    return attachment.thumbnailUrl;
+    return getProxyUrl(attachment.thumbnailUrl);
   }
   return getProxyUrl(attachment.filePath);
 }

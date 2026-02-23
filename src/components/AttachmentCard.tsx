@@ -13,10 +13,11 @@ import {
   Archive
 } from 'lucide-react';
 
-// Helper to get the correct file URL
+// Helper to get the correct file URL (bypass CORS)
 function getFileUrl(attachment: { thumbnailUrl?: string | null; filePath: string }): string {
+  // Always use proxy URL to bypass CORS - for both thumbnailUrl and filePath
   if (attachment.thumbnailUrl) {
-    return attachment.thumbnailUrl;
+    return getProxyUrl(attachment.thumbnailUrl);
   }
   return getProxyUrl(attachment.filePath);
 }
