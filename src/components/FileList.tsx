@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Search, Filter, Grid, List, File, Image, Video, FileText, Trash2, Download, Eye } from 'lucide-react';
 import { useState } from 'react';
 import FilePreviewModal from './FilePreviewModal';
+import { getProxyUrl } from '@/lib/file-proxy';
 
 interface FileListProps {
   conversationId: string;
@@ -47,9 +48,9 @@ function getFileIcon(mimeType: string) {
 }
 
 function getPreviewUrl(attachment: ConversationAttachment): string {
-  if (attachment.previewUrl) return attachment.previewUrl;
-  if (attachment.thumbnailUrl) return attachment.thumbnailUrl;
-  return attachment.filePath;
+  // Use proxy URL to bypass CORS
+  if (attachment.thumbnailUrl) return getProxyUrl(attachment.thumbnailUrl);
+  return getProxyUrl(attachment.filePath);
 }
 
 export default function FileList({ conversationId, conversationType }: FileListProps) {
