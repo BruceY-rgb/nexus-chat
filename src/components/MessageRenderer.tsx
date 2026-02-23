@@ -133,9 +133,9 @@ interface MentionedUser {
  * Helper to get the correct file URL (using proxy to bypass CORS)
  */
 function getFileUrl(attachment: { thumbnailUrl?: string | null; filePath: string }): string {
-  // Prefer thumbnailUrl if available, otherwise use filePath with proxy
+  // Always use proxy URL to bypass CORS - for both thumbnailUrl and filePath
   if (attachment.thumbnailUrl) {
-    return attachment.thumbnailUrl;
+    return getProxyUrl(attachment.thumbnailUrl);
   }
   return getProxyUrl(attachment.filePath);
 }
