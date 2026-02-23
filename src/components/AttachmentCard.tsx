@@ -92,7 +92,7 @@ export default function AttachmentCard({ attachment }: AttachmentCardProps) {
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     const link = document.createElement('a');
-    link.href = attachment.filePath;
+    link.href = getFileUrl(attachment);
     link.download = attachment.fileName;
     document.body.appendChild(link);
     link.click();
