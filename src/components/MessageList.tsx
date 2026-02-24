@@ -143,14 +143,30 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
     // Use useImperativeHandle to expose highlightMessage method
     useImperativeHandle(ref, () => ({
       highlightMessage: (messageId: string) => {
+        // Clear any existing highlight timeouts
         setHighlightedMessageId(messageId);
-        setTimeout(() => {
-          scrollToMessage(messageId);
-        }, 100);
-        // Auto clear highlight after 2 seconds
+
+        // Scroll to message with retry mechanism for stability
+        const scrollWithRetry = (retries = 3) => {
+          const messageElement = messageRefs.current[messageId];
+          if (messageElement) {
+            messageElement.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          } else if (retries > 0) {
+            // Retry after a short delay if element not found yet
+            setTimeout(() => scrollWithRetry(retries - 1), 100);
+          }
+        };
+
+        // Start scrolling after a small delay to ensure rendering
+        setTimeout(() => scrollWithRetry(), 150);
+
+        // Auto clear highlight after 5 seconds (increased from 2s for better UX)
         setTimeout(() => {
           setHighlightedMessageId(null);
-        }, 2000);
+        }, 5000);
       },
     }));
 
@@ -266,14 +282,28 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       if (messageId && messages.length > 0) {
         // Set highlight state
         setHighlightedMessageId(messageId);
+
+        // Scroll to message with retry mechanism for stability
+        const scrollWithRetry = (retries = 3) => {
+          const messageElement = messageRefs.current[messageId];
+          if (messageElement) {
+            messageElement.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          } else if (retries > 0) {
+            // Retry after a short delay if element not found yet
+            setTimeout(() => scrollWithRetry(retries - 1), 100);
+          }
+        };
+
         // Delayed execution to ensure message is rendered
-        setTimeout(() => {
-          scrollToMessage(messageId);
-        }, 100);
-        // Auto clear highlight after 2 seconds
+        setTimeout(() => scrollWithRetry(), 150);
+
+        // Auto clear highlight after 5 seconds (increased from 2s for better UX)
         setTimeout(() => {
           setHighlightedMessageId(null);
-        }, 2000);
+        }, 5000);
       } else {
         // When no specific message, scroll to bottom only on initial load
         setHighlightedMessageId(null);
