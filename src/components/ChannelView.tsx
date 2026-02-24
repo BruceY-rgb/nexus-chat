@@ -61,9 +61,9 @@ export default function ChannelView({
   const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
 
   // Input height state
-  const [inputHeight, setInputHeight] = useState(120); // Default height
+  const [inputHeight, setInputHeight] = useState(180); // Default height - increased to show all buttons
   const [isResizingInput, setIsResizingInput] = useState(false);
-  const inputDragStart = useRef({ y: 0, height: 120 });
+  const inputDragStart = useRef({ y: 0, height: 180 });
 
   // Input drag handling
   const handleInputDragStart = (e: React.MouseEvent) => {
@@ -795,7 +795,10 @@ export default function ChannelView({
                   }}
                 />
                 <div
-                  style={{ height: `${inputHeight}px` }}
+                  style={{
+                    height: `${inputHeight}px`,
+                    transition: isResizingInput ? 'none' : 'height 0.2s ease-out'
+                  }}
                   className="p-4 overflow-hidden"
                 >
                   <DMMessageInput
