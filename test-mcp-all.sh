@@ -11,7 +11,7 @@ LOGIN_RESP=$(curl -s "$MCP_URL" -H "Content-Type: application/json" -d '{
   "method": "tools/call",
   "params": {
     "name": "login",
-    "arguments": {"email":"admin@chat.com","password":"admin123"}
+    "arguments": {"email":"slackbot@slack-import.local","password":"password123"}
   }
 }')
 TOKEN=$(echo "$LOGIN_RESP" | python3 -c "import sys,json; r=json.load(sys.stdin); t=json.loads(r['result']['content'][0]['text']); print(t.get('token',''))" 2>/dev/null)
@@ -76,11 +76,11 @@ call_mcp 1 "health_check" '{}' "Health check (no auth)"
 
 # ===== 2. Auth Tools =====
 echo "=== Auth Tools (7 tools) ==="
-call_mcp 2 "login" '{"email":"admin@chat.com","password":"admin123"}' "Login"
+call_mcp 2 "login" '{"email":"slackbot@slack-import.local","password":"password123"}' "Login"
 call_mcp 3 "get_me" "{\"userToken\":\"$TOKEN\"}" "Get current user"
 call_mcp 4 "get_profile" "{\"userToken\":\"$TOKEN\"}" "Get profile"
 call_mcp 5 "update_profile" "{\"userToken\":\"$TOKEN\",\"displayName\":\"Slackbot\"}" "Update profile"
-call_mcp 6 "send_verification" '{"email":"admin@chat.com"}' "Send verification email"
+call_mcp 6 "send_verification" '{"email":"slackbot@slack-import.local"}' "Send verification email"
 # register - tested separately to avoid side effects
 call_mcp 7 "register" '{"email":"mcp-test-'$RANDOM'@test.local","password":"TestPass123","displayName":"MCP Test User"}' "Register new user"
 
