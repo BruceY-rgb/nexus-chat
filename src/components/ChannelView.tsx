@@ -156,21 +156,54 @@ export default function ChannelView({
 
   // Listen for messageId parameter in URL for deep linking
   useEffect(() => {
-    if (!channel?.id || !messageListRef.current) return;
+    if (!channel?.id) return;
 
     const urlParams = new URLSearchParams(window.location.search);
     const messageId = urlParams.get("messageId");
 
     if (messageId) {
-      messageListRef.current.highlightMessage(messageId);
+      // Add retry mechanism for when messageListRef is not ready yet
+      const highlightWithRetry = (retries = 10) => {
+        if (messageListRef.current) {
+          messageListRef.current.highlightMessage(messageId);
 
-      // Clear messageId parameter from URL to avoid duplicate highlight on refresh
-      const newUrl =
-        window.location.pathname +
-        window.location.search.replace(/[?&]messageId=[^&]*/, "");
-      window.history.replaceState({}, "", newUrl);
+          // Clear messageId parameter from URL to avoid duplicate highlight on refresh
+          const newUrl =
+            window.location.pathname +
+            window.location.search.replace(/[?&]messageId=[^&]*/, "");
+          window.history.replaceState({}, "", newUrl);
+        } else if (retries > 0) {
+          // Retry after a short delay
+          setTimeout(() => highlightWithRetry(retries - 1), 200);
+        }
+      };
+
+      highlightWithRetry();
     }
   }, [channel?.id]);
+
+  // Listen for search-navigate-to-message event from GlobalSearchModal
+  useEffect(() => {
+    const handleSearchNavigate = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail?.messageId || !messageListRef.current) return;
+
+      const highlightWithRetry = (retries = 10) => {
+        if (messageListRef.current) {
+          messageListRef.current.highlightMessage(detail.messageId);
+        } else if (retries > 0) {
+          setTimeout(() => highlightWithRetry(retries - 1), 200);
+        }
+      };
+
+      highlightWithRetry();
+    };
+
+    window.addEventListener("search-navigate-to-message", handleSearchNavigate);
+    return () => {
+      window.removeEventListener("search-navigate-to-message", handleSearchNavigate);
+    };
+  }, []);
 
   // ESC key to close thread panel
   useEffect(() => {

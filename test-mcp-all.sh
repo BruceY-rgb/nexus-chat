@@ -4,6 +4,15 @@
 
 MCP_URL="http://localhost:3002/mcp/messages"
 
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+NC='\033[0m' # No Color
+
 # Login and extract token dynamically
 LOGIN_RESP=$(curl -s "$MCP_URL" -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
@@ -18,12 +27,13 @@ TOKEN=$(echo "$LOGIN_RESP" | python3 -c "import sys,json; r=json.load(sys.stdin)
 MY_USER_ID=$(echo "$LOGIN_RESP" | python3 -c "import sys,json; r=json.load(sys.stdin); t=json.loads(r['result']['content'][0]['text']); print(t.get('userId',''))" 2>/dev/null)
 
 if [ -z "$TOKEN" ]; then
-  echo "FATAL: Could not get auth token from login"
+  echo -e "${RED}FATAL: Could not get auth token from login${NC}"
   echo "Login response: $LOGIN_RESP"
   exit 1
 fi
-echo "Got token: ${TOKEN:0:30}..."
-echo "My user ID: $MY_USER_ID"
+echo -e "${GREEN}Logged in successfully${NC}"
+echo "Token: ${TOKEN:0:30}..."
+echo "User ID: $MY_USER_ID"
 
 PASS=0
 FAIL=0
@@ -53,29 +63,32 @@ call_mcp() {
   if [ "$is_error" = "OK" ] || [ "$expect_error" = "expect_error" ]; then
     PASS=$((PASS+1))
     local status="PASS"
+    local color=$GREEN
   else
     FAIL=$((FAIL+1))
     local status="FAIL"
+    local color=$RED
   fi
 
   RESULTS="${RESULTS}${status}|${tool}|${desc}|${text}\n"
-  echo "[$status] #$id $tool - $desc"
+  echo -e "${color}[$status]${NC} #$id $tool - $desc"
   echo "  Response: $(echo "$text" | head -c 200)"
   echo ""
 }
 
-echo "=============================================="
-echo " MCP Tools Full Coverage Test"
-echo " $(date)"
-echo "=============================================="
+echo ""
+echo -e "${CYAN}==============================================${NC}"
+echo -e "${CYAN} MCP Tools Full Coverage Test${NC}"
+echo -e "${CYAN} $(date)${NC}"
+echo -e "${CYAN}==============================================${NC}"
 echo ""
 
 # ===== 1. Health Tool =====
-echo "=== Health (1 tool) ==="
+echo -e "${MAGENTA}=== Health (1 tool) ===${NC}"
 call_mcp 1 "health_check" '{}' "Health check (no auth)"
 
 # ===== 2. Auth Tools =====
-echo "=== Auth Tools (7 tools) ==="
+echo -e "${MAGENTA}=== Auth Tools (7 tools) ===${NC}"
 call_mcp 2 "login" '{"email":"slackbot@slack-import.local","password":"password123"}' "Login"
 call_mcp 3 "get_me" "{\"userToken\":\"$TOKEN\"}" "Get current user"
 call_mcp 4 "get_profile" "{\"userToken\":\"$TOKEN\"}" "Get profile"
@@ -85,7 +98,7 @@ call_mcp 6 "send_verification" '{"email":"slackbot@slack-import.local"}' "Send v
 call_mcp 7 "register" '{"email":"mcp-test-'$RANDOM'@test.local","password":"TestPass123","displayName":"MCP Test User"}' "Register new user"
 
 # ===== 3. Channel Tools =====
-echo "=== Channel Tools (12 tools) ==="
+echo -e "${MAGENTA}=== Channel Tools (12 tools)${NC}"
 call_mcp 10 "list_channels" "{\"userToken\":\"$TOKEN\"}" "List all channels"
 
 # Parse first channel ID
@@ -302,7 +315,7 @@ call_mcp 20 "delete_channel" "{\"channelId\":\"$NEW_CHANNEL_ID\",\"userToken\":\
 call_mcp 20 "leave_channel" "{\"channelId\":\"$JOIN_CH_ID\",\"userToken\":\"$TOKEN\"}" "Leave channel"
 
 # ===== 4. Message Tools =====
-echo "=== Message Tools (15 tools) ==="
+echo -e "${MAGENTA}=== Message Tools (15 tools)${NC}"
 call_mcp 21 "list_messages" "{\"channelId\":\"$CHANNEL_ID\",\"userToken\":\"$TOKEN\",\"limit\":5}" "List messages"
 call_mcp 22 "send_message" "{\"channelId\":\"$CHANNEL_ID\",\"content\":\"MCP test message $(date +%s)\",\"userToken\":\"$TOKEN\"}" "Send message"
 
@@ -340,7 +353,7 @@ call_mcp 33 "mark_all_messages_read" "{\"userToken\":\"$TOKEN\"}" "Mark all mess
 call_mcp 34 "delete_message" "{\"messageId\":\"$MSG_ID\",\"userToken\":\"$TOKEN\"}" "Delete message"
 
 # ===== 5. User Tools =====
-echo "=== User Tools (5 tools) ==="
+echo -e "${MAGENTA}=== User Tools (5 tools)${NC}"
 call_mcp 40 "list_users" "{\"userToken\":\"$TOKEN\"}" "List users"
 call_mcp 41 "search_users" "{\"query\":\"slack\",\"userToken\":\"$TOKEN\"}" "Search users"
 call_mcp 42 "get_unread_counts" "{\"userToken\":\"$TOKEN\"}" "Get unread counts"
@@ -348,7 +361,7 @@ call_mcp 43 "get_starred_users" "{\"userToken\":\"$TOKEN\"}" "Get starred users"
 call_mcp 44 "toggle_starred_user" "{\"starredUserId\":\"$OTHER_USER_ID\",\"userToken\":\"$TOKEN\"}" "Toggle starred user"
 
 # ===== 6. Conversation/DM Tools =====
-echo "=== Conversation/DM Tools (4 tools) ==="
+echo -e "${MAGENTA}=== Conversation/DM Tools (4 tools)${NC}"
 call_mcp 50 "create_dm" "{\"userId\":\"$OTHER_USER_ID\",\"userToken\":\"$TOKEN\"}" "Create DM"
 
 # Get DM conversation ID
@@ -375,7 +388,7 @@ call_mcp 52 "list_active_dms" "{\"userToken\":\"$TOKEN\"}" "List active DMs"
 call_mcp 53 "get_read_position" "{\"channelId\":\"$CHANNEL_ID\",\"userToken\":\"$TOKEN\"}" "Get read position"
 
 # ===== 7. Notification Tools =====
-echo "=== Notification Tools (4 tools) ==="
+echo -e "${MAGENTA}=== Notification Tools (4 tools)${NC}"
 call_mcp 60 "get_channel_notification_prefs" "{\"channelId\":\"$CHANNEL_ID\",\"userToken\":\"$TOKEN\"}" "Get channel notification prefs"
 call_mcp 61 "update_channel_notification_prefs" "{\"channelId\":\"$CHANNEL_ID\",\"notificationLevel\":\"mentions\",\"userToken\":\"$TOKEN\"}" "Update channel notification prefs"
 
@@ -390,23 +403,23 @@ else
 fi
 
 # ===== 8. Attachment Tools =====
-echo "=== Attachment Tools (2 tools) ==="
+echo -e "${MAGENTA}=== Attachment Tools (2 tools)${NC}"
 call_mcp 70 "get_attachments" "{\"conversationId\":\"$CHANNEL_ID\",\"conversationType\":\"channel\",\"userToken\":\"$TOKEN\"}" "Get attachments"
 call_mcp 71 "delete_attachment" "{\"attachmentId\":\"nonexistent-id\",\"userToken\":\"$TOKEN\"}" "Delete attachment (expect not found)" "expect_error"
 
 # ===== 9. Thread Tools =====
-echo "=== Thread Tools (3 tools) ==="
+echo -e "${MAGENTA}=== Thread Tools (3 tools)${NC}"
 call_mcp 80 "get_thread_count" "{\"userToken\":\"$TOKEN\"}" "Get thread count"
 call_mcp 81 "get_unread_threads" "{\"userToken\":\"$TOKEN\"}" "Get unread threads"
 call_mcp 82 "mark_thread_read" "{\"threadId\":\"$MSG_ID\",\"userToken\":\"$TOKEN\"}" "Mark thread read"
 
 # ===== 10. Logout (last) =====
-echo "=== Logout ==="
+echo -e "${MAGENTA}=== Logout${NC}"
 # We don't actually logout to avoid invalidating the token
 # call_mcp 90 "logout" "{\"userToken\":\"$TOKEN\"}" "Logout"
 
 # ===== 11. Clear messages test =====
-echo "=== Clear Messages (tested on test channel) ==="
+echo -e "${MAGENTA}=== Clear Messages (tested on test channel)${NC}"
 # Create temp channel for clear test
 CLEAR_CH_RESP=$(curl -s "$MCP_URL" -H "Content-Type: application/json" -d "{
   \"jsonrpc\": \"2.0\",
@@ -450,24 +463,26 @@ curl -s "$MCP_URL" -H "Content-Type: application/json" -d "{
 }" > /dev/null
 
 echo ""
-echo "=============================================="
-echo " TEST RESULTS SUMMARY"
-echo "=============================================="
-echo " Total: $((PASS+FAIL))"
-echo " PASS:  $PASS"
-echo " FAIL:  $FAIL"
-echo " Pass Rate: $(echo "scale=1; $PASS * 100 / ($PASS + $FAIL)" | bc)%"
-echo "=============================================="
+echo -e "${CYAN}==============================================${NC}"
+echo -e "${CYAN} TEST RESULTS SUMMARY${NC}"
+echo -e "${CYAN}==============================================${NC}"
+echo -e " Total: ${YELLOW}$((PASS+FAIL))${NC}"
+echo -e " ${GREEN}PASS:${NC}  $PASS"
+echo -e " ${RED}FAIL:${NC}  $FAIL"
+echo -e " Pass Rate: ${GREEN}$(echo "scale=1; $PASS * 100 / ($PASS + $FAIL)" | bc)%${NC}"
+echo -e "${CYAN}==============================================${NC}"
 echo ""
-echo "DETAILED RESULTS:"
-echo "----------------------------------------------"
-printf "%-6s | %-30s | %s\n" "STATUS" "TOOL" "DESCRIPTION"
-echo "----------------------------------------------"
+echo -e "${YELLOW}DETAILED RESULTS:${NC}"
+echo -e "${YELLOW}----------------------------------------------${NC}"
+printf "${YELLOW}%-6s | %-30s | %s${NC}\n" "STATUS" "TOOL" "DESCRIPTION"
+echo -e "${YELLOW}----------------------------------------------${NC}"
 echo -e "$RESULTS" | while IFS='|' read -r status tool desc text; do
   [ -z "$status" ] && continue
-  printf "%-6s | %-30s | %s\n" "$status" "$tool" "$desc"
-  if [ "$status" = "FAIL" ]; then
+  if [ "$status" = "PASS" ]; then
+    printf "${GREEN}%-6s${NC} | %-30s | %s\n" "$status" "$tool" "$desc"
+  else
+    printf "${RED}%-6s${NC} | %-30s | %s\n" "$status" "$tool" "$desc"
     echo "       ERROR: $(echo "$text" | head -c 150)"
   fi
 done
-echo "----------------------------------------------"
+echo -e "${YELLOW}----------------------------------------------${NC}"
