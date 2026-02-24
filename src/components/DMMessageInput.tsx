@@ -1055,7 +1055,7 @@ export default function DMMessageInput({
 
   return (
     <div
-      className="flex-shrink-0 bg-[#313235] border-t border-[#3A3A3D] sticky bottom-0"
+      className="flex-shrink-0 bg-[#313235] border-t border-[#3A3A3D] sticky bottom-0 h-full"
       style={{
         transform: 'none',
         willChange: 'auto'
@@ -1306,7 +1306,7 @@ export default function DMMessageInput({
 
           {/* 主输入框 */}
           <div
-            className="flex-1 relative"
+            className="flex-1 relative min-w-0"
             style={{
               overflow: 'visible',
               transform: 'none',

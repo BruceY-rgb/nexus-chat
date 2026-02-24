@@ -74,7 +74,7 @@ function MessageItemBase({
         ref={(el) => {
           messageRefs.current[message.id] = el;
         }}
-        className={`message-row w-full relative group transition-all duration-200 hover:bg-slate-800/50 hover:z-[60] ${
+        className={`message-row w-full min-w-0 relative group transition-all duration-200 hover:bg-slate-800/50 hover:z-[60] py-1 ${
           isHighlighted
             ? "bg-yellow-200/70 rounded-lg ring-2 ring-yellow-400 shadow-lg shadow-yellow-400/30 animate-pulse"
             : ""
@@ -110,7 +110,7 @@ function MessageItemBase({
           )}
 
           {/* 消息内容 */}
-          <div className={`flex-1 min-w-0 ${isOwnMessage ? "text-right" : ""}`}>
+          <div className="flex-1 min-w-0">
             {/* 用户名和时间（仅在需要时显示） */}
             {showAvatar && (
               <div
