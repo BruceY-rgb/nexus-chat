@@ -67,7 +67,7 @@ function ThreadMessageItemBase({
 
           {/* Message Content */}
           <div className="text-gray-900">
-            <MessageRenderer message={message} currentUserId={currentUserId} />
+            <MessageRenderer message={message} currentUserId={currentUserId} markdownVariant="light" />
           </div>
 
           {/* Attachments */}

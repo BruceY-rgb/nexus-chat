@@ -16,6 +16,7 @@ interface MessageRendererProps {
   currentUserId: string;
   className?: string;
   members?: { id: string; displayName: string }[];
+  markdownVariant?: 'dark' | 'light';
 }
 
 interface ImageModalProps {
@@ -147,7 +148,8 @@ export default function MessageRenderer({
   message,
   currentUserId,
   className = '',
-  members = []
+  members = [],
+  markdownVariant = 'dark'
 }: MessageRendererProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
@@ -374,6 +376,7 @@ export default function MessageRenderer({
             members={members as TeamMember[]}
             currentUserId={currentUserId}
             className="text-sm"
+            variant={markdownVariant}
           />
         ) : (
           renderMessageContent()

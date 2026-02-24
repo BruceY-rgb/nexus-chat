@@ -15,6 +15,7 @@ interface MarkdownRendererProps {
   members?: TeamMember[];
   currentUserId: string;
   className?: string;
+  variant?: 'dark' | 'light';
 }
 
 /**
@@ -78,9 +79,26 @@ export default function MarkdownRenderer({
   content,
   members = [],
   currentUserId,
-  className = ''
+  className = '',
+  variant = 'dark'
 }: MarkdownRendererProps) {
-  console.log("[MarkdownRenderer] Received members:", members);
+  // 根据 variant 设置颜色
+  const colors = variant === 'light' ? {
+    text: 'text-black',
+    textMuted: 'text-gray-600',
+    textLight: 'text-gray-700',
+    bg: 'bg-gray-100',
+    bgLight: 'bg-gray-50',
+    border: 'border-gray-300',
+  } : {
+    text: 'text-gray-200',
+    textMuted: 'text-gray-400',
+    textLight: 'text-gray-300',
+    bg: 'bg-gray-800',
+    bgLight: 'bg-gray-900',
+    border: 'border-gray-600',
+  };
+
   // Preprocess: convert Slack format markup, then protect Token @mentions
   const protectedContent = useMemo(() => {
     let processed = content || '';
@@ -165,33 +183,53 @@ export default function MarkdownRenderer({
         rehypePlugins={[rehypeSanitize, rehypeRaw]}
         components={{
           // 支持HTML标签（如<u>下划线）
-          u: ({ node, children, ...props }) => (
-            <u className="underline decoration-gray-400 decoration-2" {...props}>
-              {children}
-            </u>
-          ),
+          u: ({ node, children, ...props }) => {
+            const uColor = variant === 'light' ? 'decoration-gray-500' : 'decoration-gray-400';
+            return (
+              <u className={`underline ${uColor} decoration-2`} {...props}>
+                {children}
+              </u>
+            );
+          },
           // 代码块组件
           code: ({ node, className, children, ...props }: any) => {
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : '';
             const isInline = !language;
 
+            // 代码块颜色
+            const codeColors = variant === 'light' ? {
+              bg: 'bg-gray-100',
+              text: 'text-gray-800',
+              headerBg: 'bg-gray-200',
+              headerText: 'text-gray-700',
+              inlineBg: 'bg-gray-100',
+              inlineText: 'text-red-500',
+            } : {
+              bg: 'bg-gray-800',
+              text: 'text-gray-100',
+              headerBg: 'bg-gray-800',
+              headerText: 'text-gray-300',
+              inlineBg: 'bg-gray-800',
+              inlineText: 'text-pink-400',
+            };
+
             if (!isInline && language) {
               // 多行代码块
               return (
                 <div className="relative group my-3">
-                  <div className="flex items-center justify-between bg-gray-800 text-gray-300 px-4 py-2 rounded-t-lg text-xs">
+                  <div className={`flex items-center justify-between ${codeColors.headerBg} ${codeColors.headerText} px-4 py-2 rounded-t-lg text-xs`}>
                     <span className="font-medium">{language}</span>
                     <button
                       onClick={() => navigator.clipboard.writeText(String(children))}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-white flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-700"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-white flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-600"
                       title="Copy code"
                     >
                       <Copy size={14} />
                       Copy
                     </button>
                   </div>
-                  <pre className="bg-gray-800 text-gray-100 p-4 rounded-b-lg overflow-x-auto text-sm font-mono">
+                  <pre className={`${codeColors.bg} ${codeColors.text} p-4 rounded-b-lg overflow-x-auto text-sm font-mono`}>
                     <code {...props}>{children}</code>
                   </pre>
                 </div>
@@ -201,7 +239,7 @@ export default function MarkdownRenderer({
             // 行内代码
             return (
               <code
-                className="bg-gray-800 text-pink-400 px-1.5 py-0.5 rounded text-sm font-mono"
+                className={`${codeColors.inlineBg} ${codeColors.inlineText} px-1.5 py-0.5 rounded text-sm font-mono`}
                 {...props}
               >
                 {children}
@@ -210,22 +248,27 @@ export default function MarkdownRenderer({
           },
 
           // 链接组件
-          a: ({ node, href, children, ...props }) => (
-            <a
-              href={href}
-              className="text-blue-400 hover:text-blue-300 underline transition-colors"
-              target="_blank"
-              rel="noopener noreferrer"
-              {...props}
-            >
-              {children}
-            </a>
-          ),
+          a: ({ node, href, children, ...props }) => {
+            const linkColors = variant === 'light'
+              ? 'text-blue-600 hover:text-blue-800'
+              : 'text-blue-400 hover:text-blue-300';
+            return (
+              <a
+                href={href}
+                className={`${linkColors} underline transition-colors`}
+                target="_blank"
+                rel="noopener noreferrer"
+                {...props}
+              >
+                {children}
+              </a>
+            );
+          },
 
           // 引用组件
           blockquote: ({ node, children, ...props }) => (
             <blockquote
-              className="border-l-4 border-gray-600 pl-4 italic text-gray-300 my-2 bg-gray-800/50 py-2"
+              className={`border-l-4 ${colors.border} pl-4 italic ${colors.textLight} my-2 ${colors.bgLight} py-2`}
               {...props}
             >
               {processMentionTokens(children)}
@@ -234,46 +277,46 @@ export default function MarkdownRenderer({
 
           // 标题组件
           h1: ({ node, children, ...props }) => (
-            <h1 className="text-xl font-bold mt-4 mb-2 text-white" {...props}>{children}</h1>
+            <h1 className={`text-xl font-bold mt-4 mb-2 ${colors.text}`} {...props}>{children}</h1>
           ),
           h2: ({ node, children, ...props }) => (
-            <h2 className="text-lg font-bold mt-4 mb-2 text-white" {...props}>{children}</h2>
+            <h2 className={`text-lg font-bold mt-4 mb-2 ${colors.text}`} {...props}>{children}</h2>
           ),
           h3: ({ node, children, ...props }) => (
-            <h3 className="text-base font-bold mt-3 mb-2 text-white" {...props}>{children}</h3>
+            <h3 className={`text-base font-bold mt-3 mb-2 ${colors.text}`} {...props}>{children}</h3>
           ),
 
           // 表格组件
           table: ({ node, children, ...props }) => (
             <div className="overflow-x-auto my-3">
-              <table className="min-w-full border border-gray-600" {...props}>
+              <table className={`min-w-full border ${colors.border}`} {...props}>
                 {children}
               </table>
             </div>
           ),
 
           thead: ({ node, children, ...props }) => (
-            <thead className="bg-gray-800" {...props}>
+            <thead className={colors.bg} {...props}>
               {children}
             </thead>
           ),
 
           tbody: ({ node, children, ...props }) => (
-            <tbody className="bg-gray-900/50" {...props}>
+            <tbody className={colors.bgLight} {...props}>
               {children}
             </tbody>
           ),
 
           th: ({ node, ...props }) => (
             <th
-              className="border border-gray-600 bg-gray-800 px-4 py-2 text-left text-sm font-semibold text-gray-200"
+              className={`border ${colors.border} ${colors.bg} px-4 py-2 text-left text-sm font-semibold ${colors.text}`}
               {...props}
             />
           ),
 
           td: ({ node, ...props }) => (
             <td
-              className="border border-gray-600 px-4 py-2 text-sm text-gray-300"
+              className={`border ${colors.border} px-4 py-2 text-sm ${colors.text}`}
               {...props}
             />
           ),
@@ -294,34 +337,34 @@ export default function MarkdownRenderer({
           ),
 
           li: ({ node, children, ...props }) => (
-            <li className="text-gray-200 text-sm leading-relaxed" {...props}>
+            <li className={`${colors.text} text-sm leading-relaxed`} {...props}>
               {processMentionTokens(children)}
             </li>
           ),
 
           // 段落组件
           p: ({ node, children, ...props }) => (
-            <p className="text-gray-200 text-sm leading-relaxed mb-2" {...props}>
+            <p className={`${colors.text} text-sm leading-relaxed mb-2`} {...props}>
               {processMentionTokens(children)}
             </p>
           ),
 
           // 强调组件
           strong: ({ node, children, ...props }) => (
-            <strong className="font-bold text-white" {...props}>
+            <strong className={`font-bold ${colors.text}`} {...props}>
               {processMentionTokens(children)}
             </strong>
           ),
 
           em: ({ node, children, ...props }) => (
-            <em className="italic text-gray-300" {...props}>
+            <em className={`italic ${colors.textLight}`} {...props}>
               {processMentionTokens(children)}
             </em>
           ),
 
           // 删除线组件
           s: ({ node, children, ...props }) => (
-            <s className="line-through text-gray-500" {...props}>
+            <s className={`line-through ${colors.textMuted}`} {...props}>
               {children}
             </s>
           ),
