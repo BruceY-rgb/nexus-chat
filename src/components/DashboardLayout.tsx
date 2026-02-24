@@ -12,6 +12,7 @@ import { useUnreadCount } from "@/hooks/useUnreadCount";
 import { useUnreadStore } from "@/store/unreadStore";
 import { useMarkAllAsRead } from "@/hooks/useMarkAllAsRead";
 import { LogOut, Settings, CheckCheck } from "lucide-react";
+import SearchBox from "@/components/SearchBox";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -183,6 +184,11 @@ export default function DashboardLayout({
                 <Settings className="w-4 h-4" />
               </Button>
             </div>
+          </div>
+
+          {/* Search box */}
+          <div className="flex-shrink-0 px-3 py-2">
+            <SearchBox />
           </div>
 
           {/* Mark all as read button */}
