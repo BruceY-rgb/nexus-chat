@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { X, AlertTriangle } from 'lucide-react';
+import { formatTime12Hour } from '@/lib/time-utils';
 
 interface QuoteBlockProps {
   content: string;
@@ -22,20 +23,6 @@ export default function QuoteBlock({
   onRemove,
   showRemoveButton = false
 }: QuoteBlockProps) {
-  // Format timestamp
-  const formatTime = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-    } catch {
-      return '';
-    }
-  };
-
   // Truncate content to max 3 lines
   const truncatedContent = content.length > 200 ? content.substring(0, 200) + '...' : content;
 
@@ -71,7 +58,7 @@ export default function QuoteBlock({
               )}
               <span className="text-sm font-medium text-gray-300">{userName}</span>
               <span className="text-xs text-gray-500">·</span>
-              <span className="text-xs text-gray-500">{formatTime(createdAt)}</span>
+              <span className="text-xs text-gray-500">{formatTime12Hour(createdAt)}</span>
             </div>
 
             {/* Content */}

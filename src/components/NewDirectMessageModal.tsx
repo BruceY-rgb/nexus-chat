@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { TeamMember } from '../types';
 import { Button } from '@/components/ui';
+import { getAvatarUrl } from '@/lib/avatar';
 
 interface NewDirectMessageModalProps {
   isOpen: boolean;
@@ -173,7 +174,7 @@ export default function NewDirectMessageModal({
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
                     <img
-                      src={member.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${member.displayName || member.id}&size=32`}
+                      src={getAvatarUrl(member.avatarUrl, member, 32)}
                       alt={member.displayName}
                       className="w-8 h-8 rounded-sm"
                       style={{ borderRadius: '4px' }}

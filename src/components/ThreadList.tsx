@@ -3,7 +3,7 @@
 import React from 'react';
 import { Message } from '@/types/message';
 import { useUnreadThreads } from '@/hooks/useUnreadThreads';
-import { format } from 'date-fns';
+import { formatRelativeTime } from '@/lib/time-utils';
 import { MessageSquare } from 'lucide-react';
 
 interface ThreadListProps {
@@ -12,23 +12,6 @@ interface ThreadListProps {
 
 export default function ThreadList({ onThreadSelect }: ThreadListProps) {
   const { threads, isLoading, error } = useUnreadThreads();
-
-  const formatTime = (dateString: string | null | undefined) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 1) {
-      return 'just now';
-    } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}h ago`;
-    } else if (diffInHours < 24 * 7) {
-      return `${Math.floor(diffInHours / 24)}d ago`;
-    } else {
-      return format(date, 'MM/dd');
-    }
-  };
 
   if (isLoading) {
     return (
@@ -90,7 +73,7 @@ export default function ThreadList({ onThreadSelect }: ThreadListProps) {
                   {thread.user?.displayName}
                 </span>
                 <span className="text-xs text-gray-500 flex-shrink-0">
-                  {formatTime(thread.lastReplyAt)}
+                  {formatRelativeTime(thread.lastReplyAt)}
                 </span>
               </div>
 
