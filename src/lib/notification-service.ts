@@ -5,7 +5,7 @@
 
 import { prisma } from "./prisma";
 import { Server as SocketIOServer } from "socket.io";
-import { parseMentions, extractUsernames } from "./mention-parser";
+import { parseMentions, extractUsernames, convertTokensToTraditionalFormat } from "./mention-parser";
 
 export type NotificationLevel = "all" | "mentions" | "nothing";
 
@@ -280,7 +280,8 @@ export class NotificationService {
         }
 
         let title = `${sender.displayName} mentioned you in a message`;
-        let notificationContent = content.substring(0, 100);
+        // Convert token format @{userId:displayName} to human-readable @displayName
+        let notificationContent = convertTokensToTraditionalFormat(content).substring(0, 100);
 
         // If it's a channel message, add channel information
         if (channelId) {
@@ -546,7 +547,8 @@ export class NotificationService {
       // Create notification for each participant
       for (const participantId of participants) {
         let title = `${sender.displayName} replied to your thread`;
-        let notificationContent = content.substring(0, 100);
+        // Convert token format @{userId:displayName} to human-readable @displayName
+        let notificationContent = convertTokensToTraditionalFormat(content).substring(0, 100);
 
         // If it's a channel message, add channel information
         if (parentMessage.channelId) {
