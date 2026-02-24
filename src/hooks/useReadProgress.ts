@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 
 interface ReadProgress {
   lastReadMessageId: string | null;
@@ -9,6 +8,7 @@ interface ReadProgress {
 }
 
 interface UseReadProgressProps {
+  key?: number;
   channelId?: string;
   dmConversationId?: string;
   messages: any[];
@@ -16,18 +16,34 @@ interface UseReadProgressProps {
   onScrollToMessage?: (messageId: string) => void;
 }
 
+export interface ReadProgressResult {
+  readPosition: ReadProgress | null;
+  isLoading: boolean;
+  reportReadProgress: (messageId: string) => void;
+}
+
 export function useReadProgress({
+  key,
   channelId,
   dmConversationId,
   messages,
   messageRefs,
   onScrollToMessage,
 }: UseReadProgressProps) {
-  const router = useRouter();
   const [readPosition, setReadPosition] = useState<ReadProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const hasScrolledToReadPosition = useRef(false);
+  const keyRef = useRef(key);
+
+  // 当 key 变化时，重新获取阅读位置
+  useEffect(() => {
+    if (key !== keyRef.current) {
+      keyRef.current = key;
+      // 重置状态
+      setReadPosition(null);
+      setIsLoading(true);
+    }
+  }, [key]);
 
   // Fetch read position
   const fetchReadPosition = useCallback(
@@ -128,36 +144,6 @@ export function useReadProgress({
     [channelId, dmConversationId],
   );
 
-  // Auto-scroll to last read position
-  const scrollToReadPosition = useCallback(() => {
-    if (
-      !readPosition?.lastReadMessageId ||
-      !messages.length ||
-      hasScrolledToReadPosition.current
-    ) {
-      return;
-    }
-
-    const messageElement = messageRefs.current[readPosition.lastReadMessageId];
-    if (messageElement) {
-      // Delay execution to ensure DOM is fully rendered
-      setTimeout(() => {
-        messageElement.scrollIntoView({ behavior: "instant", block: "start" });
-        hasScrolledToReadPosition.current = true;
-        if (onScrollToMessage) {
-          onScrollToMessage(readPosition.lastReadMessageId!);
-        }
-      }, 100);
-    }
-  }, [readPosition, messages, messageRefs, onScrollToMessage]);
-
-  // Listen for message loading, auto-position
-  useEffect(() => {
-    if (!isLoading && messages.length) {
-      scrollToReadPosition();
-    }
-  }, [isLoading, messages, scrollToReadPosition]);
-
   // Fetch read position on initialization
   useEffect(() => {
     fetchReadPosition();
@@ -176,6 +162,5 @@ export function useReadProgress({
     readPosition,
     isLoading,
     reportReadProgress,
-    scrollToReadPosition,
   };
 }

@@ -83,13 +83,53 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       null,
     );
 
-    // Use read progress hook - remove onScrollToMessage callback to avoid conflict with component highlight logic
-    const { reportReadProgress } = useReadProgress({
+    // Use read progress hook
+    const { reportReadProgress, readPosition } = useReadProgress({
       channelId,
       dmConversationId,
       messages,
       messageRefs,
     });
+
+    // 未读胶囊状态
+    const [showUnreadBadge, setShowUnreadBadge] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // 检查未读状态
+    const hasUnread = messages.length > 0 && readPosition?.lastReadMessageId &&
+      readPosition.lastReadMessageId !== messages[messages.length - 1]?.id;
+
+    // 首次加载时检查未读状态
+    useEffect(() => {
+      if (!hasUnread) {
+        setShowUnreadBadge(false);
+        return;
+      }
+
+      // 计算未读数量
+      const lastReadIndex = messages.findIndex(m => m.id === readPosition?.lastReadMessageId);
+      if (lastReadIndex !== -1) {
+        const count = messages.length - lastReadIndex - 1;
+        if (count > 0) {
+          setUnreadCount(count);
+          setShowUnreadBadge(true);
+        }
+      }
+    }, [readPosition, messages.length]);
+
+    // 点击未读胶囊滚动到未读位置
+    const scrollToFirstUnread = useCallback(() => {
+      if (!readPosition?.lastReadMessageId) return;
+
+      const messageElement = messageRefs.current[readPosition.lastReadMessageId];
+      if (messageElement) {
+        messageElement.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+        setShowUnreadBadge(false);
+      }
+    }, [readPosition]);
 
     // Handle edit message - optimized with useCallback
     const handleEditMessage = useCallback(
@@ -504,16 +544,32 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
     }
 
     return (
-      <div
-        ref={scrollContainerRef}
-        className={`flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden message-scroll h-full p-6`}
-        style={{ scrollbarGutter: "stable" }}
-        id="messages-scroll-container"
-      >
-        <div className="max-w-4xl mx-auto w-full">
-          {/* Top sentinel for infinite scroll */}
-          <div ref={topSentinelRef} className="h-1" />
-          {isLoadingMore && (
+      <div className="relative h-full">
+        {/* 未读胶囊按钮 */}
+        {showUnreadBadge && unreadCount > 0 && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
+            <button
+              onClick={scrollToFirstUnread}
+              className="bg-primary text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-primary/90 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+              {unreadCount} unread
+            </button>
+          </div>
+        )}
+
+        <div
+          ref={scrollContainerRef}
+          className={`flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden message-scroll h-full p-6`}
+          style={{ scrollbarGutter: "stable" }}
+          id="messages-scroll-container"
+        >
+          <div className="max-w-4xl mx-auto w-full">
+            {/* Top sentinel for infinite scroll */}
+            <div ref={topSentinelRef} className="h-1" />
+            {isLoadingMore && (
             <div className="text-center py-3">
               <div className="inline-block w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
               <p className="text-text-secondary text-xs mt-1">Loading older messages...</p>
@@ -565,6 +621,7 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
           ))}
           {/* Auto-scroll anchor - ensures new messages scroll to bottom when they arrive */}
           <div ref={messagesEndRef} className="h-1" id="messages-end-ref" />
+        </div>
         </div>
       </div>
     );
