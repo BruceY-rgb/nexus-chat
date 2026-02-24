@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Attachment } from '@/types/message';
-import { getProxyUrl } from '@/lib/file-proxy';
 import {
   Download,
   Eye,
@@ -13,13 +12,12 @@ import {
   Archive
 } from 'lucide-react';
 
-// Helper to get the correct file URL (bypass CORS)
+// Helper to get the correct file URL
 function getFileUrl(attachment: { thumbnailUrl?: string | null; filePath: string }): string {
-  // Always use proxy URL to bypass CORS - for both thumbnailUrl and filePath
   if (attachment.thumbnailUrl) {
-    return getProxyUrl(attachment.thumbnailUrl);
+    return attachment.thumbnailUrl;
   }
-  return getProxyUrl(attachment.filePath);
+  return attachment.filePath;
 }
 
 // 动态导入 FilePreviewModal，禁用 SSR

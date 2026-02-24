@@ -8,6 +8,7 @@ import MessageEditor from "./MessageEditor";
 import QuoteBlock from "./QuoteBlock";
 import ReactionBadges from "./ReactionBadges";
 import { useReactions } from "@/hooks/useReactions";
+import { getAvatarUrl } from "@/lib/avatar";
 
 interface MessageItemProps {
   message: Message;
@@ -98,10 +99,7 @@ function MessageItemBase({
           {/* 头像 */}
           {showAvatar ? (
             <img
-              src={
-                message.user.avatarUrl ||
-                `https://api.dicebear.com/7.x/identicon/png?seed=${message.user.displayName || message.user.id}&size=40`
-              }
+              src={getAvatarUrl(message.user.avatarUrl, message.user, 40)}
               alt={message.user.displayName}
               className="w-10 h-10 rounded-sm flex-shrink-0"
             />

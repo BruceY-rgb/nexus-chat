@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Attachment } from '@/types/message';
-import { getProxyUrl } from '@/lib/file-proxy';
 import {
   X,
   Download,
@@ -16,13 +15,12 @@ import {
   Loader2
 } from 'lucide-react';
 
-// Helper to get the correct file URL (bypass CORS)
+// Helper to get the correct file URL
 function getFileUrl(attachment: Attachment): string {
-  // Always use proxy URL to bypass CORS - for both filePath and thumbnailUrl
   if (attachment.thumbnailUrl) {
-    return getProxyUrl(attachment.thumbnailUrl);
+    return attachment.thumbnailUrl;
   }
-  return getProxyUrl(attachment.filePath);
+  return attachment.filePath;
 }
 
 interface FilePreviewContentProps {
@@ -63,6 +61,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         // Use proxy URL to bypass CORS
         const proxyUrl = getFileUrl(attachment);
+
         const response = await fetch(proxyUrl, {
           method: 'HEAD',
           signal: controller.signal
