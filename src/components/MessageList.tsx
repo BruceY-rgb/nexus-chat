@@ -67,9 +67,19 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
     const prevChannelRef = useRef(channelId);
     const prevDmRef = useRef(dmConversationId);
 
-    // Reset initial load flag when channel/conversation changes
+    // Stable snapshot: captures the first unread message ID once on channel entry.
+    // This does NOT change as the user scrolls — it stays fixed until dismissed.
+    const initialUnreadMessageIdRef = useRef<string | null>(null);
+    const snapshotTakenRef = useRef(false);
+    // Guard: prevents programmatic scrolls from clearing unread UI.
+    const userHasScrolledRef = useRef(false);
+
+    // Reset flags when channel/conversation changes
     if (prevChannelRef.current !== channelId || prevDmRef.current !== dmConversationId) {
       isInitialLoadRef.current = true;
+      initialUnreadMessageIdRef.current = null;
+      snapshotTakenRef.current = false;
+      userHasScrolledRef.current = false;
       prevChannelRef.current = channelId;
       prevDmRef.current = dmConversationId;
     }
@@ -94,42 +104,69 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
     // 未读胶囊状态
     const [showUnreadBadge, setShowUnreadBadge] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const isAtBottomRef = useRef(false);
+    const unreadDividerRef = useRef<HTMLDivElement>(null);
+    // Flag to suppress userHasScrolled during programmatic scrolls
+    const isProgrammaticScrollRef = useRef(false);
 
-    // 检查未读状态
-    const hasUnread = messages.length > 0 && readPosition?.lastReadMessageId &&
-      readPosition.lastReadMessageId !== messages[messages.length - 1]?.id;
-
-    // 首次加载时检查未读状态
+    // Take snapshot once when readPosition arrives from the API
     useEffect(() => {
-      if (!hasUnread) {
-        setShowUnreadBadge(false);
-        return;
+      if (snapshotTakenRef.current) return;
+      if (!readPosition || messages.length === 0) return;
+
+      snapshotTakenRef.current = true;
+
+      const lastReadId = readPosition.lastReadMessageId;
+      if (!lastReadId) {
+        // No read position means everything is unread — snapshot first message
+        initialUnreadMessageIdRef.current = messages[0]?.id ?? null;
+      } else if (lastReadId === messages[messages.length - 1]?.id) {
+        // Already read everything — no unread
+        initialUnreadMessageIdRef.current = null;
+      } else {
+        const lastReadIndex = messages.findIndex(m => m.id === lastReadId);
+        if (lastReadIndex === -1 || lastReadIndex >= messages.length - 1) {
+          initialUnreadMessageIdRef.current = null;
+        } else {
+          initialUnreadMessageIdRef.current = messages[lastReadIndex + 1]?.id ?? null;
+        }
       }
 
-      // 计算未读数量
-      const lastReadIndex = messages.findIndex(m => m.id === readPosition?.lastReadMessageId);
-      if (lastReadIndex !== -1) {
-        const count = messages.length - lastReadIndex - 1;
-        if (count > 0) {
+      // Show badge if there are unread messages.
+      // Don't check isAtBottomRef here — the programmatic scrollToBottom hasn't
+      // run yet at this point, so the container may report any scroll position.
+      if (initialUnreadMessageIdRef.current) {
+        const firstUnreadIndex = messages.findIndex(m => m.id === initialUnreadMessageIdRef.current);
+        if (firstUnreadIndex !== -1) {
+          const count = messages.length - firstUnreadIndex;
           setUnreadCount(count);
           setShowUnreadBadge(true);
         }
       }
-    }, [readPosition, messages.length]);
+    }, [readPosition, messages]);
+
+    // Use the stable snapshot for divider rendering (not live readPosition)
+    const [unreadDividerMessageId, setUnreadDividerMessageId] = useState<string | null>(null);
+
+    // Sync divider from snapshot
+    useEffect(() => {
+      setUnreadDividerMessageId(initialUnreadMessageIdRef.current);
+    }, [readPosition, messages]);
 
     // 点击未读胶囊滚动到未读位置
     const scrollToFirstUnread = useCallback(() => {
-      if (!readPosition?.lastReadMessageId) return;
-
-      const messageElement = messageRefs.current[readPosition.lastReadMessageId];
-      if (messageElement) {
-        messageElement.scrollIntoView({
+      isProgrammaticScrollRef.current = true;
+      if (unreadDividerRef.current) {
+        unreadDividerRef.current.scrollIntoView({
           behavior: "smooth",
           block: "start",
         });
-        setShowUnreadBadge(false);
       }
-    }, [readPosition]);
+      setShowUnreadBadge(false);
+      setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 500);
+    }, []);
 
     // Handle edit message - optimized with useCallback
     const handleEditMessage = useCallback(
@@ -162,8 +199,20 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       setEditingMessageId(null);
     }, []);
 
-    const scrollToBottom = useCallback(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = useCallback((instant = false) => {
+      isProgrammaticScrollRef.current = true;
+      if (instant) {
+        const container = scrollContainerRef.current;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      } else {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+      // Reset after a tick so the scroll event handler sees the flag
+      setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 200);
     }, []);
 
     const scrollToMessage = useCallback(
@@ -222,6 +271,16 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
         const { scrollTop, scrollHeight, clientHeight } = container;
         // Check if at bottom (allow 100px tolerance)
         isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+        isAtBottomRef.current = isAtBottom;
+
+        // Only dismiss unread badge/divider when the USER has scrolled to bottom,
+        // not from the programmatic initial scrollToBottom.
+        if (isAtBottom && userHasScrolledRef.current) {
+          setShowUnreadBadge(false);
+          // Clear the snapshot so divider disappears too
+          initialUnreadMessageIdRef.current = null;
+          setUnreadDividerMessageId(null);
+        }
 
         // Notify parent component of scroll position change
         if (onScrollPositionChange) {
@@ -231,12 +290,16 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
 
       // Scroll event handler
       const handleScroll = () => {
+        // Don't mark as user scroll if it was triggered programmatically
+        if (!isProgrammaticScrollRef.current) {
+          userHasScrolledRef.current = true;
+        }
         // Use debounce to avoid frequent triggers
         clearTimeout(timeoutId);
         timeoutId = setTimeout(checkScrollPosition, 50);
       };
 
-      // Initial check
+      // Initial check — do NOT set userHasScrolledRef here
       checkScrollPosition();
 
       // Add scroll listener
@@ -348,7 +411,9 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
         // When no specific message, scroll to bottom only on initial load
         setHighlightedMessageId(null);
         if (isInitialLoadRef.current) {
-          scrollToBottom();
+          requestAnimationFrame(() => {
+            scrollToBottom(true); // instant, not smooth
+          });
           isInitialLoadRef.current = false;
         }
       }
@@ -592,28 +657,39 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
                     index === 0 ||
                     dayMessages[index - 1].userId !== message.userId;
                   const isHighlighted = message.id === highlightedMessageId;
+                  const isFirstUnread = message.id === unreadDividerMessageId;
 
                   return (
-                    <MessageItem
-                      key={message.id}
-                      message={message}
-                      currentUserId={currentUserId}
-                      isOwnMessage={isOwnMessage}
-                      showAvatar={showAvatar}
-                      isHighlighted={isHighlighted}
-                      showReadIndicator={showReadIndicator}
-                      editingMessageId={editingMessageId}
-                      onStartEditing={startEditing}
-                      onSaveEdit={handleEditMessage}
-                      onCancelEdit={cancelEditing}
-                      onDeleteMessage={handleDeleteMessage}
-                      onThreadReply={onThreadReply || (() => {})}
-                      onQuote={onQuote || (() => {})}
-                      formatMessageTime={formatMessageTime}
-                      messageRefs={messageRefs}
-                      scrollContainerRef={scrollContainerRef}
-                      members={members}
-                    />
+                    <div key={message.id}>
+                      {isFirstUnread && (
+                        <div ref={unreadDividerRef} className="flex items-center my-4 gap-3">
+                          <div className="flex-1 h-px bg-gray-300" />
+                          <span className="text-xs text-gray-400 font-medium whitespace-nowrap px-2">
+                            New messages
+                          </span>
+                          <div className="flex-1 h-px bg-gray-300" />
+                        </div>
+                      )}
+                      <MessageItem
+                        message={message}
+                        currentUserId={currentUserId}
+                        isOwnMessage={isOwnMessage}
+                        showAvatar={showAvatar}
+                        isHighlighted={isHighlighted}
+                        showReadIndicator={showReadIndicator}
+                        editingMessageId={editingMessageId}
+                        onStartEditing={startEditing}
+                        onSaveEdit={handleEditMessage}
+                        onCancelEdit={cancelEditing}
+                        onDeleteMessage={handleDeleteMessage}
+                        onThreadReply={onThreadReply || (() => {})}
+                        onQuote={onQuote || (() => {})}
+                        formatMessageTime={formatMessageTime}
+                        messageRefs={messageRefs}
+                        scrollContainerRef={scrollContainerRef}
+                        members={members}
+                      />
+                    </div>
                   );
                 })}
               </div>
