@@ -232,3 +232,7 @@ docs/api/
 # instances
 instances/*
 !instances/template/
+
+# Claude Code and Trellis
+.claude/
+.trellis/
