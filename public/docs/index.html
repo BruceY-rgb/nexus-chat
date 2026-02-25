@@ -1,0 +1,4445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slack-like Chat API Documentation</title>
+    <link rel="stylesheet" href="/docs/styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1><i class="fas fa-comments"></i> Slack Chat API</h1>
+                <p class="version">v1.0.0</p>
+            </div>
+
+            <nav class="nav">
+                <div class="nav-section">
+                    <h3>Introduction</h3>
+                    <ul>
+                        <li><a href="#introduction"><i class="fas fa-home"></i> Overview</a></li>
+                        <li><a href="#authentication"><i class="fas fa-key"></i> Authentication</a></li>
+                        <li><a href="#response-format"><i class="fas fa-exchange-alt"></i> Response Format</a></li>
+                        <li><a href="#status-codes"><i class="fas fa-list"></i> Status Codes</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3>API Documentation</h3>
+                    <ul>
+                        <li><a href="#auth-api"><i class="fas fa-lock"></i> Authentication API</a></li>
+                        <li><a href="#messages-api"><i class="fas fa-comment"></i> Messages API</a></li>
+                        <li><a href="#channels-api"><i class="fas fa-hashtag"></i> Channels API</a></li>
+                        <li><a href="#users-api"><i class="fas fa-users"></i> Users API</a></li>
+                        <li><a href="#other-api"><i class="fas fa-cog"></i> Other APIs</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3>MCP Tools</h3>
+                    <ul>
+                        <li><a href="#mcp-api"><i class="fas fa-plug"></i> Overview</a></li>
+                        <li><a href="#mcp-health-tools"><i class="fas fa-heartbeat"></i> Health</a></li>
+                        <li><a href="#mcp-auth-tools"><i class="fas fa-lock"></i> Auth</a></li>
+                        <li><a href="#mcp-channel-tools"><i class="fas fa-hashtag"></i> Channels</a></li>
+                        <li><a href="#mcp-message-tools"><i class="fas fa-comment"></i> Messages</a></li>
+                        <li><a href="#mcp-user-tools"><i class="fas fa-users"></i> Users</a></li>
+                        <li><a href="#mcp-conversation-tools"><i class="fas fa-envelope"></i> Conversations</a></li>
+                        <li><a href="#mcp-notification-tools"><i class="fas fa-bell"></i> Notifications</a></li>
+                        <li><a href="#mcp-attachment-tools"><i class="fas fa-paperclip"></i> Attachments</a></li>
+                        <li><a href="#mcp-thread-tools"><i class="fas fa-comments"></i> Threads</a></li>
+                    </ul>
+                </div>
+
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="https://github.com/BruceY-rgb/Slack-chat-API" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content">
+                <!-- Introduction -->
+                <section id="introduction">
+                    <h1><i class="fas fa-rocket"></i> API Documentation</h1>
+                    <div class="intro-box">
+                        <h2>Welcome to the Slack-like Chat Application API</h2>
+                        <p>This is a complete RESTful API that supports real-time messaging, channel management, user authentication, and more.</p>
+                        <!-- <div class="info-grid">
+                            <div class="info-card">
+                                <i class="fas fa-server"></i>
+                                <h3>27+ API Endpoints</h3>
+                                <p>Covering complete features including authentication, messages, channels, users, etc.</p>
+                            </div>
+                            <div class="info-card">
+                                <i class="fas fa-shield-alt"></i>
+                                <h3>JWT Authentication</h3>
+                                <p>Secure token-based authentication mechanism</p>
+                            </div>
+                            <div class="info-card">
+                                <i class="fas fa-bolt"></i>
+                                <h3>WebSocket</h3>
+                                <p>Support for real-time message push</p>
+                            </div>
+                            <div class="info-card">
+                                <i class="fas fa-database"></i>
+                                <h3>PostgreSQL</h3>
+                                <p>Data persistence based on Prisma ORM</p>
+                            </div>
+                        </div> -->
+                    </div>
+                </section>
+
+                <!-- Authentication -->
+                <section id="authentication">
+                    <h2><i class="fas fa-key"></i> Authentication</h2>
+                    <p>This API uses JWT Token for authentication. After successful login, the system sets <code>auth_token</code> in the Cookie.</p>
+
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                        <pre><code class="language-bash"># Set authentication Header
+curl -H "Cookie: auth_token=your_token_here" \
+     http://localhost:3000/api/auth/me</code></pre>
+                    </div>
+
+                    <div class="warning-box">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p><strong>Note:</strong> All authenticated APIs require a valid auth_token Cookie in the request.</p>
+                    </div>
+                </section>
+
+                <!-- Response Format -->
+                <section id="response-format">
+                    <h2><i class="fas fa-exchange-alt"></i> Response Format</h2>
+
+                    <h3>Success Response</h3>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                        <pre><code class="language-json">{
+  "success": true,
+  "data": { ... },
+  "message": "Operation successful"
+}</code></pre>
+                    </div>
+
+                    <h3>Error Response</h3>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                        <pre><code class="language-json">{
+  "success": false,
+  "error": "Error message",
+  "code": "ERROR_CODE"
+}</code></pre>
+                    </div>
+                </section>
+
+                <!-- Status Codes -->
+                <section id="status-codes">
+                    <h2><i class="fas fa-list"></i> HTTP Status Codes</h2>
+                    <table class="status-table">
+                        <thead>
+                            <tr>
+                                <th>Status Code</th>
+                                <th>Description</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge success">200</span></td>
+                                <td>Success</td>
+                                <td>Request completed successfully</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge warning">400</span></td>
+                                <td>Bad Request</td>
+                                <td>Missing required parameters</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge danger">401</span></td>
+                                <td>Unauthorized</td>
+                                <td>No valid authentication token provided</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge danger">403</span></td>
+                                <td>Forbidden</td>
+                                <td>Insufficient user permissions</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge danger">404</span></td>
+                                <td>Not Found</td>
+                                <td>Requested resource not found</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge danger">500</span></td>
+                                <td>Internal Server Error</td>
+                                <td>Error occurred while processing the request</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Authentication API -->
+                <section id="auth-api">
+                    <h2><i class="fas fa-lock"></i> Authentication API</h2>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/auth/login</h3>
+                        <p>User login endpoint, supporting both password and verification code login methods.</p>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>email</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>User email</td>
+                                </tr>
+                                <tr>
+                                    <td>password</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No*</span></td>
+                                    <td>User password (required for password login)</td>
+                                </tr>
+                                <tr>
+                                    <td>code</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No*</span></td>
+                                    <td>Verification code (required for verification code login)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="note"><small>*Either password login or verification code login is required</small></p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash"># Password login
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "password123"
+  }'
+
+# Verification code login
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "code": "123456"
+  }'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "123",
+      "email": "user@example.com",
+      "displayName": "John Doe",
+      "realName": "John Doe",
+      "avatarUrl": "https://example.com/avatar.jpg",
+      "status": "active",
+      "role": "member",
+      "isOnline": true,
+      "notificationSettings": {
+        "emailNotifications": true,
+        "pushNotifications": true
+      }
+    }
+  },
+  "message": "Login successful"
+}</code></pre>
+                        </div>
+
+                        <div class="info-box">
+                            <i class="fas fa-info-circle"></i>
+                            <p><strong>Cookie Settings:</strong> After successful login, the system sets two Cookies:</p>
+                            <ul>
+                                <li><code>auth_token</code> (httpOnly) - Used for API authentication</li>
+                                <li><code>ws_token</code> (non httpOnly) - Used for WebSocket authentication</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Other Authentication API Endpoints -->
+                    <div class="api-endpoint">
+                        <h3>POST /api/auth/register</h3>
+                        <p>User registration endpoint.</p>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>email</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>User email</td>
+                                </tr>
+                                <tr>
+                                    <td>password</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>User password (minimum 6 characters)</td>
+                                </tr>
+                                <tr>
+                                    <td>displayName</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Display name</td>
+                                </tr>
+                                <tr>
+                                    <td>realName</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Real name</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "password123",
+    "displayName": "John Doe",
+    "realName": "John Doe"
+  }'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Registration successful. Please check your email to verify your account.",
+  "data": {
+    "userId": "user123",
+    "email": "user@example.com",
+    "displayName": "John Doe"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/auth/me</h3>
+                        <p>Get detailed information of the currently logged in user.</p>
+
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/auth/me \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": "user123",
+    "email": "user@example.com",
+    "displayName": "John Doe",
+    "realName": "John Doe",
+    "avatarUrl": "https://example.com/avatar.jpg",
+    "status": "active",
+    "role": "member"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/auth/logout</h3>
+                        <p>User logout.</p>
+
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/auth/logout \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Logged out successfully"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/auth/send-verification</h3>
+                        <p>Send verification code to user email.</p>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>email</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>User email</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/auth/send-verification \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com"
+  }'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Verification code sent to your email"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/auth/profile</h3>
+                        <p>Get detailed profile of the current user.</p>
+
+                        <h4>Authentication</h4>
+                        <p>Cookie: <code>auth_token</code></p>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": "123",
+    "email": "user@example.com",
+    "displayName": "John Doe",
+    "realName": "John Doe",
+    "avatarUrl": "https://example.com/avatar.jpg",
+    "bio": "This is my bio",
+    "location": "New York",
+    "website": "https://example.com"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>PUT /api/auth/profile</h3>
+                        <p>Update current user's profile information.</p>
+
+                        <h4>Authentication</h4>
+                        <p>Cookie: <code>auth_token</code></p>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>displayName</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Display name</td>
+                                </tr>
+                                <tr>
+                                    <td>realName</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Real name</td>
+                                </tr>
+                                <tr>
+                                    <td>bio</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Bio</td>
+                                </tr>
+                                <tr>
+                                    <td>location</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Location</td>
+                                </tr>
+                                <tr>
+                                    <td>website</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Personal website</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X PUT http://localhost:3000/api/auth/profile \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{
+    "displayName": "New Name",
+    "bio": "Updated bio"
+  }'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": "123",
+    "displayName": "New Name",
+    "bio": "Updated bio"
+  },
+  "message": "Profile updated successfully"
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Messages API -->
+                <section id="messages-api">
+                    <h2><i class="fas fa-comment"></i> Messages API</h2>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/messages</h3>
+                        <p>Send a new message to a channel or direct message.</p>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>content</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No*</span></td>
+                                    <td>Message content</td>
+                                </tr>
+                                <tr>
+                                    <td>channelId</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No*</span></td>
+                                    <td>Channel ID (choose one with dmConversationId)</td>
+                                </tr>
+                                <tr>
+                                    <td>dmConversationId</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No*</span></td>
+                                    <td>Direct message conversation ID (choose one with channelId)</td>
+                                </tr>
+                                <tr>
+                                    <td>attachments</td>
+                                    <td>array</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Array of attachments</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="note"><small>*The message must have either text content or attachments</small></p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/messages \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{
+    "content": "Hello everyone!",
+    "channelId": "channel123"
+  }'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": "msg123",
+    "content": "Hello everyone!",
+    "messageType": "text",
+    "channelId": "channel123",
+    "userId": "user123",
+    "createdAt": "2024-01-01T12:00:00.000Z",
+    "updatedAt": "2024-01-01T12:00:00.000Z",
+    "attachments": [],
+    "reactions": []
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/messages</h3>
+                        <p>Get a list of messages from a channel or direct message.</p>
+
+                        <h4>Query Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>channelId</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No*</span></td>
+                                    <td>Channel ID</td>
+                                </tr>
+                                <tr>
+                                    <td>dmConversationId</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No*</span></td>
+                                    <td>Direct message conversation ID</td>
+                                </tr>
+                                <tr>
+                                    <td>limit</td>
+                                    <td>number</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Number of results (default: 50, max: 100)</td>
+                                </tr>
+                                <tr>
+                                    <td>offset</td>
+                                    <td>number</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Offset (default: 0)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET "http://localhost:3000/api/messages?channelId=channel123&limit=20" \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "messages": [
+      {
+        "id": "msg123",
+        "content": "Hello world",
+        "messageType": "text",
+        "channelId": "channel123",
+        "userId": "user123",
+        "createdAt": "2024-01-01T00:00:00.000Z"
+      }
+    ]
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/messages/search</h3>
+                        <p>Search for messages containing keywords.</p>
+
+                        <h4>Query Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>q</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Search keyword</td>
+                                </tr>
+                                <tr>
+                                    <td>channelId</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Channel ID (searches all visible channels if not specified)</td>
+                                </tr>
+                                <tr>
+                                    <td>limit</td>
+                                    <td>number</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Number of results (default: 20)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET "http://localhost:3000/api/messages/search?q=keyword&channelId=channel123" \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "messages": [
+      {
+        "id": "msg123",
+        "content": "This message contains the keyword",
+        "messageType": "text",
+        "channelId": "channel123",
+        "userId": "user456",
+        "createdAt": "2024-01-01T10:30:00.000Z"
+      },
+      {
+        "id": "msg456",
+        "content": "Another message with keyword",
+        "messageType": "text",
+        "channelId": "channel123",
+        "userId": "user789",
+        "createdAt": "2024-01-01T09:15:00.000Z"
+      }
+    ]
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/messages/context-search</h3>
+                        <p>Get context messages (10 before and after) for a specified message.</p>
+
+                        <h4>Query Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>messageId</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Message ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET "http://localhost:3000/api/messages/context-search?messageId=msg123" \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "messages": [
+      {"id": "msg120", "content": "Previous message", "createdAt": "2024-01-01T11:59:00.000Z"},
+      {"id": "msg123", "content": "Target message", "createdAt": "2024-01-01T12:00:00.000Z"},
+      {"id": "msg126", "content": "Next message", "createdAt": "2024-01-01T12:01:00.000Z"}
+    ]
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/messages/read</h3>
+                        <p>Mark messages as read.</p>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>channelId</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No*</span></td>
+                                    <td>Channel ID</td>
+                                </tr>
+                                <tr>
+                                    <td>dmConversationId</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No*</span></td>
+                                    <td>Direct message conversation ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="note"><small>*Either channelId or dmConversationId is required</small></p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/messages/read \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"channelId": "channel123"}'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Messages marked as read",
+  "data": {
+    "channelId": "channel123",
+    "lastReadMessageId": "msg456",
+    "updatedAt": "2024-01-01T12:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/messages/clear</h3>
+                        <p>Clear all messages from a channel or direct message (admin permission required).</p>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>channelId</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No*</span></td>
+                                    <td>Channel ID</td>
+                                </tr>
+                                <tr>
+                                    <td>dmConversationId</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No*</span></td>
+                                    <td>Direct message conversation ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="note"><small>*Either channelId or dmConversationId is required</small></p>
+
+                        <h4>Authentication</h4>
+                        <p>Cookie: <code>auth_token</code> + Admin Permission</p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/messages/clear \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"channelId": "channel123"}'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "All messages cleared from channel",
+  "data": {
+    "channelId": "channel123",
+    "clearedMessageCount": 42,
+    "clearedAt": "2024-01-01T12:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/messages/[id]</h3>
+                        <p>Get a specific message by ID.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Message ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/messages/msg123 \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": "msg123",
+    "content": "This is the message content",
+    "messageType": "text",
+    "channelId": "channel123",
+    "userId": "user456",
+    "createdAt": "2024-01-01T10:00:00.000Z",
+    "updatedAt": "2024-01-01T10:00:00.000Z",
+    "attachments": [],
+    "reactions": [
+      {"emoji": "thumbsup", "count": 2, "users": ["user123", "user789"]}
+    ]
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>PATCH /api/messages/[id]</h3>
+                        <p>Update message content (only the author can edit).</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Message ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>content</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>New message content</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X PATCH http://localhost:3000/api/messages/msg123 \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"content": "Updated message content"}'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Message updated successfully",
+  "data": {
+    "id": "msg123",
+    "content": "Updated message content",
+    "updatedAt": "2024-01-01T12:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>DELETE /api/messages/[id]</h3>
+                        <p>Delete a message (only the author can delete).</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Message ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X DELETE http://localhost:3000/api/messages/msg123 \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Message deleted successfully"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/messages/[id]/reply</h3>
+                        <p>Reply to a message, creating a thread.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Parent message ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>content</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No*</span></td>
+                                    <td>Reply content</td>
+                                </tr>
+                                <tr>
+                                    <td>attachments</td>
+                                    <td>array</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Attachments array</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="note"><small>*Reply must have either content or attachments</small></p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/messages/msg123/reply \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"content": "This is a reply"}'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": "msg456",
+    "content": "This is a reply",
+    "messageType": "thread",
+    "parentId": "msg123",
+    "channelId": "channel123",
+    "userId": "user123",
+    "createdAt": "2024-01-01T12:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/messages/[id]/thread-replies</h3>
+                        <p>Get all thread replies for a message.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Parent message ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/messages/msg123/thread-replies \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "replies": [
+      {
+        "id": "msg456",
+        "content": "First reply",
+        "messageType": "thread",
+        "parentId": "msg123",
+        "userId": "user456",
+        "createdAt": "2024-01-01T12:00:00.000Z"
+      },
+      {
+        "id": "msg789",
+        "content": "Second reply",
+        "messageType": "thread",
+        "parentId": "msg123",
+        "userId": "user123",
+        "createdAt": "2024-01-01T12:05:00.000Z"
+      }
+    ],
+    "totalCount": 2
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/messages/[id]/reactions</h3>
+                        <p>Add a reaction to a message.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Message ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>emoji</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Reaction emoji</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/messages/msg123/reactions \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"emoji": "thumbsup"}'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Reaction added",
+  "data": {
+    "messageId": "msg123",
+    "emoji": "thumbsup",
+    "count": 1,
+    "users": ["user123"]
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>DELETE /api/messages/[id]/reactions</h3>
+                        <p>Remove a reaction from a message.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Message ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Query Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>emoji</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Reaction emoji</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X DELETE "http://localhost:3000/api/messages/msg123/reactions?emoji=thumbsup" \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Reaction removed",
+  "data": {
+    "messageId": "msg123",
+    "emoji": "thumbsup",
+    "count": 0,
+    "users": []
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Channels API -->
+                <section id="channels-api">
+                    <h2><i class="fas fa-hashtag"></i> Channels API</h2>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/channels</h3>
+                        <p>Get a list of all channels visible to the current user.</p>
+
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/channels \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "channels": [
+      {
+        "id": "channel123",
+        "name": "general",
+        "description": "General discussion",
+        "isPrivate": false,
+        "createdAt": "2024-01-01T00:00:00.000Z"
+      }
+    ]
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/channels</h3>
+                        <p>Create a new channel.</p>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>name</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Channel name</td>
+                                </tr>
+                                <tr>
+                                    <td>description</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Channel description</td>
+                                </tr>
+                                <tr>
+                                    <td>isPrivate</td>
+                                    <td>boolean</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Whether it's a private channel (default: false)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/channels \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{
+    "name": "project-alpha",
+    "description": "Alpha project discussion channel",
+    "isPrivate": false
+  }'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "channel": {
+      "id": "channel123",
+      "name": "project-alpha",
+      "description": "Alpha project discussion channel",
+      "isPrivate": false,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  },
+  "message": "Channel created successfully"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/channels/[id]/join</h3>
+                        <p>User joins a specified channel.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Channel ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/channels/channel123/join \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Joined channel successfully"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/channels/[id]/leave</h3>
+                        <p>User leaves a specified channel.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Channel ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/channels/channel123/leave \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Left channel successfully"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/channels/[id]/members</h3>
+                        <p>Get a list of members in a specified channel.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Channel ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/channels/channel123/members \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "members": [
+      {
+        "id": "user123",
+        "email": "user@example.com",
+        "displayName": "John Doe",
+        "role": "member"
+      }
+    ]
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/channels/[id]/join-all</h3>
+                        <p>Admin batch invites users to join a channel.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Channel ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>userIds</td>
+                                    <td>array</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Array of user IDs to invite</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Authentication</h4>
+                        <p>Cookie: <code>auth_token</code> + Admin Permission</p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/channels/channel123/join-all \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"userIds": ["user123", "user456", "user789"]}'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Successfully added 3 members to the channel"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/channels/[id]</h3>
+                        <p>Get detailed information about a specific channel.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Channel ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/channels/channel123 \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "channel": {
+      "id": "channel123",
+      "name": "general",
+      "description": "General discussion",
+      "isPrivate": false,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>PUT /api/channels/[id]</h3>
+                        <p>Update channel information.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Channel ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>name</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Channel name</td>
+                                </tr>
+                                <tr>
+                                    <td>description</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Channel description</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X PUT http://localhost:3000/api/channels/channel123 \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"name": "general-updated", "description": "Updated description"}'</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>DELETE /api/channels/[id]</h3>
+                        <p>Delete a channel.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Channel ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X DELETE http://localhost:3000/api/channels/channel123 \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Channel deleted successfully"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/channels/[id]/invite</h3>
+                        <p>Invite a user to join a channel.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Channel ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>userId</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>User ID to invite</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/channels/channel123/invite \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"userId": "user456"}'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "User invited successfully"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/channels/[id]/members/remove</h3>
+                        <p>Remove a member from a channel.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Channel ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>userId</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>User ID to remove</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/channels/channel123/members/remove \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"userId": "user456"}'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Member removed successfully"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/channels/[id]/notification-preferences</h3>
+                        <p>Get notification preferences for a channel.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Channel ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/channels/channel123/notification-preferences \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "notificationLevel": "all"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>PUT /api/channels/[id]/notification-preferences</h3>
+                        <p>Update notification preferences for a channel.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>Channel ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>notifyOnNewMessage</td>
+                                    <td>boolean</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Notify on new messages</td>
+                                </tr>
+                                <tr>
+                                    <td>notifyOnMention</td>
+                                    <td>boolean</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Notify when mentioned</td>
+                                </tr>
+                                <tr>
+                                    <td>notifyOnThread</td>
+                                    <td>boolean</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Notify on thread replies</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X PUT http://localhost:3000/api/channels/channel123/notification-preferences \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"notifyOnNewMessage": true, "notifyOnMention": true, "notifyOnThread": false}'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Notification preferences updated successfully"
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Users API -->
+                <section id="users-api">
+                    <h2><i class="fas fa-users"></i> Users API</h2>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/users/search</h3>
+                        <p>Search for users.</p>
+
+                        <h4>Query Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>q</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Search keyword (username or email)</td>
+                                </tr>
+                                <tr>
+                                    <td>limit</td>
+                                    <td>number</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Number of results (default: 20)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET "http://localhost:3000/api/users/search?q=john&limit=10" \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "user123",
+        "email": "user@example.com",
+        "displayName": "John Doe"
+      }
+    ]
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/users</h3>
+                        <p>Get user list (admin permission required).</p>
+
+                        <h4>Query Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>limit</td>
+                                    <td>number</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Number of results (default: 50)</td>
+                                </tr>
+                                <tr>
+                                    <td>offset</td>
+                                    <td>number</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Offset (default: 0)</td>
+                                </tr>
+                                <tr>
+                                    <td>status</td>
+                                    <td>string</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>User status filter (active/inactive)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Authentication</h4>
+                        <p>Cookie: <code>auth_token</code> + Admin Permission</p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET "http://localhost:3000/api/users?limit=20&status=active" \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "user123",
+        "email": "john@example.com",
+        "displayName": "John Doe",
+        "realName": "John Doe",
+        "avatarUrl": "https://example.com/avatar.jpg",
+        "status": "active",
+        "role": "member",
+        "createdAt": "2024-01-01T00:00:00.000Z"
+      },
+      {
+        "id": "user456",
+        "email": "jane@example.com",
+        "displayName": "Jane Smith",
+        "realName": "Jane Smith",
+        "avatarUrl": "https://example.com/avatar2.jpg",
+        "status": "active",
+        "role": "admin",
+        "createdAt": "2024-01-02T00:00:00.000Z"
+      }
+    ],
+    "total": 2
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/users/unread-counts</h3>
+                        <p>Get unread message counts for all channels and direct messages of the current user.</p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/users/unread-counts \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "channels": [
+      {"channelId": "channel123", "unreadCount": 5},
+      {"channelId": "channel456", "unreadCount": 2}
+    ],
+    "conversations": [
+      {"conversationId": "conv789", "unreadCount": 3}
+    ],
+    "totalUnread": 10
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/users/starred</h3>
+                        <p>Get user's starred messages/channels list.</p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/users/starred \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "stars": [
+      {"type": "channel", "id": "channel123", "addedAt": "2024-01-01T12:00:00.000Z"},
+      {"type": "message", "id": "msg456", "addedAt": "2024-01-01T10:00:00.000Z"},
+      {"type": "conversation", "id": "conv789", "addedAt": "2024-01-01T08:00:00.000Z"}
+    ]
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/users/starred</h3>
+                        <p>Add a star.</p>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>type</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Star type (channel/conversation/message)</td>
+                                </tr>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Corresponding ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/users/starred \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"type": "channel", "id": "channel123"}'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Star added successfully",
+  "data": {
+    "type": "channel",
+    "id": "channel123",
+    "addedAt": "2024-01-01T12:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>DELETE /api/users/starred</h3>
+                        <p>Remove a star.</p>
+
+                        <h4>Query Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>type</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Star type (channel/conversation/message)</td>
+                                </tr>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Corresponding ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X DELETE "http://localhost:3000/api/users/starred?type=channel&id=channel123" \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Star removed successfully"
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Other APIs -->
+                <section id="other-api">
+                    <h2><i class="fas fa-cog"></i> Other APIs</h2>
+
+                    <div class="api-endpoint">
+                        <h3>GET /api/health</h3>
+                        <p>Get system health status.</p>
+
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/health</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "status": "ok",
+  "timestamp": "2024-01-01T12:00:00.000Z",
+  "checks": {
+    "database": "connected",
+    "websocket": "available",
+    "auth": "no-token"
+  },
+  "websocket": {
+    "connectedClients": 15,
+    "namespaces": 2
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/upload</h3>
+                        <p>Upload files to the server.</p>
+
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/upload \
+  -H "Cookie: auth_token=your_token_here" \
+  -F "file=@/path/to/document.pdf"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": "file123",
+    "filename": "document.pdf",
+    "originalName": "document.pdf",
+    "mimeType": "application/pdf",
+    "size": 1024000,
+    "url": "/uploads/files/document.pdf",
+    "uploadedAt": "2024-01-01T12:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h3>POST /api/health</h3>
+                        <p>Get detailed system information and user statistics.</p>
+
+                        <h4>Authentication</h4>
+                        <p>Cookie: <code>auth_token</code></p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/health \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "status": "healthy",
+    "timestamp": "2024-01-01T12:00:00.000Z",
+    "uptime": 3600,
+    "memory": {
+      "used": 150000000,
+      "total": 500000000
+    },
+    "users": {
+      "total": 100,
+      "active": 75,
+      "inactive": 25
+    },
+    "channels": {
+      "total": 20,
+      "public": 15,
+      "private": 5
+    },
+    "messages": {
+      "today": 500,
+      "total": 10000
+    }
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3 id="dm-api">Direct Message API</h3>
+
+                    <div class="api-endpoint">
+                        <h4>GET /api/conversations/dm</h4>
+                        <p>Get user's direct message conversation list.</p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/conversations/dm \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "conversations": [
+      {
+        "id": "conv123",
+        "participants": [
+          {"id": "user123", "displayName": "John"},
+          {"id": "user456", "displayName": "Jane"}
+        ],
+        "lastMessage": {
+          "id": "msg789",
+          "content": "Hello!",
+          "createdAt": "2024-01-01T12:00:00.000Z"
+        },
+        "unreadCount": 2,
+        "createdAt": "2024-01-01T10:00:00.000Z"
+      }
+    ]
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>POST /api/conversations/dm</h4>
+                        <p>Create a new direct message conversation.</p>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>userId</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Other user's ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/conversations/dm \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"userId": "user456"}'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": "conv123",
+    "participants": [
+      {"id": "user123", "displayName": "John"},
+      {"id": "user456", "displayName": "Jane"}
+    ],
+    "createdAt": "2024-01-01T12:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>GET /api/conversations/dm/[userId]</h4>
+                        <p>Get direct message conversation with a specified user.</p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/conversations/dm/user456 \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": "conv123",
+    "participants": [
+      {"id": "user123", "displayName": "John"},
+      {"id": "user456", "displayName": "Jane"}
+    ],
+    "lastMessage": {
+      "id": "msg789",
+      "content": "See you later!",
+      "createdAt": "2024-01-01T12:00:00.000Z"
+    },
+    "createdAt": "2024-01-01T10:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>GET /api/conversations/dm/active</h4>
+                        <p>Get currently active direct message conversations.</p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/conversations/dm/active \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "conversations": [
+      {
+        "id": "conv123",
+        "participants": [
+          {"id": "user456", "displayName": "Jane", "status": "online"}
+        ],
+        "lastMessage": {
+          "id": "msg789",
+          "createdAt": "2024-01-01T12:00:00.000Z"
+        },
+        "unreadCount": 1
+      }
+    ]
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>GET /api/conversations/read-position</h4>
+                        <p>Get read position of a direct message conversation.</p>
+
+                        <h4>Query Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>conversationId</td>
+                                    <td>string</td>
+                                    <td><span class="badge required">Yes</span></td>
+                                    <td>Direct message conversation ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET "http://localhost:3000/api/conversations/read-position?conversationId=conv123" \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "conversationId": "conv123",
+    "lastReadMessageId": "msg456",
+    "lastReadAt": "2024-01-01T12:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3 id="thread-api">Thread API</h3>
+
+                    <div class="api-endpoint">
+                        <h4>GET /api/threads/unread</h4>
+                        <p>Get threads with unread replies.</p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/threads/unread \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "threads": [
+      {
+        "parentMessage": {
+          "id": "msg123",
+          "content": "Original message"
+        },
+        "unreadReplies": 3,
+        "lastReplyAt": "2024-01-01T12:00:00.000Z"
+      }
+    ]
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>GET /api/threads/count</h4>
+                        <p>Get the count of threads with unread messages.</p>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/threads/count \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "threadCount": 5,
+    "totalUnreadReplies": 12
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>POST /api/threads/[threadId]/read</h4>
+                        <p>Mark a thread as read.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>threadId</td>
+                                    <td>string</td>
+                                    <td>Thread/Message ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X POST http://localhost:3000/api/threads/msg123/read \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Thread marked as read",
+  "data": {
+    "threadId": "msg123",
+    "markedAt": "2024-01-01T12:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3 id="dm-notification-api">DM Notification Preferences</h3>
+
+                    <div class="api-endpoint">
+                        <h4>GET /api/dm-conversations/[id]/notification-preferences</h4>
+                        <p>Get notification preferences for a DM conversation.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>DM Conversation ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X GET http://localhost:3000/api/dm-conversations/conv123/notification-preferences \
+  -H "Cookie: auth_token=your_token_here"</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "conversationId": "conv123",
+    "notifyOnNewMessage": true,
+    "notifyOnMention": false,
+    "updatedAt": "2024-01-01T12:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>PUT /api/dm-conversations/[id]/notification-preferences</h4>
+                        <p>Update notification preferences for a DM conversation.</p>
+
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>string</td>
+                                    <td>DM Conversation ID</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>notifyOnNewMessage</td>
+                                    <td>boolean</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Notify on new messages</td>
+                                </tr>
+                                <tr>
+                                    <td>notifyOnMention</td>
+                                    <td>boolean</td>
+                                    <td><span class="badge optional">No</span></td>
+                                    <td>Notify when mentioned</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Request Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-bash">curl -X PUT http://localhost:3000/api/dm-conversations/conv123/notification-preferences \
+  -H "Content-Type: application/json" \
+  -H "Cookie: auth_token=your_token_here" \
+  -d '{"notifyOnNewMessage": true, "notifyOnMention": false}'</code></pre>
+                        </div>
+
+                        <h4>Response Example</h4>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Notification preferences updated successfully",
+  "data": {
+    "conversationId": "conv123",
+    "notifyOnNewMessage": true,
+    "notifyOnMention": false,
+    "updatedAt": "2024-01-01T12:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- MCP API -->
+                <section id="mcp-api">
+                    <h2><i class="fas fa-plug"></i> MCP Server API</h2>
+                    <p>This document describes the Model Context Protocol (MCP) tools available for interacting with the Slack API. The MCP server exposes 54 tools for managing channels, messages, users, and direct messages.</p>
+
+                    <h3 id="mcp-health-tools">Health Tools</h3>
+
+                    <div class="api-endpoint">
+                        <h4>Health Check - health_check</h4>
+                        <p>Check the health status of the MCP server, database, and WebSocket connections.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "userToken": string  // Optional authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "status": "ok",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "checks": {
+    "database": "connected",
+    "websocket": "available",
+    "auth": "valid-token"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3 id="mcp-auth-tools">Authentication Tools</h3>
+
+                    <div class="api-endpoint">
+                        <h4>Register - register</h4>
+                        <p>Create a new user account.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "email": string,      // User email address
+  "password": string,   // User password
+  "displayName": string // Display name for the user
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": "user123",
+    "email": "user@example.com",
+    "displayName": "John Doe",
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  },
+  "message": "Registration successful"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Login - login</h4>
+                        <p>Authenticate user and obtain access token.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "email": string,    // User email address
+  "password": string // User password
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "user": {
+      "id": "user123",
+      "email": "user@example.com",
+      "displayName": "John Doe"
+    }
+  },
+  "message": "Login successful"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Send Verification - send_verification</h4>
+                        <p>Send a verification code to user email for email verification login.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "email": string  // User email address
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Verification code sent"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Logout - logout</h4>
+                        <p>Logout user and invalidate the current token.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Logged out"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get Me - get_me</h4>
+                        <p>Get the current authenticated user's information.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": "user123",
+  "email": "user@example.com",
+  "displayName": "John Doe",
+  "avatarUrl": "https://...",
+  "timezone": "UTC"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get Profile - get_profile</h4>
+                        <p>Get user profile information.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": "user123",
+  "email": "user@example.com",
+  "displayName": "John Doe",
+  "realName": "John Doe",
+  "avatarUrl": "https://...",
+  "timezone": "UTC"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Update Profile - update_profile</h4>
+                        <p>Update user profile information.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "displayName": string,  // New display name
+  "realName": string,     // New real name
+  "avatarUrl": string,    // New avatar URL
+  "timezone": string,     // New timezone
+  "userToken": string   // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Profile updated",
+  "user": {
+    "id": "user123",
+    "displayName": "New Name",
+    "avatarUrl": "https://..."
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3 id="mcp-channel-tools">Channel Tools</h3>
+
+                    <div class="api-endpoint">
+                        <h4>List Channels - list_channels</h4>
+                        <p>Get a list of all channels visible to the current user.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "type": "all" | "joined",  // Filter: all channels or only joined (default: "all")
+  "limit": number,          // Maximum number of results (default: 50)
+  "offset": number,          // Offset for pagination (default: 0)
+  "userToken": string       // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "channels": [
+    {
+      "id": "channel123",
+      "name": "general",
+      "description": "General discussion",
+      "isPrivate": false,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Create Channel - create_channel</h4>
+                        <p>Create a new channel.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "name": string,           // Channel name (required)
+  "description": string,   // Channel description
+  "isPrivate": boolean,    // Whether it's a private channel (default: false)
+  "userToken": string     // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "channel": {
+    "id": "channel123",
+    "name": "new-channel",
+    "description": "Channel description",
+    "isPrivate": false,
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get Channel - get_channel</h4>
+                        <p>Get detailed information about a specific channel.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,       // Channel ID
+  "userToken": string // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": "channel123",
+  "name": "general",
+  "description": "General discussion",
+  "isPrivate": false,
+  "isArchived": false,
+  "createdById": "user123",
+  "createdAt": "2024-01-01T00:00:00.000Z"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Update Channel - update_channel</h4>
+                        <p>Update channel information.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,           // Channel ID (required)
+  "name": string,         // New channel name
+  "description": string,  // New channel description
+  "userToken": string    // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Channel updated successfully",
+  "channel": { ... }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Delete Channel - delete_channel</h4>
+                        <p>Delete a channel.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,       // Channel ID (required)
+  "userToken": string // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Channel deleted"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Join Channel - join_channel</h4>
+                        <p>User joins a specified channel.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,       // Channel ID (required)
+  "userToken": string // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Joined channel"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Leave Channel - leave_channel</h4>
+                        <p>User leaves a specified channel.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,       // Channel ID (required)
+  "userToken": string // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Left channel"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>List Channel Members - list_channel_members</h4>
+                        <p>Get a list of members in a specified channel.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,       // Channel ID (required)
+  "limit": number,    // Maximum number of results (default: 50)
+  "offset": number,   // Offset for pagination (default: 0)
+  "userToken": string // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "members": [
+    {
+      "id": "user123",
+      "email": "user@example.com",
+      "displayName": "John Doe",
+      "role": "member"
+    }
+  ]
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Invite Channel Member - invite_channel_member</h4>
+                        <p>Invite a user to join a channel.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,       // Channel ID (required)
+  "userId": string,   // User ID to invite (required)
+  "userToken": string // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "User invited"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Join All Channel Members - join_all_channel_members</h4>
+                        <p>Add all users to a specified channel.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "channelId": string,  // Channel ID (required)
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Successfully added N members to the channel"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get Channel Permissions - get_channel_permissions</h4>
+                        <p>Get the current user's role and permissions in a channel.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "channelId": string,  // Channel ID (required)
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "isMember": true,
+  "role": "owner",
+  "channelId": "channel123",
+  "channelName": "general",
+  "permissions": {
+    "canEdit": true,
+    "canDelete": true,
+    "canManageMembers": true,
+    "canManageSettings": true
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3 id="mcp-message-tools">Message Tools</h3>
+
+                    <div class="api-endpoint">
+                        <h4>List Messages - list_messages</h4>
+                        <p>Get messages from a channel or direct message.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "channelId": string,        // Channel ID (required if dmConversationId not provided)
+  "dmConversationId": string, // DM conversation ID (required if channelId not provided)
+  "limit": number,           // Number of results (default: 50, max: 100)
+  "offset": number,           // Offset for pagination (default: 0)
+  "userToken": string        // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "messages": [
+    {
+      "id": "msg123",
+      "content": "Hello world",
+      "messageType": "text",
+      "channelId": "channel123",
+      "userId": "user123",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "total": 50,
+  "hasMore": false
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Send Message - send_message</h4>
+                        <p>Send a new message to a channel or direct message.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "content": string,          // Message content (required if attachments not provided)
+  "channelId": string,        // Channel ID (required if dmConversationId not provided)
+  "dmConversationId": string, // DM conversation ID (required if channelId not provided)
+  "attachments": array,       // Array of attachments
+  "userToken": string        // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": "msg123",
+  "content": "Hello world",
+  "messageType": "text",
+  "channelId": "channel123",
+  "createdAt": "2024-01-01T00:00:00.000Z"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get Message - get_message</h4>
+                        <p>Get a specific message by ID.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,         // Message ID (required)
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": "msg123",
+  "content": "Hello world",
+  "messageType": "text",
+  "channelId": "channel123",
+  "userId": "user123",
+  "createdAt": "2024-01-01T00:00:00.000Z"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Update Message - update_message</h4>
+                        <p>Update message content (only the author can edit).</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,         // Message ID (required)
+  "content": string,   // New message content (required)
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Message updated",
+  "updatedMessage": {
+    "id": "msg123",
+    "content": "Updated content",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Delete Message - delete_message</h4>
+                        <p>Delete a message (only the author can delete).</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,         // Message ID (required)
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Message deleted"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Reply to Message - reply_to_message</h4>
+                        <p>Reply to a message, creating a thread.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,           // Parent message ID (required)
+  "content": string,      // Reply content (required if attachments not provided)
+  "attachments": array,   // Attachments array
+  "userToken": string   // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": "msg123",
+  "content": "Thread reply",
+  "messageType": "text",
+  "parentMessageId": "parent123",
+  "channelId": "channel123",
+  "createdAt": "2024-01-01T00:00:00.000Z"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get Thread Replies - get_thread_replies</h4>
+                        <p>Get all thread replies for a message.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,         // Parent message ID (required)
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "replies": [
+    {
+      "id": "msg123",
+      "content": "Thread reply",
+      "parentMessageId": "parent123",
+      "userId": "user123",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "totalReplies": 5
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Add Reaction - add_reaction</h4>
+                        <p>Add a reaction to a message.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,       // Message ID (required)
+  "emoji": string,   // Reaction emoji (required)
+  "userToken": string // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Reaction added"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Remove Reaction - remove_reaction</h4>
+                        <p>Remove a reaction from a message.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": string,       // Message ID (required)
+  "emoji": string,   // Reaction emoji (required)
+  "userToken": string // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Reaction removed"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Search Messages - search_messages</h4>
+                        <p>Search for messages containing keywords.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "q": string,           // Search keyword (required)
+  "channelId": string,   // Channel ID (searches all visible channels if not specified)
+  "limit": number,       // Number of results (default: 20)
+  "userToken": string   // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">[
+  {
+    "id": "msg123",
+    "content": "Message with keyword",
+    "channelId": "channel123"
+  }
+]</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get Reactions - get_reactions</h4>
+                        <p>Get all reactions on a specific message.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "messageId": string,  // Message ID (required)
+  "userToken": string   // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">[
+  { "emoji": "thumbsup", "count": 3, "users": ["user1", "user2", "user3"] }
+]</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Context Search Messages - context_search_messages</h4>
+                        <p>Search for messages with context around each result.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "query": string,              // Search query (required)
+  "channelId": string,          // Channel ID (optional)
+  "dmConversationId": string,  // DM conversation ID (optional)
+  "userToken": string           // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "results": [...],
+  "context": { ... }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Mark Messages Read - mark_messages_read</h4>
+                        <p>Mark messages in a channel or DM as read.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "channelId": string,          // Channel ID (optional)
+  "dmConversationId": string,  // DM conversation ID (optional)
+  "lastReadMessageId": string,  // Last read message ID (optional)
+  "userToken": string           // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Messages marked as read"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Mark All Messages Read - mark_all_messages_read</h4>
+                        <p>Mark all messages in all channels as read.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "All messages marked as read"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Clear Messages - clear_messages</h4>
+                        <p>Clear all messages in a channel or DM.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "channelId": string,          // Channel ID (optional)
+  "dmConversationId": string,  // DM conversation ID (optional)
+  "userToken": string           // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Messages cleared"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3 id="mcp-user-tools">User Tools</h3>
+
+                    <div class="api-endpoint">
+                        <h4>List Users - list_users</h4>
+                        <p>Get a list of all users.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "limit": number,    // Maximum number of results (default: 50)
+  "offset": number,   // Offset for pagination (default: 0)
+  "userToken": string // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">[
+  {
+    "id": "user123",
+    "email": "user@example.com",
+    "displayName": "John Doe"
+  }
+]</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Search Users - search_users</h4>
+                        <p>Search for users by name or email.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "q": string,        // Search query (required)
+  "userToken": string // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">[
+  {
+    "id": "user123",
+    "email": "user@example.com",
+    "displayName": "John Doe"
+  }
+]</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get User - get_user</h4>
+                        <p>Get detailed information about a specific user.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "userId": string,   // User ID to retrieve
+  "userToken": string // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": "user123",
+  "email": "user@example.com",
+  "displayName": "John Doe",
+  "avatarUrl": "https://...",
+  "timezone": "UTC"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get Unread Counts - get_unread_counts</h4>
+                        <p>Get the count of unread messages across all channels and DMs.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "totalUnread": 15,
+  "channels": { "channel123": 5 },
+  "dms": { "dm123": 10 }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get Starred Users - get_starred_users</h4>
+                        <p>Get a list of users starred by the current user.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">[
+  {
+    "id": "user123",
+    "email": "user@example.com",
+    "displayName": "John Doe"
+  }
+]</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Toggle Starred User - toggle_starred_user</h4>
+                        <p>Star or unstar a user.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "starredUserId": string,  // User ID to star/unstar
+  "userToken": string      // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "User starred/unstarred"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3 id="mcp-conversation-tools">Conversation Tools</h3>
+
+                    <div class="api-endpoint">
+                        <h4>Create DM - create_dm</h4>
+                        <p>Create a new direct message conversation.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "userId": string,     // Other user's ID (required)
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": "dm123",
+  "participants": ["user123", "user456"],
+  "createdAt": "2024-01-01T00:00:00.000Z"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get DM - get_dm</h4>
+                        <p>Get direct message conversation with a specified user.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "userId": string,      // Other user's ID (required)
+  "userToken": string   // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "id": "dm123",
+  "participants": ["user123", "user456"],
+  "createdAt": "2024-01-01T00:00:00.000Z"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get Read Position - get_read_position</h4>
+                        <p>Get the read position (last read message) in a channel or DM.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "channelId": string,          // Channel ID (optional)
+  "dmConversationId": string, // DM conversation ID (optional)
+  "userToken": string          // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "lastReadMessageId": "msg123",
+  "lastReadAt": "2024-01-01T00:00:00.000Z"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3 id="mcp-notification-tools">Notification Tools</h3>
+
+                    <div class="api-endpoint">
+                        <h4>Get Channel Notification Prefs - get_channel_notification_prefs</h4>
+                        <p>Get notification preferences for a channel.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "channelId": string,  // Channel ID (required)
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "notificationLevel": "all"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Update Channel Notification Prefs - update_channel_notification_prefs</h4>
+                        <p>Update notification preferences for a channel.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "channelId": string,             // Channel ID (required)
+  "notificationLevel": string,    // "all" | "mentions" | "none"
+  "userToken": string             // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Notification preferences updated successfully"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get DM Notification Prefs - get_dm_notification_prefs</h4>
+                        <p>Get notification preferences for a DM conversation.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "conversationId": string,  // DM conversation ID (required)
+  "userToken": string        // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "notificationLevel": "all"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Update DM Notification Prefs - update_dm_notification_prefs</h4>
+                        <p>Update notification preferences for a DM conversation.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "conversationId": string,      // DM conversation ID (required)
+  "notificationLevel": string,  // "all" | "mentions" | "none"
+  "userToken": string           // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Notification preferences updated successfully"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3 id="mcp-attachment-tools">Attachment Tools</h3>
+
+                    <div class="api-endpoint">
+                        <h4>Get Attachments - get_attachments</h4>
+                        <p>Get all attachments in a conversation.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "conversationId": string,   // Conversation ID (required)
+  "conversationType": string, // "channel" | "dm" (required)
+  "userToken": string         // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">[
+  {
+    "id": "att123",
+    "fileName": "document.pdf",
+    "fileSize": 1024000,
+    "mimeType": "application/pdf",
+    "url": "https://..."
+  }
+]</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Delete Attachment - delete_attachment</h4>
+                        <p>Delete an attachment.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "attachmentId": string,  // Attachment ID (required)
+  "userToken": string     // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Attachment deleted"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Create Attachment Upload URL - create_attachment_upload_url</h4>
+                        <p>Get a pre-signed URL for uploading an attachment.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "fileName": string,    // File name with extension (required)
+  "mimeType": string,   // MIME type (required)
+  "fileSize": number,   // File size in bytes (optional)
+  "userToken": string   // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "uploadUrl": "https://...",
+  "fileUrl": "https://..."
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3 id="mcp-thread-tools">Thread Tools</h3>
+
+                    <div class="api-endpoint">
+                        <h4>Get Thread Count - get_thread_count</h4>
+                        <p>Get the count of unread threads and total unread replies.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "unreadThreadsCount": 5,
+  "totalUnreadReplies": 12
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Get Unread Threads - get_unread_threads</h4>
+                        <p>Get list of unread threads.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "limit": number,    // Number of results (optional)
+  "offset": number,   // Offset for pagination (optional)
+  "userToken": string // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "threads": [...],
+  "totalCount": 5,
+  "hasMore": false
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <h4>Mark Thread Read - mark_thread_read</h4>
+                        <p>Mark a thread as read.</p>
+
+                        <h5>Input Schema</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "threadId": string,  // Thread/parent message ID (required)
+  "userToken": string  // Current user authentication token
+}</code></pre>
+                        </div>
+
+                        <h5>Response</h5>
+                        <div class="code-block">
+                            <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "Thread marked as read"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <h3 id="mcp-quick-start">Quick Start</h3>
+
+                    <h4>1. Start the MCP Server</h4>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                        <pre><code class="language-bash">cd /nexus-chat/mcp-server
+npm run build
+node dist/index.js</code></pre>
+                    </div>
+
+                    <h4>2. Register a New User</h4>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                        <pre><code class="language-json">{
+  "name": "register",
+  "arguments": {
+    "email": "user@example.com",
+    "password": "securepassword123",
+    "displayName": "John Doe"
+  }
+}</code></pre>
+                    </div>
+
+                    <h4>3. Login</h4>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                        <pre><code class="language-json">{
+  "name": "login",
+  "arguments": {
+    "email": "user@example.com",
+    "password": "securepassword123"
+  }
+}</code></pre>
+                    </div>
+
+                    <h4>4. Use Other Tools</h4>
+                    <p>After login, use other tools to manage channels, messages, and users:</p>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                        <pre><code class="language-json">{
+  "name": "list_channels",
+  "arguments": {
+    "type": "joined"
+  }
+}</code></pre>
+                    </div>
+
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                        <pre><code class="language-json">{
+  "name": "send_message",
+  "arguments": {
+    "content": "Hello!",
+    "channelId": "channel123"
+  }
+}</code></pre>
+                    </div>
+
+                    <h3 id="mcp-error-handling">Error Handling</h3>
+                    <p>All tool responses follow a consistent format:</p>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                        <pre><code class="language-json">{
+  "success": false,
+  "error": "Error message description"
+}</code></pre>
+                    </div>
+
+                    <p>Common error codes:</p>
+                    <ul>
+                        <li><code>UNAUTHORIZED</code>: User not logged in or token expired</li>
+                        <li><code>NOT_FOUND</code>: Requested resource not found</li>
+                        <li><code>FORBIDDEN</code>: User lacks permission</li>
+                        <li><code>VALIDATION_ERROR</code>: Invalid input parameters</li>
+                        <li><code>INTERNAL_ERROR</code>: Server error</li>
+                    </ul>
+
+                    <h3 id="mcp-resources">Resources</h3>
+                    <p>The MCP server also provides resources for querying data:</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>URI</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>channels://list</code></td>
+                                <td>List of all channels</td>
+                            </tr>
+                            <tr>
+                                <td><code>channels://joined</code></td>
+                                <td>List of joined channels</td>
+                            </tr>
+                            <tr>
+                                <td><code>messages://recent</code></td>
+                                <td>Recent messages</td>
+                            </tr>
+                            <tr>
+                                <td><code>users://list</code></td>
+                                <td>List of all users</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Example Code -->
+                <section id="examples">
+                    <h2><i class="fas fa-code"></i> Example Code</h2>
+
+                    <h3>JavaScript (Node.js)</h3>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                        <pre><code class="language-javascript">// Login
+const login = async (email, password) => {
+  const response = await fetch('http://localhost:3000/api/auth/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email, password }),
+    credentials: 'include' // Include Cookie
+  });
+  return response.json();
+};
+
+// Send Message
+const sendMessage = async (content, channelId) => {
+  const response = await fetch('http://localhost:3000/api/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': 'auth_token=your_token_here'
+    },
+    body: JSON.stringify({ content, channelId }),
+    credentials: 'include'
+  });
+  return response.json();
+};</code></pre>
+                    </div>
+
+                    <h3>Python</h3>
+                    <div class="code-block">
+                        <button class="copy-btn"><i class="fas fa-copy"></i></button>
+                        <pre><code class="language-python">import requests
+
+# Login
+def login(email, password):
+    response = requests.post(
+        'http://localhost:3000/api/auth/login',
+        json={'email': email, 'password': password},
+        cookies={'auth_token': 'your_token_here'}
+    )
+    return response.json()
+
+# Send Message
+def send_message(content, channel_id):
+    response = requests.post(
+        'http://localhost:3000/api/messages',
+        json={'content': content, 'channelId': channel_id},
+        cookies={'auth_token': 'your_token_here'}
+    )
+    return response.json()</code></pre>
+                    </div>
+                </section>
+
+                <!-- Footer -->
+                <footer class="footer">
+                    <p>&copy; 2026 Slack-like Chat API. All rights reserved.</p>
+                    <p>
+                        <a href="https://github.com/BruceY-rgb/Slack-chat-API" target="_blank">
+                            <i class="fab fa-github"></i> GitHub
+                        </a>
+                        <span class="separator">|</span>
+                        <a href="mailto:support@example.com">
+                            <i class="fas fa-envelope"></i> Contact Us
+                        </a>
+                    </p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Updated to full version of Prism.js to support ES6+ syntax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="/docs/js/main.js"></script>
+</body>
+</html>

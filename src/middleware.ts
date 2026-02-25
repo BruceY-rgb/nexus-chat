@@ -41,9 +41,11 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization)
      * - favicon.ico (favicon file)
+     * - public (public assets)
      * - login (Login page)
      * - register (Register page)
+     * - docs (API documentation)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|public|login|register).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|public|login|register|docs).*)',
   ],
 };
