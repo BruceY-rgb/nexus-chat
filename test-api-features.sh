@@ -2,10 +2,50 @@
 # Slack API Test Suite - Organized by Feature Categories
 # This script provides comprehensive API testing for Slack-like application
 # Designed for customer reference and system validation
+# Includes automatic issue detection and fixing
 
 # ============================================================
 # CONFIGURATION
 # ============================================================
+
+# Auto-detect container name if not provided
+auto_detect_container() {
+    # If CONTAINER_NAME is explicitly set (not the default), use it
+    if [ -n "$CONTAINER_NAME" ] && [ "$CONTAINER_NAME" != "slack_app_dev" ]; then
+        echo "$CONTAINER_NAME"
+        return
+    fi
+
+    # Try to find container by port 3002 mapping
+    CONTAINER=$(docker ps --format '{{.Names}}:{{.Ports}}' 2>/dev/null | grep ':3002->' | cut -d':' -f1 | head -1)
+
+    if [ -n "$CONTAINER" ]; then
+        echo "$CONTAINER"
+        return
+    fi
+
+    # Try to find container by port 3000 mapping
+    CONTAINER=$(docker ps --format '{{.Names}}:{{.Ports}}' 2>/dev/null | grep ':3000->' | cut -d':' -f1 | head -1)
+
+    if [ -n "$CONTAINER" ]; then
+        echo "$CONTAINER"
+        return
+    fi
+
+    # Fallback: look for common container name patterns
+    CONTAINER=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -E '(slack|app|nextjs)' | head -1)
+
+    if [ -n "$CONTAINER" ]; then
+        echo "$CONTAINER"
+        return
+    fi
+
+    # Ultimate fallback
+    echo "slack_app_dev"
+}
+
+CONTAINER_NAME=$(auto_detect_container)
+echo -e "${CYAN}Detected container: ${CONTAINER_NAME}${NC}"
 
 MCP_URL="http://localhost:3002/mcp/messages"
 TEST_EMAIL="slackbot@slack-import.local"
@@ -18,6 +58,83 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
+
+# ============================================================
+# AUTO-FIX: Check and fix common issues
+# ============================================================
+
+fix_common_issues() {
+    echo -e "${CYAN}Running auto-fix checks...${NC}"
+
+    # Check 1: Docker running
+    if ! docker ps > /dev/null 2>&1; then
+        echo -e "${RED}ERROR: Docker is not running${NC}"
+        echo "Please start Docker and try again"
+        exit 1
+    fi
+    echo -e "${GREEN}[OK] Docker is running${NC}"
+
+    # Check 2: Required containers running
+    APP_RUNNING=$(docker ps --filter "name=slack_app" --format "{{.Names}}" 2>/dev/null)
+    if [ -z "$APP_RUNNING" ]; then
+        echo -e "${YELLOW}[WARN] App container not found, attempting to start...${NC}"
+        docker-compose -f docker-compose.dev.yml up -d app db 2>/dev/null || \
+        docker compose -f docker-compose.dev.yml up -d app db 2>/dev/null || \
+        (echo -e "${RED}ERROR: Cannot start containers automatically" && exit 1)
+        echo "Waiting for containers to start..."
+        sleep 10
+    fi
+}
+
+# Run auto-fix
+fix_common_issues
+
+# ============================================================
+# PRE-CHECK: Verify MCP server is accessible
+# ============================================================
+
+echo -e "${CYAN}Checking MCP server connectivity...${NC}"
+
+# Wait for MCP to be ready (with retry)
+MAX_RETRIES=5
+RETRY_COUNT=0
+MCP_READY=false
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    MCP_CHECK=$(curl -s --max-time 10 "$MCP_URL" -H "Content-Type: application/json" \
+        -d '{"jsonrpc":"2.0","id":0,"method":"tools/list","params":{}}' 2>&1)
+
+    if echo "$MCP_CHECK" | grep -qE '"(result|error)"'; then
+        MCP_READY=true
+        break
+    fi
+
+    # Check for esbuild error
+    if echo "$MCP_CHECK" | grep -qi "esbuild"; then
+        echo -e "${YELLOW}[AUTO-FIX] Detected esbuild version mismatch, attempting fix...${NC}"
+        docker exec $CONTAINER_NAME sh -c "cd /app/mcp-server && npm install esbuild@0.27.3 2>&1" > /dev/null
+        docker restart $CONTAINER_NAME
+        echo "Waiting for MCP server to restart..."
+        sleep 15
+    fi
+
+    RETRY_COUNT=$((RETRY_COUNT+1))
+    echo "  Retry $RETRY_COUNT/$MAX_RETRIES..."
+    sleep 3
+done
+
+if [ "$MCP_READY" = "false" ]; then
+    echo -e "${RED}ERROR: Cannot connect to MCP server on port 3002${NC}"
+    echo ""
+    echo "Please ensure Docker containers are running:"
+    echo -e "  ${YELLOW}docker ps${NC}  - Check running containers"
+    echo ""
+    echo "Port check:"
+    lsof -i :3002 2>/dev/null || echo "  Port 3002 is not listening"
+    exit 1
+fi
+
+echo -e "${GREEN}MCP server is accessible${NC}"
 
 # Test counters
 TOTAL_TESTS=0
@@ -177,6 +294,18 @@ do_login() {
 
     if [ -z "$TOKEN" ]; then
         log_error "Login failed"
+        echo "Login response: $LOGIN_RESP"
+        echo ""
+        echo -e "${YELLOW}Troubleshooting:${NC}"
+        echo "1. Check if database is running: docker ps | grep postgres"
+        echo "2. Check MCP server logs: docker logs \$(docker ps --filter name=mcp -q)"
+        echo "3. Check if API server is accessible: curl http://localhost:3000/health"
+        # Check if it's a "fetch failed" error
+        if echo "$LOGIN_RESP" | grep -q "fetch failed"; then
+            echo ""
+            echo -e "${RED}MCP server cannot connect to backend API or database${NC}"
+            echo "Please check that the app container is running and healthy"
+        fi
         exit 1
     fi
 
