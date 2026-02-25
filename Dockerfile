@@ -3,14 +3,14 @@
 # ======================
 FROM node:20-bookworm-slim AS base
 
-# 安装系统依赖（包括 OpenSSL 支持）
+# Install system dependencies (including OpenSSL support)
 RUN apt-get update && apt-get install -y \
     openssl \
     ca-certificates \
     libc6 \
     && rm -rf /var/lib/apt/lists/*
 
-# 设置 OpenSSL 环境变量
+# Set OpenSSL environment variables
 ENV OPENSSL_CONF=/etc/ssl
 
 WORKDIR /app
@@ -18,16 +18,16 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 
-# 安装全部依赖，包括 tsx（用于生产环境启动）
+# Install all dependencies, including tsx (used for starting the production environment)
 RUN npm ci --ignore-scripts
 
-# 安装 tsx 到全局（或者作为依赖安装）
+# Install tsx globally (or install it as a dependency)
 RUN npm install tsx --save-dev
 
 # 生成 Prisma Client
 RUN npx prisma generate
 
-# 复制源码并构建
+# Copy the source code and build it.
 COPY . .
 RUN npm run build
 
@@ -55,5 +55,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV NODE_ENV=production
 
-# 使用 tsx 运行 server.ts
+# Run server.ts using tsx
 CMD ["npx", "tsx", "server.ts"]
