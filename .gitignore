@@ -225,3 +225,7 @@ start-dev.sh
 # Docker volumes
 postgres_data/
 docs/api/
+
+# instances
+instances/*
+!instances/template/
