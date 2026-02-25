@@ -1,116 +1,116 @@
 #!/bin/bash
-# 数据库迁移脚本 - 从本地开发环境迁移到生产环境
+# Database Migration Script - From local development environment to production
 
 set -e
 
-# 颜色输出
+# Color output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}=========================================="
-echo "🗄️  数据库迁移工具"
+echo "Database Migration Tool"
 echo "==========================================${NC}"
 
-# 检查本地数据库连接
-echo -e "${YELLOW}📋 检查本地开发环境配置...${NC}"
+# Check local database connection
+echo -e "${YELLOW}Checking local development environment configuration...${NC}"
 
-# 读取.env文件中的本地数据库配置
+# Read local database configuration from .env file
 if [ -f .env ]; then
     source .env
 else
-    echo -e "${RED}❌ .env文件不存在${NC}"
+    echo -e "${RED}.env file does not exist${NC}"
     exit 1
 fi
 
 LOCAL_DB_URL="${DATABASE_URL}"
 PROD_DB_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public"
 
-echo -e "${GREEN}✅ 本地数据库URL: $LOCAL_DB_URL${NC}"
+echo -e "${GREEN}Local database URL: $LOCAL_DB_URL${NC}"
 
-# 检查远程数据库连接
-echo -e "${YELLOW}🔗 检查生产数据库连接...${NC}"
+# Check remote database connection
+echo -e "${YELLOW}Checking production database connection...${NC}"
 if docker-compose exec -T db pg_isready -U ${DB_USER} -d ${DB_NAME} &> /dev/null; then
-    echo -e "${GREEN}✅ 生产数据库连接正常${NC}"
+    echo -e "${GREEN}Production database connection normal${NC}"
 else
-    echo -e "${RED}❌ 生产数据库连接失败，请检查配置${NC}"
+    echo -e "${RED}Production database connection failed, please check configuration${NC}"
     exit 1
 fi
 
 echo ""
-echo "请选择迁移方式："
-echo "1) 导出本地数据并导入到生产环境"
-echo "2) 仅在生产环境运行数据库迁移（Prisma）"
-echo "3) 重置生产数据库（⚠️  危险操作，会删除所有数据）"
-read -p "请输入选择 [1-3]: " choice
+echo "Please select migration method:"
+echo "1) Export local data and import to production"
+echo "2) Run database migration only in production (Prisma)"
+echo "3) Reset production database (WARNING: Dangerous, will delete all data)"
+read -p "Enter selection [1-3]: " choice
 
 case $choice in
     1)
-        echo -e "${BLUE}开始数据迁移...${NC}"
+        echo -e "${BLUE}Starting data migration...${NC}"
 
-        # 导出本地数据
-        echo -e "${YELLOW}📤 导出本地数据库...${NC}"
+        # Export local data
+        echo -e "${YELLOW}Exporting local database...${NC}"
         pg_dump "$LOCAL_DB_URL" > /tmp/local_db_backup.sql
 
-        # 检查导出文件大小
+        # Check exported file size
         if [ ! -s /tmp/local_db_backup.sql ]; then
-            echo -e "${RED}❌ 数据库导出失败或为空${NC}"
+            echo -e "${RED}Database export failed or empty${NC}"
             exit 1
         fi
 
-        echo -e "${GREEN}✅ 本地数据库导出成功${NC}"
+        echo -e "${GREEN}Local database export successful${NC}"
 
-        # 备份生产数据库
-        echo -e "${YELLOW}💾 备份生产数据库...${NC}"
+        # Backup production database
+        echo -e "${YELLOW}Backing up production database...${NC}"
         BACKUP_FILE="/tmp/prod_db_backup_$(date +%Y%m%d_%H%M%S).sql"
         docker-compose exec -T db pg_dump -U ${DB_USER} -d ${DB_NAME} > "$BACKUP_FILE"
-        echo -e "${GREEN}✅ 生产数据库备份完成: $BACKUP_FILE${NC}"
+        echo -e "${GREEN}Production database backup complete: $BACKUP_FILE${NC}"
 
-        # 清空生产数据库
-        echo -e "${YELLOW}🧹 清空生产数据库...${NC}"
+        # Clear production database
+        echo -e "${YELLOW}Clearing production database...${NC}"
         docker-compose exec -T db psql -U ${DB_USER} -d ${DB_NAME} -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO ${DB_USER}; GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};" || true
 
-        # 导入本地数据
-        echo -e "${YELLOW}📥 导入数据到生产数据库...${NC}"
+        # Import local data
+        echo -e "${YELLOW}Importing data to production database...${NC}"
         cat /tmp/local_db_backup.sql | docker-compose exec -T db psql -U ${DB_USER} -d ${DB_NAME}
 
-        echo -e "${GREEN}✅ 数据迁移完成${NC}"
+        echo -e "${GREEN}Data migration complete${NC}"
         ;;
     2)
-        echo -e "${BLUE}运行数据库迁移...${NC}"
+        echo -e "${BLUE}Running database migration...${NC}"
 
-        # 运行Prisma迁移
+        # Run Prisma migration
         docker-compose exec -T app npx prisma migrate deploy
 
-        echo -e "${GREEN}✅ 数据库迁移完成${NC}"
+        echo -e "${GREEN}Database migration complete${NC}"
         ;;
     3)
-        echo -e "${RED}⚠️  警告：这将删除生产数据库中的所有数据！${NC}"
-        read -p "确认要继续吗？(输入 'yes' 确认): " confirm
+        echo -e "${RED}WARNING: This will delete all data in the production database!${NC}"
+        read -p "Confirm continue? (Enter 'yes' to confirm): " confirm
 
         if [ "$confirm" = "yes" ]; then
-            echo -e "${YELLOW}🗑️  重置生产数据库...${NC}"
+            echo -e "${YELLOW}Resetting production database...${NC}"
             docker-compose exec -T db psql -U ${DB_USER} -d ${DB_NAME} -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO ${DB_USER}; GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};"
 
-            echo -e "${GREEN}✅ 数据库已重置${NC}"
+            echo -e "${GREEN}Database reset complete${NC}"
         else
-            echo -e "${YELLOW}操作已取消${NC}"
+            echo -e "${YELLOW}Operation cancelled${NC}"
         fi
         ;;
     *)
-        echo -e "${RED}无效选择${NC}"
+        echo -e "${RED}Invalid selection${NC}"
         exit 1
         ;;
 esac
 
 echo ""
-echo -e "${GREEN}🎉 迁移完成！${NC}"
-echo -e "${BLUE}📊 检查数据:${NC}"
+echo -e "${GREEN}Migration complete!${NC}"
+echo -e "${BLUE}Checking data:${NC}"
 docker-compose exec -T db psql -U ${DB_USER} -d ${DB_NAME} -c "\dt"
 
-# 清理临时文件
+# Cleanup temporary files
 rm -f /tmp/local_db_backup.sql
 
 echo ""
-echo -e "${YELLOW}💡 提示: 如果遇到权限问题，请确保用户有正确的数据库权限${NC}"
+echo -e "${YELLOW}Tip: If you encounter permission issues, ensure user has correct database permissions${NC}"

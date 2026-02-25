@@ -54,9 +54,9 @@ services:
       - |
         echo "Running Prisma migrations..."
         npx prisma generate
-        # 首先尝试 migrate deploy（标准迁移）
+        # First try migrate deploy (standard migration)
         npx prisma migrate deploy || true
-        # 如果没有迁移，使用 db push 来同步 schema
+        # If no migration exists, use db push to sync schema
         npx prisma db push --accept-data-loss || true
         echo "Database schema synchronized!"
         echo "Applying init.sql (triggers and indexes)..."
@@ -84,9 +84,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       RESEND_API_KEY: ${RESEND_API_KEY:-re_CzzzpiVR_2L2z9YQXqWReMzpjyvXvAK5T}
-      EMAIL_FROM: ${EMAIL_FROM:-"Slack聊天应用 <onboarding@resend.dev>"}
+      EMAIL_FROM: ${EMAIL_FROM:-"Slack Chat App <onboarding@resend.dev>"}
       EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-onboarding@resend.dev}
-      APP_NAME: ${APP_NAME:-Slack聊天应用}
+      APP_NAME: ${APP_NAME:-Slack Chat App}
       SESSION_SECRET: ${SESSION_SECRET:-your-super-secret-session-key-change-this-in-production}
       OSS_REGION: ${OSS_REGION:-oss-cn-hangzhou}
       OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID:-LTAI5tRzvjda8NKmbZmUVNmZ}

@@ -1,19 +1,19 @@
 #!/bin/sh
 
-# Docker 启动时自动执行数据库迁移
-echo "🚀 启动时执行数据库迁移..."
+# Automatically run database migration when Docker starts
+echo "Running database migration on startup..."
 
-# 等待数据库就绪
-echo "⏳ 等待数据库连接..."
+# Wait for database to be ready
+echo "Waiting for database connection..."
 sleep 5
 
-# 生成 Prisma 客户端
-echo "🔨 生成 Prisma 客户端..."
+# Generate Prisma client
+echo "Generating Prisma client..."
 npx prisma generate
 
-# 执行数据库迁移
-echo "📦 执行数据库迁移..."
+# Execute database migration
+echo "Running database migration..."
 npx prisma migrate deploy
 
-echo "✅ 迁移完成，启动应用..."
+echo "Migration complete, starting application..."
 exec "$@"

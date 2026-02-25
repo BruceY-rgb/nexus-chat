@@ -1,18 +1,18 @@
 -- =====================================================
--- Slack-like 聊天工具数据库初始化脚本
+-- Slack-like Chat Application Database Initialization Script
 -- PostgreSQL 13+
 -- =====================================================
 
--- 启用必要的扩展
+-- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "unaccent";
 
 -- =====================================================
--- 1. 用户相关表
+-- 1. User related tables
 -- =====================================================
 
--- 用户表
+-- Users table
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE users (
     deleted_at TIMESTAMPTZ
 );
 
--- 用户会话表
+-- User sessions table
 CREATE TABLE user_sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -42,7 +42,7 @@ CREATE TABLE user_sessions (
     last_accessed_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 团队成员关系表
+-- Team members relationship table
 CREATE TABLE team_members (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -56,10 +56,10 @@ CREATE TABLE team_members (
 );
 
 -- =====================================================
--- 2. 频道相关表
+-- 2. Channel related tables
 -- =====================================================
 
--- 频道表
+-- Channels table
 CREATE TABLE channels (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) NOT NULL,
@@ -73,7 +73,7 @@ CREATE TABLE channels (
     UNIQUE(name)
 );
 
--- 频道成员关系表
+-- Channel members relationship table
 CREATE TABLE channel_members (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     channel_id UUID NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
@@ -88,10 +88,10 @@ CREATE TABLE channel_members (
 );
 
 -- =====================================================
--- 3. 私聊相关表
+-- 3. Direct message related tables
 -- =====================================================
 
--- DM 对话表
+-- DM conversations table
 CREATE TABLE dm_conversations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_by UUID NOT NULL REFERENCES users(id),
@@ -101,7 +101,7 @@ CREATE TABLE dm_conversations (
     deleted_at TIMESTAMPTZ
 );
 
--- DM 成员关系表
+-- DM members relationship table
 CREATE TABLE dm_conversation_members (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     conversation_id UUID NOT NULL REFERENCES dm_conversations(id) ON DELETE CASCADE,
@@ -115,10 +115,10 @@ CREATE TABLE dm_conversation_members (
 );
 
 -- =====================================================
--- 4. 消息相关表
+-- 4. Message related tables
 -- =====================================================
 
--- 消息表
+-- Messages table
 CREATE TABLE messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     content TEXT NOT NULL,
@@ -139,7 +139,7 @@ CREATE TABLE messages (
     )
 );
 
--- @ 提及表
+-- @ Mentions table
 CREATE TABLE message_mentions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
@@ -148,7 +148,7 @@ CREATE TABLE message_mentions (
     UNIQUE(message_id, mentioned_user_id)
 );
 
--- 消息阅读状态表
+-- Message read status table
 CREATE TABLE message_reads (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
@@ -158,10 +158,10 @@ CREATE TABLE message_reads (
 );
 
 -- =====================================================
--- 5. 文件相关表
+-- 5. File related tables
 -- =====================================================
 
--- 附件表
+-- Attachments table
 CREATE TABLE attachments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
@@ -177,10 +177,10 @@ CREATE TABLE attachments (
 );
 
 -- =====================================================
--- 6. 通知相关表
+-- 6. Notification related tables
 -- =====================================================
 
--- 通知表
+-- Notifications table
 CREATE TABLE notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -195,7 +195,7 @@ CREATE TABLE notifications (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 通知偏好设置表
+-- Notification preferences settings table
 CREATE TABLE notification_settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
@@ -211,45 +211,45 @@ CREATE TABLE notification_settings (
 );
 
 -- =====================================================
--- 7. 索引创建
+-- 7. Index creation
 -- =====================================================
 
--- 用户表索引
+-- Users table indexes
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_status ON users(status);
 CREATE INDEX idx_users_is_online ON users(is_online);
 CREATE INDEX idx_users_last_seen ON users(last_seen_at DESC);
 
--- 用户会话表索引
+-- User sessions table indexes
 CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id);
 CREATE INDEX idx_user_sessions_token ON user_sessions(token_hash);
 CREATE INDEX idx_user_sessions_expires ON user_sessions(expires_at);
 
--- 团队成员表索引
+-- Team members table indexes
 CREATE INDEX idx_team_members_user_id ON team_members(user_id);
 CREATE INDEX idx_team_members_role ON team_members(role);
 
--- 频道表索引
+-- Channels table indexes
 CREATE INDEX idx_channels_is_archived ON channels(is_archived);
 CREATE INDEX idx_channels_is_private ON channels(is_private);
 CREATE INDEX idx_channels_created_by ON channels(created_by);
 
--- 频道成员表索引
+-- Channel members table indexes
 CREATE INDEX idx_channel_members_channel_id ON channel_members(channel_id);
 CREATE INDEX idx_channel_members_user_id ON channel_members(user_id);
 CREATE INDEX idx_channel_members_unread_count ON channel_members(unread_count DESC);
 CREATE INDEX idx_channel_members_last_read ON channel_members(last_read_at);
 
--- DM 对话表索引
+-- DM conversations table indexes
 CREATE INDEX idx_dm_conversations_created_by ON dm_conversations(created_by);
 CREATE INDEX idx_dm_conversations_last_message ON dm_conversations(last_message_at DESC);
 
--- DM 成员表索引
+-- DM members table indexes
 CREATE INDEX idx_dm_conversation_members_conversation_id ON dm_conversation_members(conversation_id);
 CREATE INDEX idx_dm_conversation_members_user_id ON dm_conversation_members(user_id);
 CREATE INDEX idx_dm_conversation_members_unread_count ON dm_conversation_members(unread_count DESC);
 
--- 消息表索引
+-- Messages table indexes
 CREATE INDEX idx_messages_channel_id ON messages(channel_id) WHERE channel_id IS NOT NULL;
 CREATE INDEX idx_messages_dm_conversation_id ON messages(dm_conversation_id) WHERE dm_conversation_id IS NOT NULL;
 CREATE INDEX idx_messages_user_id ON messages(user_id);
@@ -258,33 +258,33 @@ CREATE INDEX idx_messages_parent_message ON messages(parent_message_id);
 CREATE INDEX idx_messages_is_deleted ON messages(is_deleted) WHERE is_deleted = FALSE;
 CREATE INDEX idx_messages_message_type ON messages(message_type);
 
--- 消息全文搜索索引
+-- Message full-text search index
 CREATE INDEX idx_messages_content_search ON messages USING gin(content_search);
 
--- @ 提及表索引
+-- @ Mentions table indexes
 CREATE INDEX idx_message_mentions_message_id ON message_mentions(message_id);
 CREATE INDEX idx_message_mentions_mentioned_user ON message_mentions(mentioned_user_id);
 
--- 消息阅读状态索引
+-- Message read status indexes
 CREATE INDEX idx_message_reads_message_id ON message_reads(message_id);
 CREATE INDEX idx_message_reads_user_id ON message_reads(user_id);
 
--- 附件表索引
+-- Attachments table indexes
 CREATE INDEX idx_attachments_message_id ON attachments(message_id);
 CREATE INDEX idx_attachments_file_type ON attachments(file_type);
 CREATE INDEX idx_attachments_mime_type ON attachments(mime_type);
 
--- 通知表索引
+-- Notifications table indexes
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_notifications_is_read ON notifications(is_read);
 CREATE INDEX idx_notifications_type ON notifications(type);
 CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
 
 -- =====================================================
--- 8. 触发器函数
+-- 8. Trigger functions
 -- =====================================================
 
--- 更新 updated_at 字段的通用函数
+-- Generic function to update updated_at column
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -293,7 +293,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- 为相关表添加 updated_at 触发器
+-- Add updated_at triggers for related tables
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -318,7 +318,7 @@ CREATE TRIGGER update_messages_updated_at BEFORE UPDATE ON messages
 CREATE TRIGGER update_notification_settings_updated_at BEFORE UPDATE ON notification_settings
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- 消息全文搜索更新触发器
+-- Message full-text search update trigger
 CREATE OR REPLACE FUNCTION update_message_search_vector()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -333,12 +333,12 @@ CREATE TRIGGER update_messages_search_vector
     BEFORE INSERT OR UPDATE ON messages
     FOR EACH ROW EXECUTE FUNCTION update_message_search_vector();
 
--- 更新未读计数的触发器函数
+-- Trigger function to update unread count
 CREATE OR REPLACE FUNCTION update_unread_count()
 RETURNS TRIGGER AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        -- 更新频道未读计数
+        -- Update channel unread count
         IF NEW.channel_id IS NOT NULL THEN
             UPDATE channel_members
             SET unread_count = unread_count + 1
@@ -346,7 +346,7 @@ BEGIN
             AND user_id != NEW.user_id;
         END IF;
 
-        -- 更新 DM 未读计数
+        -- Update DM unread count
         IF NEW.dm_conversation_id IS NOT NULL THEN
             UPDATE dm_conversation_members
             SET unread_count = unread_count + 1
@@ -354,7 +354,7 @@ BEGIN
             AND user_id != NEW.user_id;
         END IF;
 
-        -- 更新最后消息时间
+        -- Update last message time
         IF NEW.channel_id IS NOT NULL THEN
             UPDATE channels SET updated_at = NOW() WHERE id = NEW.channel_id;
         END IF;
@@ -372,19 +372,19 @@ CREATE TRIGGER update_unread_count_trigger
     AFTER INSERT ON messages
     FOR EACH ROW EXECUTE FUNCTION update_unread_count();
 
--- 重置未读计数的触发器函数
+-- Trigger function to reset unread count
 CREATE OR REPLACE FUNCTION reset_unread_count()
 RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.last_read_at > OLD.last_read_at THEN
         IF TG_TABLE_NAME = 'channel_members' THEN
-            -- 重置频道未读计数
+            -- Reset channel unread count
             UPDATE channel_members
             SET unread_count = 0
             WHERE channel_id = NEW.channel_id
             AND user_id = NEW.user_id;
         ELSIF TG_TABLE_NAME = 'dm_conversation_members' THEN
-            -- 重置 DM 未读计数
+            -- Reset DM unread count
             UPDATE dm_conversation_members
             SET unread_count = 0
             WHERE conversation_id = NEW.conversation_id
@@ -404,10 +404,10 @@ CREATE TRIGGER reset_dm_unread_count
     FOR EACH ROW EXECUTE FUNCTION reset_unread_count();
 
 -- =====================================================
--- 9. 视图创建
+-- 9. View creation
 -- =====================================================
 
--- 频道详细信息视图
+-- Channel details view
 CREATE VIEW channel_details AS
 SELECT
     c.*,
@@ -416,7 +416,7 @@ SELECT
 FROM channels c
 JOIN users u ON c.created_by = u.id;
 
--- DM 对话详细信息视图
+-- DM conversation details view
 CREATE VIEW dm_conversation_details AS
 SELECT
     dc.*,
@@ -428,7 +428,7 @@ JOIN dm_conversation_members dcm ON dc.id = dcm.conversation_id
 JOIN users u ON dcm.user_id = u.id
 GROUP BY dc.id, u1.display_name;
 
--- 消息详细信息视图
+-- Message details view
 CREATE VIEW message_details AS
 SELECT
     m.*,
@@ -441,7 +441,7 @@ FROM messages m
 JOIN users u ON m.user_id = u.id
 LEFT JOIN channels c ON m.channel_id = c.id;
 
--- 用户活动统计视图
+-- User activity statistics view
 CREATE VIEW user_activity_stats AS
 SELECT
     u.id,
@@ -465,33 +465,33 @@ LEFT JOIN (
 ) channel_stats ON u.id = channel_stats.user_id;
 
 -- =====================================================
--- 10. 初始化数据
+-- 10. Initialize data
 -- =====================================================
 
--- 插入默认管理员用户
+-- Insert default admin user
 INSERT INTO users (id, email, password_hash, display_name, real_name, email_verified_at) VALUES
 ('00000000-0000-0000-0000-000000000001', 'admin@example.com', crypt('admin123', gen_salt('bf')), 'Admin', 'System Administrator', NOW());
 
--- 插入示例用户
+-- Insert sample users
 INSERT INTO users (id, email, password_hash, display_name, real_name, email_verified_at) VALUES
 ('00000000-0000-0000-0000-000000000002', 'alice@example.com', crypt('password123', gen_salt('bf')), 'Alice', 'Alice Smith', NOW()),
 ('00000000-0000-0000-0000-000000000003', 'bob@example.com', crypt('password123', gen_salt('bf')), 'Bob', 'Bob Johnson', NOW()),
 ('00000000-0000-0000-0000-000000000004', 'charlie@example.com', crypt('password123', gen_salt('bf')), 'Charlie', 'Charlie Brown', NOW());
 
--- 将所有用户添加为团队成员
+-- Add all users as team members
 INSERT INTO team_members (user_id, role) VALUES
 ('00000000-0000-0000-0000-000000000001', 'owner'),
 ('00000000-0000-0000-0000-000000000002', 'member'),
 ('00000000-0000-0000-0000-000000000003', 'member'),
 ('00000000-0000-0000-0000-000000000004', 'member');
 
--- 创建默认频道
+-- Create default channels
 INSERT INTO channels (id, name, description, created_by) VALUES
 ('10000000-0000-0000-0000-000000000001', 'general', 'General discussion', '00000000-0000-0000-0000-000000000001'),
 ('10000000-0000-0000-0000-000000000002', 'random', 'Random topics', '00000000-0000-0000-0000-000000000001'),
 ('10000000-0000-0000-0000-000000000003', 'announcements', 'Team announcements', '00000000-0000-0000-0000-000000000001');
 
--- 将所有用户添加到默认频道
+-- Add all users to default channels
 INSERT INTO channel_members (channel_id, user_id) VALUES
 ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'),
 ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'),
@@ -506,16 +506,16 @@ INSERT INTO channel_members (channel_id, user_id) VALUES
 ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000003'),
 ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000004');
 
--- 创建示例 DM 对话
+-- Create sample DM conversations
 INSERT INTO dm_conversations (id, created_by) VALUES
 ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002');
 
--- 添加 DM 成员
+-- Add DM members
 INSERT INTO dm_conversation_members (conversation_id, user_id) VALUES
 ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'),
 ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000003');
 
--- 插入示例消息
+-- Insert sample messages
 INSERT INTO messages (content, message_type, channel_id, user_id) VALUES
 ('Welcome to our Slack-like chat tool! 🎉', 'system', '10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'),
 ('Hello everyone! Excited to be here.', 'text', '10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'),
@@ -523,7 +523,7 @@ INSERT INTO messages (content, message_type, channel_id, user_id) VALUES
 ('Let''s start building something amazing!', 'text', '10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'),
 ('Hey @Bob, have you seen the new design?', 'text', '20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002');
 
--- 插入 @ 提及
+-- Insert @ mentions
 INSERT INTO message_mentions (message_id, mentioned_user_id)
 SELECT m.id, '00000000-0000-0000-0000-000000000002'
 FROM messages m
@@ -534,14 +534,14 @@ SELECT m.id, '00000000-0000-0000-0000-000000000003'
 FROM messages m
 WHERE m.content LIKE '%@Bob%';
 
--- 设置默认通知偏好
+-- Set default notification preferences
 INSERT INTO notification_settings (user_id) VALUES
 ('00000000-0000-0000-0000-000000000001'),
 ('00000000-0000-0000-0000-000000000002'),
 ('00000000-0000-0000-0000-000000000003'),
 ('00000000-0000-0000-0000-000000000004');
 
--- 插入示例通知
+-- Insert sample notifications
 INSERT INTO notifications (user_id, type, title, content, related_message_id)
 SELECT
     mm.mentioned_user_id,
@@ -552,8 +552,8 @@ SELECT
 FROM message_mentions mm;
 
 -- =====================================================
--- 完成
+-- Completion
 -- =====================================================
 
--- 输出完成信息
+-- Output completion message
 SELECT 'Database initialization completed successfully!' as status;

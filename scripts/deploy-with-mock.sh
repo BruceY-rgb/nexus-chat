@@ -1,21 +1,21 @@
 #!/bin/bash
 
 # =====================================================
-# 自动化部署脚本 - 带Mock数据
-# 用于部署Slack-like聊天应用到生产环境并填充测试数据
+# Automated Deployment Script - With Mock Data
+# Used to deploy Slack-like chat application to production and populate test data
 # =====================================================
 
 set -e
 
-echo "🚀 开始部署流程..."
+echo "Starting deployment process..."
 
-# 颜色定义
+# Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# 函数：打印带颜色的消息
+# Function: Print colored messages
 print_status() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
@@ -28,96 +28,96 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 检查环境变量
-print_status "检查环境配置..."
+# Check environment variables
+print_status "Checking environment configuration..."
 if [ ! -f ".env.production" ]; then
-    print_error "未找到 .env.production 文件"
+    print_error ".env.production file not found"
     exit 1
 fi
 
-# 检查Docker是否安装
+# Check if Docker is installed
 if ! command -v docker &> /dev/null; then
-    print_error "Docker 未安装，请先安装 Docker"
+    print_error "Docker not installed, please install Docker first"
     exit 1
 fi
 
-# 检查Docker Compose是否安装
+# Check if Docker Compose is installed
 if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
-    print_error "Docker Compose 未安装，请先安装 Docker Compose"
+    print_error "Docker Compose not installed, please install Docker Compose first"
     exit 1
 fi
 
-print_status "环境检查完成 ✓"
+print_status "Environment check complete"
 
-# 构建Docker镜像
-print_status "构建Docker镜像..."
+# Build Docker image
+print_status "Building Docker image..."
 docker-compose -f docker-compose.dokploy.yml build --no-cache
-print_status "镜像构建完成 ✓"
+print_status "Image build complete"
 
-# 停止现有容器
-print_status "停止现有容器..."
+# Stop existing containers
+print_status "Stopping existing containers..."
 docker-compose -f docker-compose.dokploy.yml down || true
-print_status "容器已停止 ✓"
+print_status "Containers stopped"
 
-# 启动数据库和应用服务
-print_status "启动服务..."
+# Start database and app services
+print_status "Starting services..."
 docker-compose -f docker-compose.dokploy.yml up -d db
-print_status "等待数据库启动..."
+print_status "Waiting for database to start..."
 sleep 10
 
-# 检查数据库连接
-print_status "检查数据库连接..."
+# Check database connection
+print_status "Checking database connection..."
 for i in {1..30}; do
     if docker-compose -f docker-compose.dokploy.yml exec -T db pg_isready -U ${DB_USER:-dokploy} > /dev/null 2>&1; then
-        print_status "数据库连接成功 ✓"
+        print_status "Database connection successful"
         break
     fi
     if [ $i -eq 30 ]; then
-        print_error "数据库连接超时"
+        print_error "Database connection timeout"
         exit 1
     fi
     echo -n "."
     sleep 2
 done
 
-# 生成Prisma客户端
-print_status "生成Prisma客户端..."
+# Generate Prisma client
+print_status "Generating Prisma client..."
 docker-compose -f docker-compose.dokploy.yml run --rm app npx prisma generate
-print_status "Prisma客户端生成完成 ✓"
+print_status "Prisma client generation complete"
 
-# 运行数据库迁移
-print_status "运行数据库迁移..."
+# Run database migration
+print_status "Running database migration..."
 docker-compose -f docker-compose.dokploy.yml run --rm app npx prisma migrate deploy
-print_status "数据库迁移完成 ✓"
+print_status "Database migration complete"
 
-# 填充Mock数据
-print_status "开始填充Mock数据..."
+# Populate mock data
+print_status "Starting mock data population..."
 docker-compose -f docker-compose.dokploy.yml run --rm app npm run db:seed
 if [ $? -eq 0 ]; then
-    print_status "Mock数据填充完成 ✓"
+    print_status "Mock data population complete"
 else
-    print_warning "使用增强版Mock数据脚本..."
+    print_warning "Using enhanced mock data script..."
     docker-compose -f docker-compose.dokploy.yml run --rm app tsx scripts/seed-enhanced.ts
-    print_status "增强版Mock数据填充完成 ✓"
+    print_status "Enhanced mock data population complete"
 fi
 
-# 启动应用服务
-print_status "启动应用服务..."
+# Start app service
+print_status "Starting app service..."
 docker-compose -f docker-compose.dokploy.yml up -d app
 
-# 等待应用启动
-print_status "等待应用启动..."
+# Wait for app to start
+print_status "Waiting for app to start..."
 sleep 5
 
-# 检查应用健康状态
-print_status "检查应用健康状态..."
+# Check app health status
+print_status "Checking app health status..."
 for i in {1..30}; do
     if curl -f http://localhost:3000/api/health > /dev/null 2>&1; then
-        print_status "应用启动成功 ✓"
+        print_status "App started successfully"
         break
     fi
     if [ $i -eq 30 ]; then
-        print_error "应用启动失败"
+        print_error "App startup failed"
         docker-compose -f docker-compose.dokploy.yml logs app
         exit 1
     fi
@@ -125,39 +125,39 @@ for i in {1..30}; do
     sleep 2
 done
 
-# 显示部署结果
-print_status "部署完成！"
+# Show deployment results
+print_status "Deployment complete!"
 echo ""
 echo "=========================================="
-echo "📊 部署信息:"
+echo "Deployment Info:"
 echo "=========================================="
-echo "应用地址: http://localhost:3000"
-echo "WebSocket端口: 3001"
+echo "App URL: http://localhost:3000"
+echo "WebSocket port: 3001"
 echo ""
-echo "🔑 测试账户:"
-echo "管理员: admin@chat.com / admin123"
+echo "Test Accounts:"
+echo "Admin: admin@chat.com / admin123"
 echo "Alice: alice@chat.com / password123"
 echo "Bob: bob@chat.com / password123"
 echo "Charlie: charlie@chat.com / password123"
 echo "Diana: diana@chat.com / password123"
 echo ""
-echo "📢 可用频道:"
-echo "- #general (公共)"
-echo "- #random (公共)"
-echo "- #announcements (公共)"
-echo "- #development (公共)"
-echo "- #design (公共)"
-echo "- #marketing (公共)"
-echo "- #sales (公共)"
-echo "- #hr (私有)"
-echo "- #finance (私有)"
+echo "Available Channels:"
+echo "- #general (public)"
+echo "- #random (public)"
+echo "- #announcements (public)"
+echo "- #development (public)"
+echo "- #design (public)"
+echo "- #marketing (public)"
+echo "- #sales (public)"
+echo "- #hr (private)"
+echo "- #finance (private)"
 echo ""
 echo "=========================================="
-echo "📝 管理命令:"
+echo "Management Commands:"
 echo "=========================================="
-echo "查看日志: docker-compose -f docker-compose.dokploy.yml logs -f app"
-echo "停止服务: docker-compose -f docker-compose.dokploy.yml down"
-echo "重启服务: docker-compose -f docker-compose.dokploy.yml restart"
-echo "重新填充数据: docker-compose -f docker-compose.dokploy.yml run --rm app tsx scripts/seed-enhanced.ts"
+echo "View logs: docker-compose -f docker-compose.dokploy.yml logs -f app"
+echo "Stop services: docker-compose -f docker-compose.dokploy.yml down"
+echo "Restart services: docker-compose -f docker-compose.dokploy.yml restart"
+echo "Reseed data: docker-compose -f docker-compose.dokploy.yml run --rm app tsx scripts/seed-enhanced.ts"
 echo ""
 echo "=========================================="

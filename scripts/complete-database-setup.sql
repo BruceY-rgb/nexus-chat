@@ -1,16 +1,16 @@
 -- =====================================================
--- 完整数据库结构初始化脚本
--- 生产环境数据库修复和补充
+-- Complete database structure initialization script
+-- Production environment database repair and supplement
 -- =====================================================
 
--- 设置时区
+-- Set timezone
 SET timezone = 'UTC';
 
 -- =====================================================
--- 第一部分：创建核心表
+-- Part 1: Create core tables
 -- =====================================================
 
--- 1. _prisma_migrations 表（Prisma迁移记录）
+-- 1. _prisma_migrations table (Prisma migration records)
 CREATE TABLE IF NOT EXISTS public._prisma_migrations (
     id character varying(36) NOT NULL PRIMARY KEY,
     checksum character varying(64) NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS public._prisma_migrations (
     applied_steps_count integer DEFAULT 0 NOT NULL
 );
 
--- 2. users 表（用户主表）
+-- 2. users table (users master table)
 CREATE TABLE IF NOT EXISTS public.users (
     id text NOT NULL PRIMARY KEY,
     email text NOT NULL UNIQUE,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     email_verification_code text
 );
 
--- 3. user_sessions 表（用户会话）
+-- 3. user_sessions table (user sessions)
 CREATE TABLE IF NOT EXISTS public.user_sessions (
     id text NOT NULL PRIMARY KEY,
     user_id text NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS public.user_sessions (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- 4. team_members 表（团队成员）
+-- 4. team_members table (team members)
 CREATE TABLE IF NOT EXISTS public.team_members (
     id text NOT NULL PRIMARY KEY,
     user_id text NOT NULL UNIQUE,
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS public.team_members (
         ON UPDATE CASCADE ON DELETE SET NULL
 );
 
--- 5. channels 表（频道）
+-- 5. channels table (channels)
 CREATE TABLE IF NOT EXISTS public.channels (
     id text NOT NULL PRIMARY KEY,
     name text NOT NULL UNIQUE,
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS public.channels (
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
--- 6. channel_members 表（频道成员）
+-- 6. channel_members table (channel members)
 CREATE TABLE IF NOT EXISTS public.channel_members (
     id text NOT NULL PRIMARY KEY,
     channel_id text NOT NULL,
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS public.channel_members (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- 7. dm_conversations 表（私信对话）
+-- 7. dm_conversations table (direct message conversations)
 CREATE TABLE IF NOT EXISTS public.dm_conversations (
     id text NOT NULL PRIMARY KEY,
     created_by text NOT NULL,
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS public.dm_conversations (
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
--- 8. dm_conversation_members 表（私信成员）
+-- 8. dm_conversation_members table (DM members)
 CREATE TABLE IF NOT EXISTS public.dm_conversation_members (
     id text NOT NULL PRIMARY KEY,
     conversation_id text NOT NULL,
@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS public.dm_conversation_members (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- 9. messages 表（消息）
+-- 9. messages table (messages)
 CREATE TABLE IF NOT EXISTS public.messages (
     id text NOT NULL PRIMARY KEY,
     content text NOT NULL,
@@ -172,7 +172,7 @@ CREATE TABLE IF NOT EXISTS public.messages (
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
--- 10. message_mentions 表（消息提及）
+-- 10. message_mentions table (message mentions)
 CREATE TABLE IF NOT EXISTS public.message_mentions (
     id text NOT NULL PRIMARY KEY,
     message_id text NOT NULL,
@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS public.message_mentions (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- 11. message_reactions 表（消息反应）⭐ 新功能
+-- 11. message_reactions table (message reactions) - New feature
 CREATE TABLE IF NOT EXISTS public.message_reactions (
     id text NOT NULL PRIMARY KEY,
     message_id text NOT NULL,
@@ -201,7 +201,7 @@ CREATE TABLE IF NOT EXISTS public.message_reactions (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- 12. message_reads 表（消息已读）
+-- 12. message_reads table (message read status)
 CREATE TABLE IF NOT EXISTS public.message_reads (
     id text NOT NULL PRIMARY KEY,
     message_id text NOT NULL,
@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS public.message_reads (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- 13. attachments 表（附件）
+-- 13. attachments table (attachments)
 CREATE TABLE IF NOT EXISTS public.attachments (
     id text NOT NULL PRIMARY KEY,
     message_id text NOT NULL,
@@ -233,7 +233,7 @@ CREATE TABLE IF NOT EXISTS public.attachments (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- 14. notifications 表（通知）
+-- 14. notifications table (notifications)
 CREATE TABLE IF NOT EXISTS public.notifications (
     id text NOT NULL PRIMARY KEY,
     user_id text NOT NULL,
@@ -251,7 +251,7 @@ CREATE TABLE IF NOT EXISTS public.notifications (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- 15. notification_settings 表（通知设置）
+-- 15. notification_settings table (notification settings)
 CREATE TABLE IF NOT EXISTS public.notification_settings (
     id text NOT NULL PRIMARY KEY,
     user_id text NOT NULL UNIQUE,
@@ -270,10 +270,10 @@ CREATE TABLE IF NOT EXISTS public.notification_settings (
 );
 
 -- =====================================================
--- 第二部分：创建唯一约束
+-- Part 2: Create unique constraints
 -- =====================================================
 
--- channel_members 唯一约束
+-- channel_members unique constraint
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -287,7 +287,7 @@ BEGIN
     END IF;
 END $$;
 
--- dm_conversation_members 唯一约束
+-- dm_conversation_members unique constraint
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -301,7 +301,7 @@ BEGIN
     END IF;
 END $$;
 
--- message_mentions 唯一约束
+-- message_mentions unique constraint
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -315,7 +315,7 @@ BEGIN
     END IF;
 END $$;
 
--- message_reactions 唯一约束
+-- message_reactions unique constraint
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -329,7 +329,7 @@ BEGIN
     END IF;
 END $$;
 
--- message_reads 唯一约束
+-- message_reads unique constraint
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -344,73 +344,73 @@ BEGIN
 END $$;
 
 -- =====================================================
--- 第三部分：创建索引
+-- Part 3: Create indexes
 -- =====================================================
 
--- users 表索引
+-- users table indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_status ON public.users(status);
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON public.users(created_at);
 
--- channels 表索引
+-- channels table indexes
 CREATE INDEX IF NOT EXISTS idx_channels_name ON public.channels(name);
 CREATE INDEX IF NOT EXISTS idx_channels_created_by ON public.channels(created_by);
 CREATE INDEX IF NOT EXISTS idx_channels_is_archived ON public.channels(is_archived);
 
--- messages 表索引
+-- messages table indexes
 CREATE INDEX IF NOT EXISTS idx_messages_channel_id ON public.messages(channel_id);
 CREATE INDEX IF NOT EXISTS idx_messages_dm_conversation_id ON public.messages(dm_conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_user_id ON public.messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON public.messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_messages_parent_message_id ON public.messages(parent_message_id);
 
--- message_reactions 表索引（重点优化新功能）
+-- message_reactions table indexes (focus on optimizing new feature)
 CREATE INDEX IF NOT EXISTS idx_message_reactions_message_id ON public.message_reactions(message_id);
 CREATE INDEX IF NOT EXISTS idx_message_reactions_user_id ON public.message_reactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_message_reactions_emoji ON public.message_reactions(emoji);
 CREATE INDEX IF NOT EXISTS idx_message_reactions_created_at ON public.message_reactions(created_at);
 
--- channel_members 表索引
+-- channel_members table indexes
 CREATE INDEX IF NOT EXISTS idx_channel_members_channel_id ON public.channel_members(channel_id);
 CREATE INDEX IF NOT EXISTS idx_channel_members_user_id ON public.channel_members(user_id);
 
--- dm_conversation_members 表索引
+-- dm_conversation_members table indexes
 CREATE INDEX IF NOT EXISTS idx_dm_conversation_members_conversation_id ON public.dm_conversation_members(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_dm_conversation_members_user_id ON public.dm_conversation_members(user_id);
 
--- message_mentions 表索引
+-- message_mentions table indexes
 CREATE INDEX IF NOT EXISTS idx_message_mentions_message_id ON public.message_mentions(message_id);
 CREATE INDEX IF NOT EXISTS idx_message_mentions_mentioned_user_id ON public.message_mentions(mentioned_user_id);
 
--- notifications 表索引
+-- notifications table indexes
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON public.notifications(is_read);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON public.notifications(created_at);
 
--- user_sessions 表索引
+-- user_sessions table indexes
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON public.user_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON public.user_sessions(expires_at);
 
 -- =====================================================
--- 第四部分：添加表和列注释
+-- Part 4: Add table and column comments
 -- =====================================================
 
--- 表注释
-COMMENT ON TABLE public.message_reactions IS '消息表情反应表 - 存储用户对消息的表情反应（如👍❤️😂等）';
-COMMENT ON TABLE public.users IS '用户主表 - 存储所有用户基本信息';
-COMMENT ON TABLE public.messages IS '消息主表 - 存储所有聊天消息内容';
-COMMENT ON TABLE public.channels IS '频道表 - 存储聊天频道信息';
-COMMENT ON TABLE public.dm_conversations IS '私信对话表 - 存储用户间私信对话';
+-- Table comments
+COMMENT ON TABLE public.message_reactions IS 'Message emoji reaction table - Stores user emoji reactions to messages (e.g. 👍❤️😂 etc)';
+COMMENT ON TABLE public.users IS 'Users master table - Stores all basic user information';
+COMMENT ON TABLE public.messages IS 'Messages master table - Stores all chat message content';
+COMMENT ON TABLE public.channels IS 'Channels table - Stores chat channel information';
+COMMENT ON TABLE public.dm_conversations IS 'DM conversations table - Stores direct message conversations between users';
 
--- 列注释
-COMMENT ON COLUMN public.message_reactions.emoji IS '表情符号，如👍❤️😂等';
-COMMENT ON COLUMN public.users.display_name IS '用户显示名称';
-COMMENT ON COLUMN public.users.email_verification_code IS '邮箱验证码（临时存储）';
-COMMENT ON COLUMN public.messages.is_edited IS '消息是否被编辑过';
-COMMENT ON COLUMN public.messages.is_deleted IS '消息是否被删除（软删除）';
+-- Column comments
+COMMENT ON COLUMN public.message_reactions.emoji IS 'Emoji symbols such as 👍❤️😂 etc';
+COMMENT ON COLUMN public.users.display_name IS 'User display name';
+COMMENT ON COLUMN public.users.email_verification_code IS 'Email verification code (temporary storage)';
+COMMENT ON COLUMN public.messages.is_edited IS 'Whether message has been edited';
+COMMENT ON COLUMN public.messages.is_deleted IS 'Whether message has been deleted (soft delete)';
 
 -- =====================================================
--- 第五部分：验证和统计
+-- Part 5: Validation and statistics
 -- =====================================================
 
 DO $$
@@ -425,9 +425,9 @@ DECLARE
     missing_table text;
     table_exists boolean;
 BEGIN
-    RAISE NOTICE '=== 数据库表结构验证开始 ===';
+    RAISE NOTICE '=== Database table structure validation started ===';
 
-    -- 检查每个表是否存在
+    -- Check if each table exists
     FOREACH missing_table IN ARRAY expected_tables
     LOOP
         SELECT EXISTS (
@@ -437,28 +437,28 @@ BEGIN
         ) INTO table_exists;
 
         IF table_exists THEN
-            RAISE NOTICE '✅ 表存在: %', missing_table;
+            RAISE NOTICE 'Table exists: %', missing_table;
         ELSE
-            RAISE NOTICE '❌ 表缺失: %', missing_table;
+            RAISE NOTICE 'Table missing: %', missing_table;
         END IF;
     END LOOP;
 
-    -- 统计总表数
+    -- Count total tables
     SELECT count(*) INTO table_count
     FROM information_schema.tables
     WHERE table_schema = 'public'
     AND table_type = 'BASE TABLE';
 
-    RAISE NOTICE '=== 验证完成: 共 % 个表 ===', table_count;
+    RAISE NOTICE '=== Validation completed: % tables total ===', table_count;
 
     IF table_count >= 14 THEN
-        RAISE NOTICE '✅ 数据库结构完整';
+        RAISE NOTICE 'Database structure is complete';
     ELSE
-        RAISE NOTICE '⚠️  数据库结构不完整，请检查缺失的表';
+        RAISE NOTICE 'Database structure is incomplete, please check for missing tables';
     END IF;
 END $$;
 
--- 显示各表数据统计
+-- Show data statistics for each table
 SELECT 'users' as table_name, count(*) as record_count FROM users
 UNION ALL
 SELECT 'channels', count(*) FROM channels

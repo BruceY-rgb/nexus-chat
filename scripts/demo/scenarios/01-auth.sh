@@ -1,35 +1,35 @@
 #!/bin/bash
 # =====================================================
-# 场景 1: 用户登录与个人资料
+# Scenario 1: User Login and Profile
 # =====================================================
 
-# 引入依赖
+# Import dependencies
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/colors.sh"
 source "$SCRIPT_DIR/../lib/mcp.sh"
 
-# 测试账号 (从 Slack 导入的数据)
+# Test account (data imported from Slack)
 DEMO_EMAIL="${DEMO_EMAIL:-slackbot@slack-import.local}"
 DEMO_PASSWORD="${DEMO_PASSWORD:-password123}"
 
 run_auth_scenario() {
-  print_section "场景 1: 用户登录与个人资料"
+  print_section "Scenario 1: User Login and Profile"
 
-  # 1. 登录
-  print_step "1. 登录系统..."
+  # 1. Login
+  print_step "1. Logging in..."
   TOKEN=$(mcp_login "$DEMO_EMAIL" "$DEMO_PASSWORD")
   local login_result=$?
 
   if [ $login_result -ne 0 ] || [ -z "$TOKEN" ]; then
-    print_error "登录失败!"
+    print_error "Login failed!"
     return 1
   fi
 
-  print_success "登录成功! (Token: ${TOKEN:0:30}...)"
-  print_info "用户 ID: $USER_ID"
+  print_success "Login successful! (Token: ${TOKEN:0:30}...)"
+  print_info "User ID: $USER_ID"
 
-  # 2. 获取当前用户信息
-  print_step "2. 获取当前用户信息..."
+  # 2. Get current user info
+  print_step "2. Getting current user info..."
   local me_resp
   me_resp=$(mcp_get_me)
 
@@ -38,10 +38,10 @@ run_auth_scenario() {
   local email
   email=$(extract_field "$me_resp" "email")
 
-  print_success "当前用户: $displayName <$email>"
+  print_success "Current user: $displayName <$email>"
 
-  # 3. 获取个人资料
-  print_step "3. 获取个人资料..."
+  # 3. Get profile
+  print_step "3. Getting profile..."
   local profile_resp
   profile_resp=$(mcp_get_profile)
 
@@ -50,28 +50,28 @@ run_auth_scenario() {
   local avatarUrl
   avatarUrl=$(extract_field "$profile_resp" "avatarUrl")
 
-  print_success "真实姓名: $realName"
-  print_info "头像: ${avatarUrl:0:60}..."
+  print_success "Real name: $realName"
+  print_info "Avatar: ${avatarUrl:0:60}..."
 
-  # 4. 更新资料 (可选)
-  print_step "4. 更新显示名称为 '演示用户'..."
+  # 4. Update profile (optional)
+  print_step "4. Updating display name to 'Demo User'..."
   local update_resp
-  update_resp=$(mcp_update_profile "演示用户")
+  update_resp=$(mcp_update_profile "Demo User")
 
   local newDisplayName
   newDisplayName=$(extract_field "$update_resp" "displayName")
 
-  if [ "$newDisplayName" = "演示用户" ]; then
-    print_success "显示名称已更新为: $newDisplayName"
+  if [ "$newDisplayName" = "Demo User" ]; then
+    print_success "Display name updated to: $newDisplayName"
   else
-    print_warning "更新响应: $newDisplayName"
+    print_warning "Update response: $newDisplayName"
   fi
 
-  print_success "场景 1 完成!"
+  print_success "Scenario 1 complete!"
   return 0
 }
 
-# 如果直接运行此脚本
+# If running this script directly
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   run_auth_scenario
 fi

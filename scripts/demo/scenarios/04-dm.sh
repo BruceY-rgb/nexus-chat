@@ -1,25 +1,25 @@
 #!/bin/bash
 # =====================================================
-# 场景 4: 私聊 DM
+# Scenario 4: Private Message (DM)
 # =====================================================
 
-# 引入依赖
+# Import dependencies
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/colors.sh"
 source "$SCRIPT_DIR/../lib/mcp.sh"
 
 run_dm_scenario() {
-  print_section "场景 4: 私聊 DM"
+  print_section "Scenario 4: Private Message (DM)"
 
-  # 1. 列出所有用户
-  print_step "1. 获取用户列表..."
+  # 1. List all users
+  print_step "1. Getting user list..."
   local users_resp
   users_resp=$(mcp_list_users)
 
   local users_json
   users_json=$(extract_array "$users_resp" "users")
 
-  # 排除当前用户
+  # Exclude current user
   local other_users_json
   other_users_json=$(echo "$users_json" | python3 -c "
 import sys, json
@@ -34,9 +34,9 @@ except:
   local user_count
   user_count=$(echo "$other_users_json" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
 
-  print_success "找到 $user_count 个其他用户"
+  print_success "Found $user_count other users"
 
-  # 获取第一个其他用户的 ID
+  # Get first other user's ID
   local target_user_id
   target_user_id=$(echo "$other_users_json" | python3 -c "
 import sys, json
@@ -60,14 +60,14 @@ except:
 " 2>/dev/null)
 
   if [ -z "$target_user_id" ]; then
-    print_error "未找到其他用户，无法创建私聊"
+    print_error "No other users found, cannot create DM"
     return 1
   fi
 
-  print_info "目标用户: $target_user_name (ID: $target_user_id)"
+  print_info "Target user: $target_user_name (ID: $target_user_id)"
 
-  # 2. 创建私聊
-  print_step "2. 创建私聊会话..."
+  # 2. Create DM
+  print_step "2. Creating DM session..."
   local create_dm_resp
   create_dm_resp=$(mcp_create_dm "$target_user_id")
 
@@ -75,8 +75,8 @@ except:
   dm_id=$(extract_field "$create_dm_resp" "id")
 
   if [ -z "$dm_id" ]; then
-    # 可能已经存在，尝试列出
-    print_warning "创建私聊失败，尝试查找已有私聊..."
+    # May already exist, try to list
+    print_warning "Failed to create DM, trying to find existing DM..."
     local dms_resp
     dms_resp=$(mcp_list_active_dms)
 
@@ -99,14 +99,14 @@ except:
   fi
 
   if [ -z "$dm_id" ]; then
-    print_error "无法创建或找到私聊会话"
+    print_error "Cannot create or find DM session"
     return 1
   fi
 
-  print_success "私聊创建成功! DM ID: $dm_id"
+  print_success "DM created successfully! DM ID: $dm_id"
 
-  # 3. 获取私聊详情
-  print_step "3. 获取私聊详情..."
+  # 3. Get DM details
+  print_step "3. Getting DM details..."
   local dm_detail_resp
   dm_detail_resp=$(mcp_get_dm "$dm_id")
 
@@ -115,11 +115,11 @@ except:
   local member_count
   member_count=$(echo "$dm_members_json" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
 
-  print_success "私聊成员数: $member_count"
+  print_success "DM member count: $member_count"
 
-  # 4. 发送私聊消息
-  print_step "4. 发送私聊消息..."
-  local dm_message="👋 你好! 这是一条来自自动化演示的私聊消息! 时间: $(date +'%H:%M:%S')"
+  # 4. Send DM message
+  print_step "4. Sending DM message..."
+  local dm_message="Hello! This is a DM message from automated demo! Time: $(date +'%H:%M:%S')"
   local send_dm_resp
   send_dm_resp=$(mcp_send_dm_message "$dm_id" "$dm_message")
 
@@ -127,14 +127,14 @@ except:
   dm_msg_id=$(extract_field "$send_dm_resp" "id")
 
   if [ -n "$dm_msg_id" ]; then
-    print_success "私聊消息发送成功! ID: $dm_msg_id"
+    print_success "DM message sent successfully! ID: $dm_msg_id"
   else
-    print_error "私聊消息发送失败"
+    print_error "DM message sending failed"
     return 1
   fi
 
-  # 5. 列出活跃私聊
-  print_step "5. 获取活跃私聊列表..."
+  # 5. List active DMs
+  print_step "5. Getting active DM list..."
   local active_dms_resp
   active_dms_resp=$(mcp_list_active_dms)
 
@@ -143,16 +143,16 @@ except:
   local active_dm_count
   active_dm_count=$(echo "$active_dms_json" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
 
-  print_success "当前活跃私聊数: $active_dm_count"
+  print_success "Current active DM count: $active_dm_count"
 
-  # 保存 DM ID 供后续场景使用
+  # Save DM ID for subsequent scenarios
   echo "$dm_id" > /tmp/demo_dm_id
 
-  print_success "场景 4 完成!"
+  print_success "Scenario 4 complete!"
   return 0
 }
 
-# 如果直接运行此脚本
+# If running this script directly
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   run_dm_scenario
 fi

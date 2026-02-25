@@ -1,21 +1,21 @@
 #!/bin/bash
 # =====================================================
-# 场景 3: 消息收发
+# Scenario 3: Send and Receive Messages
 # =====================================================
 
-# 引入依赖
+# Import dependencies
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/colors.sh"
 source "$SCRIPT_DIR/../lib/mcp.sh"
 
-# 演示用消息内容
-DEMO_MESSAGE="🤖 这是一条来自自动化演示的消息！时间: $(date +'%H:%M:%S')"
+# Demo message content
+DEMO_MESSAGE="This is a message from automated demo! Time: $(date +'%H:%M:%S')"
 
 run_messages_scenario() {
-  print_section "场景 3: 消息收发"
+  print_section "Scenario 3: Send and Receive Messages"
 
-  # 1. 列出频道消息 (获取一个有效的频道 ID)
-  print_step "1. 获取频道列表以查找可用频道..."
+  # 1. List channel messages (get a valid channel ID)
+  print_step "1. Getting channel list to find available channel..."
   local channels_resp
   channels_resp=$(mcp_list_channels)
 
@@ -36,14 +36,14 @@ except:
 " 2>/dev/null)
 
   if [ -z "$channel_id" ]; then
-    print_error "未找到可用频道"
+    print_error "No available channel found"
     return 1
   fi
 
-  print_success "使用频道 ID: $channel_id"
+  print_success "Using channel ID: $channel_id"
 
-  # 2. 列出频道历史消息
-  print_step "2. 获取频道历史消息..."
+  # 2. List channel history messages
+  print_step "2. Getting channel history messages..."
   local messages_resp
   messages_resp=$(mcp_list_messages "$channel_id" 10)
 
@@ -52,9 +52,9 @@ except:
   local message_count
   message_count=$(echo "$messages_json" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
 
-  print_success "获取到 $message_count 条历史消息"
+  print_success "Retrieved $message_count historical messages"
 
-  # 提取最后一条消息 ID 用于后续操作
+  # Extract last message ID for subsequent operations
   local last_message_id
   last_message_id=$(echo "$messages_json" | python3 -c "
 import sys, json
@@ -66,8 +66,8 @@ except:
   print('')
 " 2>/dev/null)
 
-  # 3. 发送文本消息
-  print_step "3. 发送文本消息..."
+  # 3. Send text message
+  print_step "3. Sending text message..."
   local send_resp
   send_resp=$(mcp_send_message "$channel_id" "$DEMO_MESSAGE")
 
@@ -75,15 +75,15 @@ except:
   sent_message_id=$(extract_field "$send_resp" "id")
 
   if [ -n "$sent_message_id" ]; then
-    print_success "消息发送成功! ID: $sent_message_id"
+    print_success "Message sent successfully! ID: $sent_message_id"
   else
-    print_error "消息发送失败"
-    print_debug "响应: $send_resp"
+    print_error "Message sending failed"
+    print_debug "Response: $send_resp"
     return 1
   fi
 
-  # 4. 搜索消息
-  print_step "4. 搜索消息关键词..."
+  # 4. Search messages
+  print_step "4. Searching message keywords..."
   local search_resp
   search_resp=$(mcp_search_messages "demo")
 
@@ -92,10 +92,10 @@ except:
   local search_count
   search_count=$(echo "$search_results_json" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
 
-  print_success "找到 $search_count 条包含 'demo' 的消息"
+  print_success "Found $search_count messages containing 'demo'"
 
-  # 5. 获取刚发送的消息详情
-  print_step "5. 获取刚发送的消息详情..."
+  # 5. Get just sent message details
+  print_step "5. Getting just sent message details..."
   local get_msg_resp
   get_msg_resp=$(mcp_get_message "$sent_message_id")
 
@@ -104,19 +104,19 @@ except:
   local msg_created_at
   msg_created_at=$(extract_field "$get_msg_resp" "createdAt")
 
-  print_success "消息内容: ${msg_content:0:50}..."
-  print_info "创建时间: $msg_created_at"
+  print_success "Message content: ${msg_content:0:50}..."
+  print_info "Created at: $msg_created_at"
 
-  # 6. 演示 @提及 (如果能找到其他用户)
-  print_step "6. 尝试发送 @提及消息..."
+  # 6. Demonstrate @mention (if other users can be found)
+  print_step "6. Trying to send @mention message..."
 
-  # 先搜索一些用户
+  # First search for some users
   local users_resp
   users_resp=$(mcp_list_users)
   local users_json
   users_json=$(extract_array "$users_resp" "users")
 
-  # 获取第一个其他用户的 ID
+  # Get first other user's ID
   local mentioned_user_id
   mentioned_user_id=$(echo "$users_json" | python3 -c "
 import sys, json
@@ -131,22 +131,22 @@ except:
 " 2>/dev/null)
 
   if [ -n "$mentioned_user_id" ]; then
-    local mention_msg="@user 这是一条提及消息!"
+    local mention_msg="@user This is a mention message!"
     local mention_resp
     mention_resp=$(mcp_send_message "$channel_id" "$mention_msg")
-    print_success "@提及消息发送成功"
+    print_success "@mention message sent successfully"
   else
-    print_warning "未找到其他用户，跳过 @提及演示"
+    print_warning "No other users found, skipping @mention demo"
   fi
 
-  # 保存消息 ID 供后续场景使用
+  # Save message ID for subsequent scenarios
   echo "$sent_message_id" > /tmp/demo_message_id
 
-  print_success "场景 3 完成!"
+  print_success "Scenario 3 complete!"
   return 0
 }
 
-# 如果直接运行此脚本
+# If running this script directly
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   run_messages_scenario
 fi

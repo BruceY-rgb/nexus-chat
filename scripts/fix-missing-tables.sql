@@ -1,9 +1,9 @@
 -- =====================================================
--- 生产环境数据库表结构补充脚本
--- 用于添加本地开发环境存在但生产环境缺失的表
+-- Production environment database table supplement script
+-- Used to add tables that exist in local development but are missing in production
 -- =====================================================
 
--- 1. 创建 _prisma_migrations 表（Prisma迁移记录）
+-- 1. Create _prisma_migrations table (Prisma migration records)
 CREATE TABLE IF NOT EXISTS public._prisma_migrations (
     id character varying(36) NOT NULL PRIMARY KEY,
     checksum character varying(64) NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public._prisma_migrations (
     applied_steps_count integer DEFAULT 0 NOT NULL
 );
 
--- 2. 创建 users 表（用户主表）
+-- 2. Create users table (users master table)
 CREATE TABLE IF NOT EXISTS public.users (
     id text NOT NULL PRIMARY KEY,
     email text NOT NULL UNIQUE,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     email_verification_code text
 );
 
--- 3. 创建 message_reactions 表（消息反应表）- 新功能
+-- 3. Create message_reactions table (message reactions table) - New feature
 CREATE TABLE IF NOT EXISTS public.message_reactions (
     id text NOT NULL PRIMARY KEY,
     message_id text NOT NULL,
@@ -50,10 +50,10 @@ CREATE TABLE IF NOT EXISTS public.message_reactions (
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- 4. 创建 unique 约束
+-- 4. Create unique constraint
 DO $$
 BEGIN
-    -- message_reactions表的唯一约束
+    -- Unique constraint for message_reactions table
     IF NOT EXISTS (
         SELECT 1 FROM pg_constraint
         WHERE conname = 'message_reactions_message_id_user_id_emoji_key'
@@ -65,30 +65,30 @@ BEGIN
     END IF;
 END $$;
 
--- 5. 创建索引以优化查询性能
+-- 5. Create indexes to optimize query performance
 CREATE INDEX IF NOT EXISTS idx_message_reactions_message_id ON public.message_reactions(message_id);
 CREATE INDEX IF NOT EXISTS idx_message_reactions_user_id ON public.message_reactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_message_reactions_emoji ON public.message_reactions(emoji);
 CREATE INDEX IF NOT EXISTS idx_message_reactions_created_at ON public.message_reactions(created_at);
 
--- 6. 创建用户表的相关索引
+-- 6. Create related indexes for users table
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_status ON public.users(status);
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON public.users(created_at);
 
--- 7. 为现有表添加缺失的外键约束（如果不存在）
+-- 7. Add missing foreign key constraints to existing tables (if not exists)
 
--- 8. 添加注释
-COMMENT ON TABLE public.message_reactions IS '消息表情反应表 - 存储用户对消息的表情反应';
-COMMENT ON COLUMN public.message_reactions.emoji IS '表情符号，如👍❤️😂等';
-COMMENT ON COLUMN public.message_reactions.created_at IS '反应创建时间';
+-- 8. Add comments
+COMMENT ON TABLE public.message_reactions IS 'Message emoji reaction table - Stores user emoji reactions to messages';
+COMMENT ON COLUMN public.message_reactions.emoji IS 'Emoji symbols such as 👍❤️😂 etc';
+COMMENT ON COLUMN public.message_reactions.created_at IS 'Reaction creation time';
 
-COMMENT ON TABLE public.users IS '用户主表 - 存储所有用户信息';
-COMMENT ON COLUMN public.users.display_name IS '显示名称';
-COMMENT ON COLUMN public.users.email_verification_code IS '邮箱验证码（临时）';
-COMMENT ON COLUMN public.users.email_code_expires_at IS '验证码过期时间';
+COMMENT ON TABLE public.users IS 'Users master table - Stores all user information';
+COMMENT ON COLUMN public.users.display_name IS 'Display name';
+COMMENT ON COLUMN public.users.email_verification_code IS 'Email verification code (temporary)';
+COMMENT ON COLUMN public.users.email_code_expires_at IS 'Verification code expiration time';
 
--- 9. 验证表创建结果
+-- 9. Verify table creation results
 DO $$
 DECLARE
     table_count integer;
@@ -99,13 +99,13 @@ BEGIN
     AND table_name IN ('users', 'message_reactions', '_prisma_migrations');
 
     IF table_count = 3 THEN
-        RAISE NOTICE '✅ 成功创建 % 个缺失的表', table_count;
+        RAISE NOTICE 'Successfully created % missing tables', table_count;
     ELSE
-        RAISE NOTICE '⚠️  只创建了 % 个表，请检查', table_count;
+        RAISE NOTICE 'Only % tables created, please check', table_count;
     END IF;
 END $$;
 
--- 10. 显示创建结果
+-- 10. Show creation results
 SELECT 'message_reactions' as table_name, count(*) as count FROM message_reactions
 UNION ALL
 SELECT 'users', count(*) FROM users

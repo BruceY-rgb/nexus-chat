@@ -1,13 +1,13 @@
 #!/bin/bash
 # =====================================================
-# 彩色输出定义
+# Color Output Definitions
 # =====================================================
 
-# 颜色代码
+# Color codes
 COLOR_RESET='\033[0m'
 COLOR_BOLD='\033[1m'
 
-# 前景色
+# Foreground colors
 COLOR_BLACK='\033[30m'
 COLOR_RED='\033[31m'
 COLOR_GREEN='\033[32m'
@@ -17,7 +17,7 @@ COLOR_MAGENTA='\033[35m'
 COLOR_CYAN='\033[36m'
 COLOR_WHITE='\033[37m'
 
-# 背景色
+# Background colors
 BG_BLACK='\033[40m'
 BG_RED='\033[41m'
 BG_GREEN='\033[42m'
@@ -28,50 +28,50 @@ BG_CYAN='\033[46m'
 BG_WHITE='\033[47m'
 
 # ---------------------------------------------------
-# 便捷函数
+# Convenience functions
 # ---------------------------------------------------
 
-# 标题
+# Title
 print_title() {
   echo -e "${COLOR_BOLD}${COLOR_CYAN}$1${COLOR_RESET}"
 }
 
-# 成功
+# Success
 print_success() {
-  echo -e "${COLOR_GREEN}✓ $1${COLOR_RESET}"
+  echo -e "${COLOR_GREEN}$1${COLOR_RESET}"
 }
 
-# 错误
+# Error
 print_error() {
-  echo -e "${COLOR_RED}✗ $1${COLOR_RESET}"
+  echo -e "${COLOR_RED}$1${COLOR_RESET}"
 }
 
-# 警告
+# Warning
 print_warning() {
-  echo -e "${COLOR_YELLOW}⚠ $1${COLOR_RESET}"
+  echo -e "${COLOR_YELLOW}$1${COLOR_RESET}"
 }
 
-# 信息
+# Info
 print_info() {
-  echo -e "${COLOR_BLUE}ℹ $1${COLOR_RESET}"
+  echo -e "${COLOR_BLUE}$1${COLOR_RESET}"
 }
 
-# 步骤
+# Step
 print_step() {
-  echo -e "${COLOR_MAGENTA}▶ $1${COLOR_RESET}"
+  echo -e "${COLOR_MAGENTA}$1${COLOR_RESET}"
 }
 
-# 调试
+# Debug
 print_debug() {
   [ "$DEBUG" = "1" ] && echo -e "${COLOR_GRAY}$1${COLOR_RESET}"
 }
 
-# 分隔线
+# Separator
 print_separator() {
   echo -e "${COLOR_BLUE}──────────────────────────────────────────────────${COLOR_RESET}"
 }
 
-# 章节标题
+# Section title
 print_section() {
   echo ""
   print_separator
@@ -80,10 +80,10 @@ print_section() {
 }
 
 # ---------------------------------------------------
-# 进度显示
+# Progress display
 # ---------------------------------------------------
 
-# 进度条
+# Progress bar
 print_progress() {
   local current=$1
   local total=$2

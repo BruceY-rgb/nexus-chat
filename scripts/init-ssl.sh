@@ -1,26 +1,26 @@
 #!/bin/bash
-# SSL证书自动配置脚本
-# 使用Let's Encrypt免费SSL证书
+# SSL Certificate Auto-Configuration Script
+# Use Let's Encrypt free SSL certificate
 
 set -e
 
-echo "🔒 开始配置SSL证书..."
+echo "Starting SSL certificate configuration..."
 
-# 检查域名是否解析到当前服务器IP
+# Check if domain resolves to current server IP
 DOMAIN="instagram.rlenv.data4o.ai"
 SERVER_IP=$(curl -s ifconfig.me)
 
-echo "📍 当前服务器IP: $SERVER_IP"
-echo "🌐 请确保域名 $DOMAIN 已解析到此IP"
+echo "Current server IP: $SERVER_IP"
+echo "Please ensure domain $DOMAIN is resolved to this IP"
 echo ""
-read -p "确认域名已解析后按回车继续..."
+read -p "Press Enter to continue after confirming domain resolution..."
 
-# 创建SSL目录
+# Create SSL directory
 mkdir -p ssl
 
-# 安装certbot（如果未安装）
+# Install certbot (if not installed)
 if ! command -v certbot &> /dev/null; then
-    echo "📦 安装Certbot..."
+    echo "Installing Certbot..."
     if [ -f /etc/debian_version ]; then
         apt-get update
         apt-get install -y certbot python3-certbot-nginx
@@ -29,17 +29,17 @@ if ! command -v certbot &> /dev/null; then
     fi
 fi
 
-# 停止nginx容器（如果正在运行）
-echo "⏹️  停止Nginx容器..."
+# Stop nginx container (if running)
+echo "Stopping Nginx container..."
 docker-compose stop nginx || true
 
-# 临时启动一个简单的HTTP服务器来验证域名
-echo "🚀 启动临时HTTP服务器验证域名..."
+# Temporarily start a simple HTTP server to verify domain
+echo "Starting temporary HTTP server to verify domain..."
 docker run --rm -d -p 80:80 --name temp-nginx -v $(pwd)/nginx/nginx.conf:/etc/nginx/nginx.conf nginx:alpine || true
 sleep 3
 
-# 申请SSL证书
-echo "📜 申请Let's Encrypt证书..."
+# Apply for SSL certificate
+echo "Applying for Let's Encrypt certificate..."
 certbot certonly \
     --standalone \
     --preferred-challenges http \
@@ -48,56 +48,56 @@ certbot certonly \
     --no-eff-email \
     -d $DOMAIN
 
-# 复制证书到项目目录
-echo "📂 复制证书文件..."
+# Copy certificates to project directory
+echo "Copying certificate files..."
 cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem ssl/
 cp /etc/letsencrypt/live/$DOMAIN/privkey.pem ssl/
 
-# 设置证书权限
+# Set certificate permissions
 chmod 600 ssl/*.pem
 
-# 创建证书续期脚本
+# Create certificate renewal script
 cat > ssl/renew-ssl.sh << 'EOF'
 #!/bin/bash
-# SSL证书续期脚本
+# SSL Certificate Renewal Script
 
 DOMAIN="instagram.rlenv.data4o.ai"
 
-# 停止nginx
+# Stop nginx
 docker-compose stop nginx
 
-# 续期证书
+# Renew certificate
 certbot renew --quiet
 
-# 复制新证书
+# Copy new certificates
 cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem $(dirname $0)/../ssl/
 cp /etc/letsencrypt/live/$DOMAIN/privkey.pem $(dirname $0)/../ssl/
 
-# 设置权限
+# Set permissions
 chmod 600 $(dirname $0)/../ssl/*.pem
 
-# 重启nginx
+# Restart nginx
 docker-compose start nginx
 
-echo "✅ SSL证书已更新"
+echo "SSL certificate updated"
 EOF
 
 chmod +x ssl/renew-ssl.sh
 
-# 停止临时容器
+# Stop temporary container
 docker stop temp-nginx || true
 
-# 添加crontab任务（每天检查续期）
+# Add crontab task (check renewal daily)
 (crontab -l 2>/dev/null; echo "0 12 * * * $(pwd)/ssl/renew-ssl.sh >> /var/log/ssl-renew.log 2>&1") | crontab -
 
-# 启动所有服务
-echo "🚀 启动所有服务..."
+# Start all services
+echo "Starting all services..."
 docker-compose up -d
 
 echo ""
-echo "✅ SSL证书配置完成！"
-echo "📝 证书位置: ./ssl/"
-echo "🔄 自动续期: 已设置crontab任务"
-echo "🌐 访问地址: https://instagram.rlenv.data4o.ai"
+echo "SSL certificate configuration complete!"
+echo "Certificate location: ./ssl/"
+echo "Auto-renewal: Crontab task configured"
+echo "Access URL: https://instagram.rlenv.data4o.ai"
 echo ""
-echo "📌 手动续期命令: ./ssl/renew-ssl.sh"
+echo "Manual renewal command: ./ssl/renew-ssl.sh"

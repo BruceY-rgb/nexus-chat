@@ -1,86 +1,86 @@
 #!/bin/bash
 
-# IP 配置验证脚本
-# 用于验证所有配置文件中的域名是否正确更新为 instagram.rlenv.data4o.ai
+# IP Configuration Verification Script
+# Used to verify that all domain names in configuration files are correctly updated to instagram.rlenv.data4o.ai
 
 echo "================================================"
-echo "🔍 IP 地址配置验证脚本"
+echo "IP Address Configuration Verification Script"
 echo "================================================"
 echo ""
 
-# 设置正确的域名
+# Set correct domain
 CORRECT_DOMAIN="instagram.rlenv.data4o.ai"
 OLD_IP="118.31.62.122"
 OLD_IP2="72.62.252.67"
 
-# 计数器
+# Counter
 PASS_COUNT=0
 FAIL_COUNT=0
 
-# 检查函数
+# Check function
 check_file() {
     local file=$1
     local pattern=$2
     local description=$3
 
-    echo -n "检查 $description... "
+    echo -n "Checking $description... "
 
     if [ ! -f "$file" ]; then
-        echo "❌ 文件不存在: $file"
+        echo "File not found: $file"
         ((FAIL_COUNT++))
         return 1
     fi
 
     if grep -q "$CORRECT_DOMAIN" "$file"; then
-        echo "✅ 正确 (包含 $CORRECT_DOMAIN)"
+        echo "Correct (contains $CORRECT_DOMAIN)"
         ((PASS_COUNT++))
         return 0
     elif grep -q "$OLD_IP" "$file" || grep -q "$OLD_IP2" "$file"; then
-        echo "⚠️  仍使用旧 IP ($OLD_IP 或 $OLD_IP2)"
+        echo "Still using old IP ($OLD_IP or $OLD_IP2)"
         ((FAIL_COUNT++))
         return 1
     else
-        echo "⚠️  未找到域名"
+        echo "Domain not found"
         ((FAIL_COUNT++))
         return 1
     fi
 }
 
-# 检查 .env.server
-check_file ".env.server" "NEXT_PUBLIC_APP_URL" ".env.server 环境变量"
+# Check .env.server
+check_file ".env.server" "NEXT_PUBLIC_APP_URL" ".env.server environment variables"
 
-# 检查 nginx 配置
-check_file "nginx/conf.d/default.conf" "server_name" "Nginx 配置文件"
+# Check nginx configuration
+check_file "nginx/conf.d/default.conf" "server_name" "Nginx configuration file"
 
-# 检查 docker-compose.dokploy.yml
+# Check docker-compose.dokploy.yml
 if [ -f "docker-compose.dokploy.yml" ]; then
-    check_file "docker-compose.dokploy.yml" "Host.*instagram.rlenv.data4o.ai" "Dokploy 配置"
+    check_file "docker-compose.dokploy.yml" "Host.*instagram.rlenv.data4o.ai" "Dokploy configuration"
 else
-    echo "检查 Dokploy 配置... ℹ️  文件不存在 (docker-compose.dokploy.yml)"
+    echo "Checking Dokploy configuration... File not found (docker-compose.dokploy.yml)"
 fi
 
 echo ""
 echo "================================================"
-echo "📊 验证结果统计"
+echo "Verification Results Summary"
 echo "================================================"
-echo "✅ 通过: $PASS_COUNT"
-echo "❌ 失败: $FAIL_COUNT"
+echo "Passed: $PASS_COUNT"
+echo "Failed: $FAIL_COUNT"
 echo ""
 
 if [ $FAIL_COUNT -eq 0 ]; then
-    echo "🎉 所有检查通过！域名配置正确。"
+    echo "All checks passed! Domain configuration is correct."
     echo ""
-    echo "下一步操作："
-    echo "1. 重启服务: docker-compose restart"
-    echo "2. 测试访问: https://instagram.rlenv.data4o.ai"
-    echo "3. 查看调试指南: cat DEBUGGING-GUIDE.md"
+    echo "Next steps:"
+    echo "1. Restart services: docker-compose restart"
+    echo "2. Test access: https://instagram.rlenv.data4o.ai"
+    echo "3. View debugging guide: cat DEBUGGING-GUIDE.md"
     exit 0
 else
-    echo "⚠️  发现问题！请检查上述失败的项目。"
+    echo "Issues found! Please check the failed items above."
     echo ""
-    echo "解决方案："
-    echo "1. 手动更新失败的文件"
-    echo "2. 运行: ./scripts/update-domain.sh instagram.rlenv.data4o.ai"
-    echo "3. 重新构建: npm run build"
+    echo "Solutions:"
+    echo "1. Manually update failed files"
+    echo "2. Run: ./scripts/update-domain.sh instagram.rlenv.data4o.ai"
+    echo "3. Rebuild: npm run build"
     exit 1
 fi

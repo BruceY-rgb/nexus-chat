@@ -1,23 +1,23 @@
 #!/bin/bash
 
 # =====================================================
-# 创建新实例
-# 使用方法: ./create-instance.sh <instance-name>
+# Create New Instance
+# Usage: ./create-instance.sh <instance-name>
 # =====================================================
 
 set -e
 
-# 颜色定义
+# Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# 检查参数
+# Check arguments
 if [ -z "$1" ]; then
-    echo -e "${RED}错误: 请指定实例名称${NC}"
-    echo "使用方法: $0 <instance-name>"
-    echo "示例: $0 my-instance"
+    echo -e "${RED}Error: Please specify instance name${NC}"
+    echo "Usage: $0 <instance-name>"
+    echo "Example: $0 my-instance"
     exit 1
 fi
 
@@ -27,48 +27,48 @@ INSTANCES_DIR="$(dirname "$SCRIPT_DIR")/instances"
 TEMPLATE_DIR="$INSTANCES_DIR/template"
 INSTANCE_DIR="$INSTANCES_DIR/$INSTANCE_NAME"
 
-# 检查模板目录是否存在
+# Check if template directory exists
 if [ ! -d "$TEMPLATE_DIR" ]; then
-    echo -e "${RED}错误: 模板目录不存在: $TEMPLATE_DIR${NC}"
+    echo -e "${RED}Error: Template directory does not exist: $TEMPLATE_DIR${NC}"
     exit 1
 fi
 
-# 检查实例是否已存在
+# Check if instance already exists
 if [ -d "$INSTANCE_DIR" ]; then
-    echo -e "${RED}错误: 实例 '$INSTANCE_NAME' 已存在${NC}"
+    echo -e "${RED}Error: Instance '$INSTANCE_NAME' already exists${NC}"
     exit 1
 fi
 
-# 创建实例目录
-echo -e "${GREEN}创建实例目录: $INSTANCE_DIR${NC}"
+# Create instance directory
+echo -e "${GREEN}Creating instance directory: $INSTANCE_DIR${NC}"
 mkdir -p "$INSTANCE_DIR"
 
-# 复制 docker-compose.yml（使用符号链接指向模板）
-echo -e "${GREEN}创建 docker-compose.yml${NC}"
+# Copy docker-compose.yml (use symlink to point to template)
+echo -e "${GREEN}Creating docker-compose.yml${NC}"
 ln -sf ../template/docker-compose.yml "$INSTANCE_DIR/docker-compose.yml"
 
-# 复制 .env.example 为 .env
-echo -e "${GREEN}创建 .env 配置文件${NC}"
+# Copy .env.example to .env
+echo -e "${GREEN}Creating .env configuration file${NC}"
 cp "$TEMPLATE_DIR/.env.example" "$INSTANCE_DIR/.env"
 
-# 设置环境变量使符号链接正确解析
+# Set environment variables so symlink resolves correctly
 cd "$INSTANCE_DIR"
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}实例 '$INSTANCE_NAME' 创建成功!${NC}"
+echo -e "${GREEN}Instance '$INSTANCE_NAME' created successfully!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-echo "配置步骤:"
-echo "1. 进入实例目录: cd instances/$INSTANCE_NAME"
-echo "2. 修改 .env 配置文件（特别是端口）"
-echo "3. 启动实例: ../scripts/start-instance.sh $INSTANCE_NAME"
+echo "Configuration steps:"
+echo "1. Go to instance directory: cd instances/$INSTANCE_NAME"
+echo "2. Modify .env configuration file (especially ports)"
+echo "3. Start instance: ../scripts/start-instance.sh $INSTANCE_NAME"
 echo ""
-echo -e "${YELLOW}注意: 请修改 .env 中的以下配置以避免端口冲突:${NC}"
-echo "  - APP_PORT (默认 3000)"
-echo "  - WEBSOCKET_PORT (默认 3001)"
-echo "  - DB_PORT (默认 5432)"
-echo "  - MCP_PORT (默认 3002)"
-echo "  - DB_NAME (数据库名)"
-echo "  - INSTANCE_NAME (实例名)"
+echo -e "${YELLOW}Note: Please modify the following in .env to avoid port conflicts:${NC}"
+echo "  - APP_PORT (default 3000)"
+echo "  - WEBSOCKET_PORT (default 3001)"
+echo "  - DB_PORT (default 5432)"
+echo "  - MCP_PORT (default 3002)"
+echo "  - DB_NAME (database name)"
+echo "  - INSTANCE_NAME (instance name)"
 echo ""

@@ -1,5 +1,5 @@
 #!/bin/bash
-# 执行数据库种子脚本
+# Execute database seed script
 
 set -e
 
@@ -9,12 +9,12 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}=========================================="
-echo "🌱 数据库种子脚本"
+echo "Database Seed Script"
 echo "==========================================${NC}"
 
-echo -e "${YELLOW}🚀 开始执行种子脚本...${NC}"
+echo -e "${YELLOW}Starting seed script execution...${NC}"
 
-# 在Docker容器中执行
+# Execute in Docker container
 docker-compose exec -T app npx tsx scripts/seed.ts
 
-echo -e "${GREEN}✅ 种子脚本执行完成${NC}"
+echo -e "${GREEN}Seed script execution complete${NC}"

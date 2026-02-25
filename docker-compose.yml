@@ -1,12 +1,12 @@
 # # =====================================================
-# # 生产环境部署配置
-# # 用于部署到Linux服务器
+# # Production environment deployment configuration
+# # For deploying to Linux server
 # # =====================================================
 
 # version: '3.8'
 
 # services:
-#   # PostgreSQL数据库
+#   # PostgreSQL database
 #   db:
 #     image: postgres:15-alpine
 #     container_name: slack_db
@@ -28,7 +28,7 @@
 #       timeout: 5s
 #       retries: 5
 
-#   # Next.js应用
+#   # Next.js application
 #   app:
 #     build:
 #       context: .
@@ -50,7 +50,7 @@
 #       RESEND_API_KEY: ${RESEND_API_KEY}
 #       EMAIL_FROM: ${EMAIL_FROM}
 #       EMAIL_REPLY_TO: ${EMAIL_REPLY_TO}
-#       APP_NAME: ${APP_NAME:-Slack聊天应用}
+#       APP_NAME: ${APP_NAME:-Slack Chat App}
 #       SESSION_SECRET: ${SESSION_SECRET}
 #       OSS_REGION: ${OSS_REGION}
 #       OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID}
@@ -83,7 +83,7 @@
 #       timeout: 10s
 #       retries: 3
 
-#   # Nginx反向代理
+#   # Nginx reverse proxy
 #   nginx:
 #     image: nginx:alpine
 #     container_name: slack_nginx
@@ -106,26 +106,26 @@
 
 # networks:
 #   dokploy-network:
-#     external: true  # 告诉 Docker 使用 Dokploy 已经创建好的网络
+#     external: true  # Tell Docker to use the network already created by Dokploy
 
 
 # =====================================================
-# 适配 Dokploy (Docker Swarm) 的生产环境配置
+# Production configuration adapted for Dokploy (Docker Swarm)
 # =====================================================
 
 version: '3.8'
 
 services:
-  # Next.js 应用服务
+  # Next.js application service
   app:
     build:
       context: .
       dockerfile: Dockerfile
     restart: always
-    # Dokploy 模式下建议通过面板配置环境变量，或保留以下映射
+    # In Dokploy mode, it is recommended to configure environment variables through the panel, or keep the following mapping
     environment:
       - NODE_ENV=production
-      # 注意：主机名已从 db 改为 dokploy-postgres
+      # Note: hostname changed from db to dokploy-postgres
       - DATABASE_URL=postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD}@dokploy-postgres:5432/${DB_NAME:-slack_chat}?schema=public
       - DB_HOST=dokploy-postgres
       - DB_PORT=5432
@@ -140,12 +140,12 @@ services:
       - "3000:3000"
     networks:
       - dokploy-network
-    # 确保应用在数据库就绪后启动（Swarm模式下 depends_on 仅作参考）
+    # Ensure application starts after database is ready (depends_on is only a reference in Swarm mode)
     deploy:
       restart_policy:
         condition: on-failure
 
-  # Nginx 反向代理
+  # Nginx reverse proxy
   nginx:
     image: nginx:alpine
     restart: always
@@ -159,7 +159,7 @@ services:
     networks:
       - dokploy-network
 
-# 关键：连接到 Dokploy 已有的网络
+# Key: Connect to Dokploy's existing network
 networks:
   dokploy-network:
     external: true

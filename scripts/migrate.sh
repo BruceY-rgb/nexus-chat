@@ -1,155 +1,155 @@
 #!/bin/bash
 
 # =====================================================
-# 数据库迁移脚本
+# Database Migration Script
 # Slack-like Chat Tool
 # =====================================================
 
 set -e
 
-echo "🚀 开始数据库迁移..."
+echo "Starting database migration..."
 
-# 检查必要的工具
-command -v psql >/dev/null 2>&1 || { echo "❌ PostgreSQL 客户端未安装" >&2; exit 1; }
-command -v node >/dev/null 2>&1 || { echo "❌ Node.js 未安装" >&2; exit 1; }
-command -v npm >/dev/null 2>&1 || { echo "❌ npm 未安装" >&2; exit 1; }
+# Check required tools
+command -v psql >/dev/null 2>&1 || { echo "PostgreSQL client not installed" >&2; exit 1; }
+command -v node >/dev/null 2>&1 || { echo "Node.js not installed" >&2; exit 1; }
+command -v npm >/dev/null 2>&1 || { echo "npm not installed" >&2; exit 1; }
 
-# 加载环境变量
+# Load environment variables
 if [ -f .env ]; then
-    echo "📋 加载环境变量..."
-    # 安全地加载环境变量，跳过注释和空行
+    echo "Loading environment variables..."
+    # Safely load environment variables, skip comments and empty lines
     while IFS= read -r line; do
-        # 跳过空行
+        # Skip empty lines
         [[ -z "$line" ]] && continue
-        # 跳过注释行
+        # Skip comment lines
         [[ "$line" =~ ^[[:space:]]*# ]] && continue
-        # 提取变量名和值（去掉行末注释）
+        # Extract variable name and value (remove trailing comments)
         if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
             var_name="${BASH_REMATCH[1]}"
             var_value="${BASH_REMATCH[2]}"
-            # 移除行末注释
+            # Remove trailing comments
             var_value=$(echo "$var_value" | sed 's/[[:space:]]*#.*$//')
-            # 导出变量
+            # Export variable
             export "$var_name=$var_value"
         fi
     done < <(grep -v '^#' .env | grep -v '^$' | sed 's/\r$//')
 else
-    echo "⚠️  未找到 .env 文件，请确保已设置环境变量"
+    echo "Warning: .env file not found, make sure environment variables are set"
 fi
 
-# 检查必要的环境变量
+# Check required environment variables
 if [ -z "$DATABASE_URL" ]; then
-    echo "❌ DATABASE_URL 环境变量未设置"
+    echo "DATABASE_URL environment variable not set"
     exit 1
 fi
 
-# 步骤 1: 检查数据库连接
+# Step 1: Check database connection
 echo ""
-echo "🔍 检查数据库连接..."
+echo "Checking database connection..."
 PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "SELECT 1;" > /dev/null 2>&1
 if [ $? -ne 0 ]; then
-    echo "❌ 数据库连接失败"
+    echo "Database connection failed"
     exit 1
 fi
-echo "✅ 数据库连接成功"
+echo "Database connection successful"
 
-# 步骤 2: 检查扩展是否存在
+# Step 2: Check if extensions exist
 echo ""
-echo "🔧 检查 PostgreSQL 扩展..."
+echo "Checking PostgreSQL extensions..."
 PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "SELECT extname FROM pg_extension WHERE extname IN ('uuid-ossp', 'pgcrypto', 'unaccent');" > /dev/null 2>&1
 if [ $? -ne 0 ]; then
-    echo "❌ 扩展检查失败"
+    echo "Extension check failed"
     exit 1
 fi
-echo "✅ PostgreSQL 扩展已安装"
+echo "PostgreSQL extensions installed"
 
-# 步骤 3: 备份现有数据（如果表已存在）
+# Step 3: Backup existing data (if tables exist)
 echo ""
-echo "💾 备份现有数据（如果存在）..."
+echo "Backing up existing data (if exists)..."
 BACKUP_FILE="backup_$(date +%Y%m%d_%H%M%S).sql"
 PGPASSWORD=$DB_PASSWORD pg_dump -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME --schema-only > "${BACKUP_FILE}_schema.sql" 2>/dev/null || true
 PGPASSWORD=$DB_PASSWORD pg_dump -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME --data-only > "${BACKUP_FILE}_data.sql" 2>/dev/null || true
 if [ -s "${BACKUP_FILE}_schema.sql" ] || [ -s "${BACKUP_FILE}_data.sql" ]; then
-    echo "✅ 数据已备份到 ${BACKUP_FILE}_*.sql"
+    echo "Data backed up to ${BACKUP_FILE}_*.sql"
 else
-    echo "ℹ️  未发现现有数据，无需备份"
+    echo "No existing data found, no backup needed"
     rm -f "${BACKUP_FILE}_schema.sql" "${BACKUP_FILE}_data.sql"
 fi
 
-# 步骤 4: 执行初始化 SQL 脚本
+# Step 4: Execute initialization SQL script
 echo ""
-echo "📝 执行数据库初始化脚本..."
+echo "Executing database initialization script..."
 if [ -f "database/init.sql" ]; then
     PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f "database/init.sql" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
-        echo "✅ 数据库初始化成功"
+        echo "Database initialization successful"
     else
-        echo "❌ 数据库初始化失败"
+        echo "Database initialization failed"
         exit 1
     fi
 else
-    echo "⚠️  未找到 database/init.sql，跳过初始化"
+    echo "Warning: database/init.sql not found, skipping initialization"
 fi
 
-# 步骤 5: 安装依赖
+# Step 5: Install dependencies
 echo ""
-echo "📦 安装 Node.js 依赖..."
+echo "Installing Node.js dependencies..."
 npm install
 
-# 步骤 6: 生成 Prisma 客户端
+# Step 6: Generate Prisma client
 echo ""
-echo "🔨 生成 Prisma 客户端..."
+echo "Generating Prisma client..."
 npx prisma generate
 
-# 步骤 7: 推送 Prisma Schema 到数据库
+# Step 7: Push Prisma Schema to database
 echo ""
-echo "🚀 推送 Prisma Schema..."
+echo "Pushing Prisma Schema..."
 npx prisma db push
 
-# 步骤 8: 验证数据库结构
+# Step 8: Verify database structure
 echo ""
-echo "✔️  验证数据库结构..."
+echo "Verifying database structure..."
 TABLE_COUNT=$(PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';" | xargs)
-echo "✅ 创建了 $TABLE_COUNT 个表"
+echo "Created $TABLE_COUNT tables"
 
-# 步骤 9: 创建索引（如果尚未创建）
+# Step 9: Create indexes (if not already created)
 echo ""
-echo "⚡ 检查索引..."
+echo "Checking indexes..."
 INDEX_COUNT=$(PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -t -c "SELECT count(*) FROM pg_indexes WHERE schemaname = 'public';" | xargs)
-echo "✅ 发现 $INDEX_COUNT 个索引"
+echo "Found $INDEX_COUNT indexes"
 
-# 步骤 10: 验证初始化数据
+# Step 10: Verify initialization data
 echo ""
-echo "📊 验证初始化数据..."
+echo "Verifying initialization data..."
 USER_COUNT=$(PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -t -c "SELECT count(*) FROM users;" | xargs)
 CHANNEL_COUNT=$(PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -t -c "SELECT count(*) FROM channels;" | xargs)
-echo "✅ 创建了 $USER_COUNT 个用户"
-echo "✅ 创建了 $CHANNEL_COUNT 个频道"
+echo "Created $USER_COUNT users"
+echo "Created $CHANNEL_COUNT channels"
 
-# 步骤 11: 运行 Prisma Studio（可选）
+# Step 11: Run Prisma Studio (optional)
 echo ""
-read -p "🔍 是否要打开 Prisma Studio 查看数据？(y/N): " -n 1 -r
+read -p "Open Prisma Studio to view data? (y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "🌐 启动 Prisma Studio..."
+    echo "Starting Prisma Studio..."
     npx prisma studio
 fi
 
-# 完成
+# Complete
 echo ""
-echo "✨ 数据库迁移完成！"
+echo "Database migration complete!"
 echo ""
-echo "📚 接下来的步骤："
-echo "  1. 检查 .env 文件中的数据库配置"
-echo "  2. 启动应用程序：npm run dev"
-echo "  3. 查看文档：https://your-docs-url.com"
+echo "Next steps:"
+echo "  1. Check database configuration in .env file"
+echo "  2. Start application: npm run dev"
+echo "  3. View documentation: https://your-docs-url.com"
 echo ""
-echo "🔑 默认管理员账户："
-echo "  邮箱：admin@example.com"
-echo "  密码：admin123"
+echo "Default admin account:"
+echo "  Email: admin@example.com"
+echo "  Password: admin123"
 echo ""
-echo "💡 提示："
-echo "  - 使用 'npm run db:reset' 重置数据库"
-echo "  - 使用 'npm run db:seed' 重新填充数据"
-echo "  - 使用 'npm run db:studio' 打开 Prisma Studio"
+echo "Tips:"
+echo "  - Use 'npm run db:reset' to reset database"
+echo "  - Use 'npm run db:seed' to reseed data"
+echo "  - Use 'npm run db:studio' to open Prisma Studio"
 echo ""

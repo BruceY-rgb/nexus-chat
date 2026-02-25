@@ -1,26 +1,26 @@
 #!/bin/bash
 # =====================================================
-# 场景 5: 消息互动 (Thread/Reaction)
+# Scenario 5: Message Interactions (Thread/Reaction)
 # =====================================================
 
-# 引入依赖
+# Import dependencies
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/colors.sh"
 source "$SCRIPT_DIR/../lib/mcp.sh"
 
 run_interactions_scenario() {
-  print_section "场景 5: 消息互动"
+  print_section "Scenario 5: Message Interactions"
 
-  # 获取之前场景保存的消息 ID
+  # Get message ID saved from previous scenario
   local message_id
   if [ -f /tmp/demo_message_id ]; then
     message_id=$(cat /tmp/demo_message_id)
   fi
 
   if [ -z "$message_id" ]; then
-    print_warning "未找到消息 ID，尝试创建一个新消息..."
+    print_warning "Message ID not found, trying to create a new message..."
 
-    # 获取一个频道
+    # Get a channel
     local channels_resp
     channels_resp=$(mcp_list_channels)
     local channels_json
@@ -40,36 +40,36 @@ except:
 " 2>/dev/null)
 
     if [ -z "$channel_id" ]; then
-      print_error "无法获取频道 ID"
+      print_error "Cannot get channel ID"
       return 1
     fi
 
-    # 发送一条新消息用于互动
+    # Send a new message for interaction
     local new_msg_resp
-    new_msg_resp=$(mcp_send_message "$channel_id" "这是用于互动测试的消息")
+    new_msg_resp=$(mcp_send_message "$channel_id" "This is a message for interaction test")
     message_id=$(extract_field "$new_msg_resp" "id")
 
     if [ -z "$message_id" ]; then
-      print_error "无法发送测试消息"
+      print_error "Cannot send test message"
       return 1
     fi
   fi
 
-  print_info "使用消息 ID: $message_id"
+  print_info "Using message ID: $message_id"
 
-  # 1. 添加表情反应
-  print_step "1. 添加表情反应 (👍)..."
+  # 1. Add emoji reaction
+  print_step "1. Adding emoji reaction (thumbsup)..."
   local reaction_resp
   reaction_resp=$(mcp_add_reaction "$message_id" "thumbsup")
 
   if check_error "$reaction_resp"; then
-    print_warning "添加反应失败"
+    print_warning "Failed to add reaction"
   else
-    print_success "已添加 👍 表情"
+    print_success "Added thumbsup emoji"
   fi
 
-  # 2. 获取消息反应
-  print_step "2. 获取消息反应列表..."
+  # 2. Get message reactions
+  print_step "2. Getting message reaction list..."
   local reactions_resp
   reactions_resp=$(mcp_get_reactions "$message_id")
 
@@ -79,11 +79,11 @@ except:
   local reaction_count
   reaction_count=$(echo "$reactions_json" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
 
-  print_success "消息共有 $reaction_count 个表情反应"
+  print_success "Message has $reaction_count emoji reactions"
 
-  # 3. 回复消息 (Thread)
-  print_step "3. 回复消息创建 Thread..."
-  local reply_content="这是对原消息的回复! 时间: $(date +'%H:%M:%S')"
+  # 3. Reply to message (Thread)
+  print_step "3. Replying to message to create Thread..."
+  local reply_content="This is a reply to the original message! Time: $(date +'%H:%M:%S')"
   local reply_resp
   reply_resp=$(mcp_reply_to_message "$message_id" "$reply_content")
 
@@ -91,14 +91,14 @@ except:
   reply_id=$(extract_field "$reply_resp" "id")
 
   if [ -n "$reply_id" ]; then
-    print_success "Thread 回复成功! ID: $reply_id"
+    print_success "Thread reply successful! ID: $reply_id"
   else
-    print_warning "Thread 回复可能失败"
+    print_warning "Thread reply may have failed"
   fi
 
-  # 4. 获取 Thread 回复
+  # 4. Get Thread replies
   if [ -n "$reply_id" ]; then
-    print_step "4. 获取 Thread 回复..."
+    print_step "4. Getting Thread replies..."
     local thread_resp
     thread_resp=$(mcp_get_thread_replies "$message_id")
 
@@ -107,40 +107,40 @@ except:
     local reply_count
     reply_count=$(echo "$replies_json" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
 
-    print_success "Thread 共有 $reply_count 条回复"
+    print_success "Thread has $reply_count replies"
   fi
 
-  # 5. 编辑消息
-  print_step "5. 编辑消息内容..."
-  local edit_content="[已编辑] 这是一条被编辑过的消息 - $(date +'%H:%M:%S')"
+  # 5. Edit message
+  print_step "5. Editing message content..."
+  local edit_content="[Edited] This is an edited message - $(date +'%H:%M:%S')"
   local edit_resp
   edit_resp=$(mcp_update_message "$message_id" "$edit_content")
 
   local updated_content
   updated_content=$(extract_field "$edit_resp" "content")
 
-  if [[ "$updated_content" == *"已编辑"* ]]; then
-    print_success "消息编辑成功: ${updated_content:0:50}..."
+  if [[ "$updated_content" == *"Edited"* ]]; then
+    print_success "Message edited successfully: ${updated_content:0:50}..."
   else
-    print_warning "消息编辑结果: $updated_content"
+    print_warning "Message edit result: $updated_content"
   fi
 
-  # 6. 删除反应 (可选)
-  print_step "6. 移除表情反应..."
+  # 6. Remove reaction (optional)
+  print_step "6. Removing emoji reaction..."
   local remove_reaction_resp
   remove_reaction_resp=$(mcp_remove_reaction "$message_id" "thumbsup")
 
   if check_error "$remove_reaction_resp"; then
-    print_warning "移除反应可能失败"
+    print_warning "Removing reaction may have failed"
   else
-    print_success "已移除 👍 表情"
+    print_success "Removed thumbsup emoji"
   fi
 
-  print_success "场景 5 完成!"
+  print_success "Scenario 5 complete!"
   return 0
 }
 
-# 如果直接运行此脚本
+# If running this script directly
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   run_interactions_scenario
 fi
