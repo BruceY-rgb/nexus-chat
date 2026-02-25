@@ -437,7 +437,7 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
   // Helper function to update user online status
   async function updateUserPresence(userId: string, isOnline: boolean) {
     try {
-      await prisma.user.update({
+      const result = await prisma.user.updateMany({
         where: { id: userId },
         data: {
           isOnline,
@@ -445,12 +445,14 @@ export function setupWebSocket(httpServer: HTTPServer): ExtendedSocketIOServer {
         }
       });
 
-      // Broadcast user status change to all connections
-      io.emit('user-presence-update', {
-        userId,
-        isOnline,
-        lastSeenAt: new Date()
-      });
+      if (result.count > 0) {
+        // Broadcast user status change to all connections
+        io.emit('user-presence-update', {
+          userId,
+          isOnline,
+          lastSeenAt: new Date()
+        });
+      }
     } catch (error) {
       console.error('Error updating user presence:', error);
     }
