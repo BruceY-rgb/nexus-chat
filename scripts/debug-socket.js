@@ -36,7 +36,7 @@ const getServerUrl = () => {
     serverUrl = `${serverUrl}/socket.io`;
   }
 
-  console.log(`🔌 生成 WebSocket URL:`, {
+  console.log(`Generating WebSocket URL:`, {
     originalUrl: url,
     wsUrl: serverUrl,
     protocol: serverUrl.split('://')[0]
@@ -52,13 +52,13 @@ const rl = readline.createInterface({
 
 const WS_URL = getServerUrl();
 
-console.log('\n🔍 Socket 通信调试工具\n');
-console.log(`📡 服务器地址: ${WS_URL}`);
-console.log('\n请选择调试方式：');
-console.log('1. 手动输入 token');
-console.log('2. 从环境变量获取 (DEBUG_TOKEN)');
-console.log('3. 从本地存储获取');
-console.log('4. 跳过认证测试（仅测试连接）\n');
+console.log('\nSocket Communication Debug Tool\n');
+console.log(`Server address: ${WS_URL}`);
+console.log('\nSelect debug method:');
+console.log('1. Manual token input');
+console.log('2. Get from environment variable (DEBUG_TOKEN)');
+console.log('3. Get from localStorage');
+console.log('4. Skip auth test (connection only)\n');
 
 // 颜色输出
 const colors = {
@@ -81,10 +81,10 @@ function logStep(step, message) {
 // 获取 token
 async function getToken() {
   return new Promise((resolve) => {
-    rl.question('请选择 (1-4): ', (answer) => {
+    rl.question('Select (1-4): ', (answer) => {
       switch (answer) {
         case '1':
-          rl.question('请输入 auth_token: ', (token) => {
+          rl.question('Enter auth_token: ', (token) => {
             resolve(token);
           });
           break;
@@ -92,10 +92,10 @@ async function getToken() {
           resolve(process.env.DEBUG_TOKEN);
           break;
         case '3':
-          console.log('\n请在浏览器控制台运行：');
-          console.log('localStorage.getItem("auth_token") 或');
+          console.log('\nRun in browser console:');
+          console.log('localStorage.getItem("auth_token") or');
           console.log('document.cookie.split(";").find(r=>r.startsWith("auth_token=")).split("=")[1]');
-          rl.question('请粘贴 token: ', (token) => {
+          rl.question('Paste token: ', (token) => {
             resolve(token);
           });
           break;
@@ -103,7 +103,7 @@ async function getToken() {
           resolve(null);
           break;
         default:
-          log('red', '无效选择');
+          log('red', 'Invalid selection');
           process.exit(1);
       }
     });
@@ -113,7 +113,7 @@ async function getToken() {
 // 测试 WebSocket 连接
 async function testConnection(token) {
   return new Promise((resolve, reject) => {
-    logStep('1', '测试 WebSocket 连接...');
+    logStep('1', 'Testing WebSocket connection...');
 
     const options = {
       transports: ['websocket', 'polling'],
@@ -137,7 +137,7 @@ async function testConnection(token) {
       options.auth = { token };
     }
 
-    console.log(`📡 连接选项:`, {
+    console.log(`Connection options:`, {
       url: WS_URL,
       transports: options.transports,
       secure: options.secure,
@@ -147,30 +147,30 @@ async function testConnection(token) {
     const socket = io(WS_URL, options);
 
     const timeout = setTimeout(() => {
-      log('red', '❌ 连接超时 (5秒)');
+      log('red', 'X Connection timeout (5 seconds)');
       socket.disconnect();
       reject(new Error('Connection timeout'));
     }, 5000);
 
     socket.on('connect', () => {
       clearTimeout(timeout);
-      log('green', `✅ WebSocket 连接成功！`);
+      log('green', `X WebSocket connected!`);
       log('cyan', `   Socket ID: ${socket.id}`);
       resolve(socket);
     });
 
     socket.on('connect_error', (error) => {
       clearTimeout(timeout);
-      log('red', `❌ 连接错误: ${error.message}`);
-      log('yellow', `   错误类型: ${error.type}`);
+      log('red', `X Connection error: ${error.message}`);
+      log('yellow', `   Error type: ${error.type}`);
       if (error.description) {
-        log('yellow', `   错误描述: ${error.description}`);
+        log('yellow', `   Error description: ${error.description}`);
       }
       reject(error);
     });
 
     socket.on('error', (error) => {
-      log('red', `❌ Socket 错误: ${error.message}`);
+      log('red', `X Socket error: ${error.message}`);
     });
   });
 }
@@ -178,23 +178,23 @@ async function testConnection(token) {
 // 测试频道加入
 async function testJoinChannel(socket) {
   return new Promise((resolve) => {
-    logStep('2', '测试频道操作...');
+    logStep('2', 'Testing channel operations...');
 
-    rl.question('请输入频道 ID (或按回车跳过): ', async (channelId) => {
+    rl.question('Enter channel ID (or press Enter to skip): ', async (channelId) => {
       if (!channelId) {
-        log('yellow', '⏭️  跳过频道测试');
+        log('yellow', 'Skipping channel test');
         return resolve();
       }
 
       socket.emit('join-channel', channelId);
 
       socket.once('error', (error) => {
-        log('red', `❌ 加入频道失败: ${error.message}`);
+        log('red', `X Failed to join channel: ${error.message}`);
         resolve();
       });
 
       setTimeout(() => {
-        log('green', `✅ 已发送加入频道请求: ${channelId}`);
+        log('green', `X Sent join channel request: ${channelId}`);
         resolve();
       }, 1000);
     });
@@ -204,18 +204,18 @@ async function testJoinChannel(socket) {
 // 测试私聊加入
 async function testJoinDM(socket) {
   return new Promise((resolve) => {
-    logStep('3', '测试私聊操作...');
+    logStep('3', 'Testing DM operations...');
 
-    rl.question('请输入私聊 ID (或按回车跳过): ', async (conversationId) => {
+    rl.question('Enter DM ID (or press Enter to skip): ', async (conversationId) => {
       if (!conversationId) {
-        log('yellow', '⏭️  跳过私聊测试');
+        log('yellow', 'Skipping DM test');
         return resolve();
       }
 
       socket.emit('join-dm', conversationId);
 
       setTimeout(() => {
-        log('green', `✅ 已发送加入私聊请求: ${conversationId}`);
+        log('green', `X Sent join DM request: ${conversationId}`);
         resolve();
       }, 1000);
     });
@@ -224,16 +224,16 @@ async function testJoinDM(socket) {
 
 // 交互式测试
 function interactiveMode(socket) {
-  logStep('4', '进入交互模式');
+  logStep('4', 'Entering interactive mode');
 
-  console.log('\n可用命令：');
-  console.log('  join-channel <id>  - 加入频道');
-  console.log('  join-dm <id>       - 加入私聊');
-  console.log('  typing-start       - 开始打字');
-  console.log('  typing-stop        - 停止打字');
-  console.log('  status             - 查看连接状态');
-  console.log('  events             - 监听所有事件');
-  console.log('  quit               - 退出\n');
+  console.log('\nAvailable commands:');
+  console.log('  join-channel <id>  - Join channel');
+  console.log('  join-dm <id>       - Join DM');
+  console.log('  typing-start       - Start typing');
+  console.log('  typing-stop        - Stop typing');
+  console.log('  status             - View connection status');
+  console.log('  events             - Listen to all events');
+  console.log('  quit               - Quit\n');
 
   const events = new Set();
 
@@ -241,7 +241,7 @@ function interactiveMode(socket) {
     socket.onAny((eventName, ...args) => {
       if (!events.has(eventName)) {
         events.add(eventName);
-        console.log(`📡 新事件: ${eventName}`);
+        console.log(`New event: ${eventName}`);
       }
       if (events.size <= 10) {
         console.log(`   ${eventName}:`, JSON.stringify(args[0], null, 2));
@@ -251,52 +251,52 @@ function interactiveMode(socket) {
 
   listenToEvents();
 
-  rl.question('命令> ', (input) => {
+  rl.question('Command> ', (input) => {
     const [cmd, ...args] = input.trim().split(' ');
 
     switch (cmd) {
       case 'join-channel':
         if (args[0]) {
           socket.emit('join-channel', args[0]);
-          console.log(`📥 已发送加入频道: ${args[0]}`);
+          console.log(`Sent join channel: ${args[0]}`);
         } else {
-          console.log('❌ 请指定频道 ID');
+          console.log('X Please specify channel ID');
         }
         break;
 
       case 'join-dm':
         if (args[0]) {
           socket.emit('join-dm', args[0]);
-          console.log(`📥 已发送加入私聊: ${args[0]}`);
+          console.log(`Sent join DM: ${args[0]}`);
         } else {
-          console.log('❌ 请指定私聊 ID');
+          console.log('X Please specify DM ID');
         }
         break;
 
       case 'typing-start':
         socket.emit('typing-start', {});
-        console.log('⌨️  已发送打字开始');
+        console.log('Sent typing start');
         break;
 
       case 'typing-stop':
         socket.emit('typing-stop', {});
-        console.log('⌨️  已发送打字停止');
+        console.log('Sent typing stop');
         break;
 
       case 'status':
-        console.log('📊 连接状态:');
-        console.log(`   已连接: ${socket.connected ? '是' : '否'}`);
+        console.log('Connection status:');
+        console.log(`   Connected: ${socket.connected ? 'Yes' : 'No'}`);
         console.log(`   Socket ID: ${socket.id || 'N/A'}`);
-        console.log(`   Socket.IO 版本: ${io.version}`);
+        console.log(`   Socket.IO version: ${io.version}`);
         break;
 
       case 'events':
-        console.log('📡 监听的事件:');
+        console.log('Listening events:');
         events.forEach(e => console.log(`   - ${e}`));
         break;
 
       case 'quit':
-        console.log('\n👋 正在关闭连接...');
+        console.log('\nClosing connection...');
         socket.close();
         rl.close();
         return;
@@ -306,7 +306,7 @@ function interactiveMode(socket) {
         break;
 
       default:
-        console.log(`❌ 未知命令: ${cmd}`);
+        console.log(`X Unknown command: ${cmd}`);
     }
 
     // 继续等待下一个命令
@@ -317,28 +317,28 @@ function interactiveMode(socket) {
 // 发送测试消息
 async function testSendMessage(token) {
   return new Promise((resolve) => {
-    logStep('5', '测试消息发送');
+    logStep('5', 'Testing message sending');
 
-    rl.question('是否发送测试消息? (y/N): ', async (answer) => {
+    rl.question('Send test message? (y/N): ', async (answer) => {
       if (answer.toLowerCase() !== 'y') {
-        log('yellow', '⏭️  跳过消息发送测试');
+        log('yellow', 'Skipping message send test');
         return resolve();
       }
 
-      rl.question('请输入消息内容: ', async (content) => {
-        rl.question('请选择类型 (1.频道 2.私聊 3.跳过): ', async (type) => {
+      rl.question('Enter message content: ', async (content) => {
+        rl.question('Select type (1.Channel 2.DM 3.Skip): ', async (type) => {
           try {
             let payload = {
-              content: content || '测试消息'
+              content: content || 'Test message'
             };
 
             if (type === '1') {
-              rl.question('频道 ID: ', (id) => {
+              rl.question('Channel ID: ', (id) => {
                 payload.channelId = id;
                 sendHTTPMessage(payload, token);
               });
             } else if (type === '2') {
-              rl.question('私聊 ID: ', (id) => {
+              rl.question('DM ID: ', (id) => {
                 payload.dmConversationId = id;
                 sendHTTPMessage(payload, token);
               });
@@ -374,14 +374,14 @@ async function testSendMessage(token) {
                   body += chunk;
                 });
                 res.on('end', () => {
-                  console.log(`\n📥 HTTP 响应:`);
-                  console.log(`   状态: ${res.statusCode} ${res.statusMessage}`);
-                  console.log(`   响应: ${body}`);
+                  console.log(`\nHTTP Response:`);
+                  console.log(`   Status: ${res.statusCode} ${res.statusMessage}`);
+                  console.log(`   Response: ${body}`);
 
                   if (res.statusCode === 200) {
-                    log('green', '✅ 消息发送成功！');
+                    log('green', 'X Message sent successfully!');
                   } else {
-                    log('red', '❌ 消息发送失败');
+                    log('red', 'X Message sending failed');
                   }
 
                   resolve();
@@ -389,7 +389,7 @@ async function testSendMessage(token) {
               });
 
               req.on('error', (e) => {
-                console.error(`❌ 请求错误: ${e.message}`);
+                console.error(`X Request error: ${e.message}`);
                 resolve();
               });
 
@@ -397,7 +397,7 @@ async function testSendMessage(token) {
               req.end();
             }
           } catch (error) {
-            console.error(`❌ 错误: ${error.message}`);
+            console.error(`X Error: ${error.message}`);
             resolve();
           }
         });
@@ -410,15 +410,15 @@ async function testSendMessage(token) {
 async function main() {
   try {
     console.log('='.repeat(50));
-    console.log('Socket 通信调试工具');
+    console.log('Socket Communication Debug Tool');
     console.log('='.repeat(50));
 
     const token = await getToken();
 
     if (!token) {
-      log('yellow', '⚠️  未提供 token，将跳过认证');
+      log('yellow', 'No token provided, skipping auth');
     } else {
-      log('green', `🔑 Token: ${token.substring(0, 20)}...`);
+      log('green', `Token: ${token.substring(0, 20)}...`);
     }
 
     const socket = await testConnection(token);
@@ -429,14 +429,14 @@ async function main() {
     await testSendMessage(token);
 
     console.log('\n' + '='.repeat(50));
-    console.log('✅ 调试完成');
+    console.log('X Debug completed');
     console.log('='.repeat(50));
 
-    rl.question('\n是否进入交互模式? (y/N): ', (answer) => {
+    rl.question('\nEnter interactive mode? (y/N): ', (answer) => {
       if (answer.toLowerCase() === 'y') {
         interactiveMode(socket);
       } else {
-        console.log('\n👋 正在关闭连接...');
+        console.log('\nClosing connection...');
         socket.close();
         rl.close();
         process.exit(0);
@@ -444,7 +444,7 @@ async function main() {
     });
 
   } catch (error) {
-    log('red', `\n💥 调试过程中出错: ${error.message}`);
+    log('red', `\nError during debug: ${error.message}`);
     console.error(error);
     rl.close();
     process.exit(1);
@@ -453,7 +453,7 @@ async function main() {
 
 // 优雅退出
 process.on('SIGINT', () => {
-  console.log('\n\n👋 正在退出...');
+  console.log('\n\nExiting...');
   process.exit(0);
 });
 

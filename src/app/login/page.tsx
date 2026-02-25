@@ -1,6 +1,6 @@
 'use client';
 
-// 强制动态渲染 - 因为这个页面使用了客户端状态管理
+// Force dynamic rendering - because this page uses client-side state management
 export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
@@ -62,6 +62,21 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Custom validation to avoid browser-native Chinese messages
+    if (!email.trim()) {
+      setError('Please enter your email address');
+      return;
+    }
+    if (mode === 'password' && !password) {
+      setError('Please enter your password');
+      return;
+    }
+    if (mode === 'verification' && !verificationCode) {
+      setError('Please enter the verification code');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -136,7 +151,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="auth-form">
+          <form onSubmit={handleSubmit} className="auth-form" noValidate>
             {error && (
               <div className="p-3 bg-error/10 border border-error/20 rounded-lg text-error text-sm animate-slide-up">
                 {error}

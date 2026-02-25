@@ -28,6 +28,8 @@ export default function DirectMessageView({
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversation, setConversation] = useState<DMConversation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
     "messages" | "canvas" | "files" | "shared"
@@ -49,9 +51,9 @@ export default function DirectMessageView({
   const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
 
   // Input height state
-  const [inputHeight, setInputHeight] = useState(120); // Default height
+  const [inputHeight, setInputHeight] = useState(180); // Default height - increased to show all buttons
   const [isResizingInput, setIsResizingInput] = useState(false);
-  const inputDragStart = useRef({ y: 0, height: 120 });
+  const inputDragStart = useRef({ y: 0, height: 180 });
 
   // Input drag handling
   const handleInputDragStart = (e: React.MouseEvent) => {
@@ -104,25 +106,52 @@ export default function DirectMessageView({
 
   // Listen for messageId parameter in URL for deep linking
   useEffect(() => {
-    if (!messageListRef.current) return;
-
     const urlParams = new URLSearchParams(window.location.search);
     const messageId = urlParams.get("messageId");
 
     if (messageId) {
-      console.log(
-        "🔍 DirectMessageView: Found messageId in URL, highlighting:",
-        messageId,
-      );
-      messageListRef.current.highlightMessage(messageId);
+      // Add retry mechanism for when messageListRef is not ready yet
+      const highlightWithRetry = (retries = 10) => {
+        if (messageListRef.current) {
+          messageListRef.current.highlightMessage(messageId);
 
-      // Clear messageId parameter from URL to avoid duplicate highlight on refresh
-      const newUrl =
-        window.location.pathname +
-        window.location.search.replace(/[?&]messageId=[^&]*/, "");
-      window.history.replaceState({}, "", newUrl);
+          // Clear messageId parameter from URL to avoid duplicate highlight on refresh
+          const newUrl =
+            window.location.pathname +
+            window.location.search.replace(/[?&]messageId=[^&]*/, "");
+          window.history.replaceState({}, "", newUrl);
+        } else if (retries > 0) {
+          // Retry after a short delay
+          setTimeout(() => highlightWithRetry(retries - 1), 200);
+        }
+      };
+
+      highlightWithRetry();
     }
   }, [member.id]);
+
+  // Listen for search-navigate-to-message event from GlobalSearchModal
+  useEffect(() => {
+    const handleSearchNavigate = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail?.messageId || !messageListRef.current) return;
+
+      const highlightWithRetry = (retries = 10) => {
+        if (messageListRef.current) {
+          messageListRef.current.highlightMessage(detail.messageId);
+        } else if (retries > 0) {
+          setTimeout(() => highlightWithRetry(retries - 1), 200);
+        }
+      };
+
+      highlightWithRetry();
+    };
+
+    window.addEventListener("search-navigate-to-message", handleSearchNavigate);
+    return () => {
+      window.removeEventListener("search-navigate-to-message", handleSearchNavigate);
+    };
+  }, []);
 
   // Force connect WebSocket (if not connected)
   useEffect(() => {
@@ -264,11 +293,14 @@ export default function DirectMessageView({
   };
 
   // Get message list
+  const PAGE_SIZE = 50;
+
   const fetchMessages = async (conversationId: string) => {
     try {
       setIsLoading(true);
+      setHasMore(true);
       const response = await fetch(
-        `/api/messages?dmConversationId=${conversationId}`,
+        `/api/messages?dmConversationId=${conversationId}&limit=${PAGE_SIZE}`,
       );
 
       if (!response.ok) {
@@ -276,7 +308,8 @@ export default function DirectMessageView({
       }
 
       const data = await response.json();
-      setMessages(data.reverse()); // Reverse to show newest messages
+      setMessages(data.reverse());
+      setHasMore(data.length >= PAGE_SIZE);
       setIsLoading(false);
     } catch (err) {
       console.error("Error fetching messages:", err);
@@ -284,6 +317,40 @@ export default function DirectMessageView({
       setIsLoading(false);
     }
   };
+
+  const fetchOlderMessages = useCallback(async () => {
+    if (!conversation?.id || isLoadingMore || !hasMore) return;
+
+    try {
+      setIsLoadingMore(true);
+      const container = document.getElementById("messages-scroll-container");
+      const prevScrollHeight = container?.scrollHeight || 0;
+
+      const response = await fetch(
+        `/api/messages?dmConversationId=${conversation.id}&limit=${PAGE_SIZE}&offset=${messages.length}`,
+      );
+
+      if (!response.ok) {
+        setIsLoadingMore(false);
+        return;
+      }
+
+      const data = await response.json();
+      setHasMore(data.length >= PAGE_SIZE);
+      if (data.length > 0) {
+        setMessages((prev) => [...data.reverse(), ...prev]);
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight - prevScrollHeight;
+          }
+        });
+      }
+      setIsLoadingMore(false);
+    } catch (err) {
+      console.error("Error fetching older messages:", err);
+      setIsLoadingMore(false);
+    }
+  }, [conversation?.id, isLoadingMore, hasMore, messages.length]);
 
   // Initial load
   useEffect(() => {
@@ -467,6 +534,9 @@ export default function DirectMessageView({
                   messages={messages}
                   currentUserId={currentUserId}
                   isLoading={isLoading}
+                  isLoadingMore={isLoadingMore}
+                  hasMore={hasMore}
+                  onLoadMore={fetchOlderMessages}
                   className="h-full w-full"
                   dmConversationId={
                     conversation?.id && !conversation.id.startsWith("self-")
@@ -509,7 +579,10 @@ export default function DirectMessageView({
                 }}
               />
               <div
-                style={{ height: `${inputHeight}px` }}
+                style={{
+                  height: `${inputHeight}px`,
+                  transition: isResizingInput ? 'none' : 'height 0.2s ease-out'
+                }}
                 className="p-4 overflow-hidden"
               >
                 <DMMessageInput

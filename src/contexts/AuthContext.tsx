@@ -124,10 +124,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           // Try to parse as JSON
           const errorData = JSON.parse(errorText);
+          // Extract specific validation error messages if available
+          if (errorData.details?.errors) {
+            const errorMessages = Object.values(errorData.details.errors).filter(Boolean);
+            if (errorMessages.length > 0) {
+              throw new Error(errorMessages.join('. '));
+            }
+          }
           throw new Error(
             errorData.message || `Login failed (${response.status})`,
           );
         } catch (parseError) {
+          // Re-throw if it's already our Error
+          if (parseError instanceof Error && parseError.message !== errorText) {
+            throw parseError;
+          }
           // If parsing fails, it means the response is not JSON
           console.error("🔴 [AUTH] Response is not JSON format:", parseError);
           throw new Error(
@@ -182,10 +193,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         try {
           const errorData = JSON.parse(errorText);
+          // Extract specific validation error messages if available
+          if (errorData.details?.errors) {
+            const errorMessages = Object.values(errorData.details.errors).filter(Boolean);
+            if (errorMessages.length > 0) {
+              throw new Error(errorMessages.join('. '));
+            }
+          }
           throw new Error(
             errorData.message || `Registration failed (${response.status})`,
           );
         } catch (parseError) {
+          // Re-throw if it's already our Error
+          if (parseError instanceof Error && parseError.message !== errorText) {
+            throw parseError;
+          }
           console.error(
             "🔴 [AUTH] Registration response is not JSON format:",
             parseError,

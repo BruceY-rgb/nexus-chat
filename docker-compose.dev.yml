@@ -108,6 +108,7 @@ services:
       LOG_FORMAT: ${LOG_FORMAT:-dev}
     ports:
       - "3000:3000"
+      - "3002:3002"   # MCP Server
       - "24678:24678" # Next.js HMR port
     depends_on:
       db:

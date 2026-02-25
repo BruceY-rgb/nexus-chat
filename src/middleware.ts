@@ -1,6 +1,6 @@
 // =====================================================
-// Next.js 中间件
-// 用于保护需要认证的路由
+// Next.js middleware
+// Used to protect routes that require authentication
 // =====================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -9,11 +9,11 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
   const pathname = request.nextUrl.pathname;
 
-  // 需要认证的路径
+  // Paths that require authentication
   const protectedPaths = ['/dashboard', '/channels', '/settings', '/profile', '/api/messages', '/api/channels'];
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
 
-  // 检查认证状态
+  // Check authentication status
   const isAuthenticated = token ? true : false;
 
   // If accessing protected route without authentication, redirect to login page
@@ -32,15 +32,15 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// 配置中间件匹配路径
+// Configure middleware matching paths
 export const config = {
   matcher: [
     /*
-     * 匹配所有路径除了以下开头的：
-     * - api (API 路由)
-     * - _next/static (静态文件)
-     * - _next/image (图像优化)
-     * - favicon.ico (favicon 文件)
+     * Match all paths except those starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico (favicon file)
      * - login (Login page)
      * - register (Register page)
      */

@@ -5,10 +5,11 @@ import { TeamMember } from '../types';
 import { Message } from '@/types/message';
 import { Button } from '@/components/ui';
 import DMMessageInput from './DMMessageInput';
+import { getAvatarUrl } from '@/lib/avatar';
 
 interface MySpaceViewProps {
   member: TeamMember;
-  currentUserId?: string; // 可选，如果未传递则使用 member.id
+  currentUserId?: string; // Optional, uses member.id if not provided
 }
 
 export default function MySpaceView({ member, currentUserId }: MySpaceViewProps) {
@@ -16,14 +17,14 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
   const [isLoading, setIsLoading] = useState(true);
   const currentUserIdValue = currentUserId || member.id;
 
-  // 获取自己的消息列表
+  // Fetch own messages list
   const fetchMessages = async () => {
     try {
       setIsLoading(true);
       const response = await fetch(`/api/messages?dmConversationId=self-${member.id}`);
 
       if (!response.ok) {
-        // 如果没有消息，返回空数组
+        // If no messages, return empty array
         setMessages([]);
         setIsLoading(false);
         return;
@@ -49,23 +50,23 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-background">
-      {/* 滚动内容区域 */}
+      {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto p-6">
-          {/* 大头像和欢迎信息 */}
+          {/* Large avatar and welcome message */}
           <div className="text-center py-8 mb-8">
             <div className="relative inline-block mb-6">
               <img
-                src={member.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${member.displayName || member.id}&size=96`}
+                src={getAvatarUrl(member.avatarUrl, member, 96)}
                 alt={member.displayName}
                 className="w-24 h-24 rounded-lg shadow-lg"
               />
             </div>
             <h2 className="text-2xl font-semibold text-text-primary mb-4">
-              这是你的空间
+              This is your space
             </h2>
             <p className="text-text-secondary max-w-2xl mx-auto leading-relaxed">
-              起草消息、列出待办事项或保持随时可用的链接和文件。
+              Draft messages, make a to-do list, or keep links and files handy.
             </p>
             <div className="mt-6">
               <Button
@@ -89,14 +90,14 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
                     d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
                   />
                 </svg>
-                编辑个人档案
+                Edit Profile
               </Button>
             </div>
           </div>
 
-          {/* 功能卡片区域 */}
+          {/* Feature cards area */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* 快速笔记 */}
+            {/* Quick Notes */}
             <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -115,14 +116,14 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
                     />
                   </svg>
                 </div>
-                <h3 className="font-medium text-text-primary">快速笔记</h3>
+                <h3 className="font-medium text-text-primary">Quick Notes</h3>
               </div>
               <p className="text-sm text-text-secondary">
-                记录想法和点子
+                Jot down thoughts and ideas
               </p>
             </div>
 
-            {/* 待办事项 */}
+            {/* To-Do List */}
             <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -141,14 +142,14 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
                     />
                   </svg>
                 </div>
-                <h3 className="font-medium text-text-primary">待办事项</h3>
+                <h3 className="font-medium text-text-primary">To-Do List</h3>
               </div>
               <p className="text-sm text-text-secondary">
-                跟踪任务和截止日期
+                Track tasks and deadlines
               </p>
             </div>
 
-            {/* 文件和链接 */}
+            {/* Files and Links */}
             <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -167,25 +168,25 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
                     />
                   </svg>
                 </div>
-                <h3 className="font-medium text-text-primary">文件和链接</h3>
+                <h3 className="font-medium text-text-primary">Files & Links</h3>
               </div>
               <p className="text-sm text-text-secondary">
-                保存重要文件和链接
+                Save important files and links
               </p>
             </div>
           </div>
 
-          {/* 最近活动 */}
+          {/* Recent Activity */}
           <div className="mt-12">
             <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-4">
-              最近活动
+              Recent Activity
             </h3>
             {messages.length > 0 ? (
               <div className="space-y-4">
                 {messages.slice(0, 5).map((message) => (
                   <div key={message.id} className="flex items-start gap-3 p-3 bg-background-component rounded-lg">
                     <img
-                      src={message.user.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${message.user.displayName || message.user.id}&size=32`}
+                      src={getAvatarUrl(message.user.avatarUrl, message.user, 32)}
                       alt={message.user.displayName}
                       className="w-8 h-8 rounded-sm"
                     />
@@ -223,7 +224,7 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
         </div>
       </div>
 
-      {/* 消息输入框 */}
+      {/* Message input */}
       <div className="flex-shrink-0">
         <DMMessageInput
           placeholder="Message yourself"

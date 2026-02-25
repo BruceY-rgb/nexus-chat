@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { TeamMember } from '@/types';
+import { getAvatarUrl } from '@/lib/avatar';
 
 interface MentionAutocompleteProps {
   onSelect: (user: TeamMember) => void;
@@ -204,7 +205,7 @@ export default function MentionAutocomplete({
         }}
       >
         <div className="text-white/60 text-sm px-2 py-1.5 text-center">
-          未找到匹配的成员
+          No matching members found
         </div>
       </div>
     );
@@ -250,15 +251,9 @@ export default function MentionAutocomplete({
         >
           <div className="relative flex-shrink-0">
             <img
-              src={member.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${member.displayName || member.id}&size=32`}
+              src={getAvatarUrl(member.avatarUrl, member, 32)}
               alt={member.displayName}
               className="w-8 h-8 rounded-md flex-shrink-0"
-              onError={(e) => {
-                const img = e.target as HTMLImageElement;
-                if (!img.src.includes('api.dicebear.com')) {
-                  img.src = `https://api.dicebear.com/7.x/identicon/png?seed=${member.displayName || member.id}&size=32`;
-                }
-              }}
             />
             {member.isOnline && (
               <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-[#2D2D2F]" />
@@ -285,7 +280,7 @@ export default function MentionAutocomplete({
       {/* 底部提示 */}
       <div className="border-t border-[#3A3A3D] px-3 py-2">
         <div className="text-xs text-white/50 flex items-center justify-between">
-          <span>↑↓ 选择 • Enter 确认 • Esc 关闭</span>
+          <span>↑↓ Navigate • Enter Select • Esc Close</span>
         </div>
       </div>
     </div>

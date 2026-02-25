@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 async function addAllMembersToAnnouncements() {
   try {
-    console.log('🚀 开始将所有成员加入 announcements 频道...\n');
+    console.log('Starting to add all members to announcements channel...\n');
 
     // 1. 查找或创建 announcements 频道
     let announcementsChannel = await prisma.channel.findUnique({
@@ -12,18 +12,18 @@ async function addAllMembersToAnnouncements() {
     });
 
     if (!announcementsChannel) {
-      console.log('📢 announcements 频道不存在，正在创建...\n');
+      console.log('announcements channel does not exist, creating...\n');
 
       // 获取第一个用户作为创建者
       const firstUser = await prisma.user.findFirst();
       if (!firstUser) {
-        throw new Error('没有找到用户数据，请先创建用户');
+        throw new Error('No user data found, please create users first');
       }
 
       announcementsChannel = await prisma.channel.create({
         data: {
           name: 'announcements',
-          description: '官方公告频道',
+          description: 'Official Announcements',
           isPrivate: false,
           createdById: firstUser.id
         }
@@ -38,9 +38,9 @@ async function addAllMembersToAnnouncements() {
         }
       });
 
-      console.log('✅ announcements 频道创建成功\n');
+      console.log('announcements channel created successfully\n');
     } else {
-      console.log('✅ announcements 频道已存在\n');
+      console.log('announcements channel already exists\n');
     }
 
     // 2. 获取所有 team members
@@ -62,7 +62,7 @@ async function addAllMembersToAnnouncements() {
       }
     });
 
-    console.log(`👥 找到 ${teamMembers.length} 个活跃团队成员\n`);
+    console.log(`Found ${teamMembers.length} active team members\n`);
 
     // 3. 获取已加入的频道成员
     const existingMembers = await prisma.channelMember.findMany({
@@ -82,11 +82,11 @@ async function addAllMembersToAnnouncements() {
     );
 
     if (newMembers.length === 0) {
-      console.log('ℹ️ 所有成员已经加入了 announcements 频道\n');
+      console.log('All members have already joined the announcements channel\n');
       return;
     }
 
-    console.log(`➕ 需要加入 ${newMembers.length} 个新成员\n`);
+    console.log(`Need to add ${newMembers.length} new members\n`);
 
     // 5. 批量创建频道成员记录
     const createdMembers = [];
@@ -112,9 +112,9 @@ async function addAllMembersToAnnouncements() {
           }
         });
         createdMembers.push(channelMember);
-        console.log(`✅ 已加入: ${member.user.displayName} (${member.user.email})`);
+        console.log(`Added: ${member.user.displayName} (${member.user.email})`);
       } catch (error) {
-        console.error(`❌ 加入失败: ${member.user.displayName} - ${error.message}`);
+        console.error(`Failed to add: ${member.user.displayName} - ${error.message}`);
       }
     }
 
@@ -125,13 +125,13 @@ async function addAllMembersToAnnouncements() {
       }
     });
 
-    console.log('\n🎉 完成！');
-    console.log(`📊 统计:`);
-    console.log(`   - 新加入成员: ${createdMembers.length}`);
-    console.log(`   - 频道总成员: ${totalMembers}`);
+    console.log('\nDone!');
+    console.log(`Statistics:`);
+    console.log(`   - New members added: ${createdMembers.length}`);
+    console.log(`   - Total channel members: ${totalMembers}`);
 
   } catch (error) {
-    console.error('❌ 执行失败:', error);
+    console.error('Execution failed:', error);
     throw error;
   } finally {
     await prisma.$disconnect();
@@ -141,10 +141,10 @@ async function addAllMembersToAnnouncements() {
 // 运行脚本
 addAllMembersToAnnouncements()
   .then(() => {
-    console.log('\n✅ 脚本执行完成');
+    console.log('\nScript execution completed');
     process.exit(0);
   })
   .catch((error) => {
-    console.error('\n❌ 脚本执行失败:', error);
+    console.error('\nScript execution failed:', error);
     process.exit(1);
   });

@@ -1,6 +1,7 @@
-// TeamMember 接口定义 - 与数据库 User 表保持一致
+// TeamMember interface definition - consistent with database User table
 export interface TeamMember {
   id: string;
+  slackUserId?: string | null;
   email: string;
   displayName: string;
   realName?: string | null;

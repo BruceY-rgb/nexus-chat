@@ -1,0 +1,110 @@
+# =====================================================
+# Docker Compose 模板 - 多实例部署
+# 使用方法:
+# 1. 复制 template 目录并重命名为实例名
+# 2. 修改 .env 中的端口配置
+# 3. 使用 docker-compose -p <instance_name> up -d 启动
+# =====================================================
+
+services:
+  # PostgreSQL数据库
+  db:
+    image: postgres:15-alpine
+    container_name: ${INSTANCE_NAME:-slack}_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-yangsmac}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ysx050223}
+      POSTGRES_DB: ${DB_NAME:-slack_chat}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - slack_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-yangsmac}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js开发应用
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.dev
+    container_name: ${INSTANCE_NAME:-slack}_app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD:-ysx050223}@db:5432/${DB_NAME:-slack_chat}?schema=public
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-yangsmac}
+      DB_PASSWORD: ${DB_PASSWORD:-ysx050223}
+      DB_NAME: ${DB_NAME:-slack_chat}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      RESEND_API_KEY: ${RESEND_API_KEY:-re_CzzzpiVR_2L2z9YQXqWReMzpjyvXvAK5T}
+      EMAIL_FROM: ${EMAIL_FROM:-"Slack聊天应用 <onboarding@resend.dev>"}
+      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-onboarding@resend.dev}
+      APP_NAME: ${APP_NAME:-Slack聊天应用}
+      SESSION_SECRET: ${SESSION_SECRET:-your-super-secret-session-key-change-this-in-production}
+      OSS_REGION: ${OSS_REGION:-oss-cn-hangzhou}
+      OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID:-LTAI5tRzvjda8NKmbZmUVNmZ}
+      OSS_ACCESS_KEY_SECRET: ${OSS_ACCESS_KEY_SECRET:-PC0QgV7zo2x00m9OhxiqkkApWwz2Bi}
+      OSS_BUCKET: ${OSS_BUCKET:-q-and-a-chatbot}
+      OSS_ENDPOINT: ${OSS_ENDPOINT:-https://oss-cn-hangzhou.aliyuncs.com}
+      PORT: 3000
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      WEBSOCKET_PORT: ${WEBSOCKET_PORT:-3001}
+      ENABLE_FILE_UPLOAD: ${ENABLE_FILE_UPLOAD:-true}
+      ENABLE_SEARCH: ${ENABLE_SEARCH:-true}
+      ENABLE_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS:-true}
+      ENABLE_EMAIL_NOTIFICATIONS: ${ENABLE_EMAIL_NOTIFICATIONS:-false}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+      ALLOWED_FILE_TYPES: ${ALLOWED_FILE_TYPES:-image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-dev}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+      - "${WEBSOCKET_PORT:-3001}:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - slack_network
+    volumes:
+      # 挂载源码实现热重载
+      - ../../:/app
+      - /app/node_modules
+      - /app/.next
+
+  # MCP Server
+  mcp:
+    build:
+      context: ../../mcp-server
+      dockerfile: Dockerfile
+    container_name: ${INSTANCE_NAME:-slack}_mcp
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: ${MCP_PORT:-3002}
+      DATABASE_URL: postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD:-ysx050223}@db:5432/${DB_NAME:-slack_chat}?schema=public
+    ports:
+      - "${MCP_PORT:-3002}:${MCP_PORT:-3002}"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - slack_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  slack_network:
+    driver: bridge

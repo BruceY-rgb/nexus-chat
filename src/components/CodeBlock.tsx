@@ -20,7 +20,7 @@ export default function CodeBlock({
   const [copied, setCopied] = useState(false);
   const [showLineNumbersState, setShowLineNumbers] = useState(showLineNumbers);
 
-  // 高亮代码
+  // Highlight code
   const highlightedCode = useMemo(() => {
     try {
       if (language && language.toLowerCase() !== 'auto') {
@@ -33,7 +33,7 @@ export default function CodeBlock({
     }
   }, [code, language]);
 
-  // 复制代码
+  // Copy code
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(code);
@@ -44,45 +44,45 @@ export default function CodeBlock({
     }
   };
 
-  // 生成行号
+  // Generate line numbers
   const lines = highlightedCode.split('\n');
   const lineNumbers = Array.from({ length: lines.length }, (_, i) => i + 1);
 
   return (
     <div className={`relative group my-3 ${className}`}>
-      {/* 代码块头部 */}
+      {/* Code block header */}
       <div className="flex items-center justify-between bg-gray-800 text-gray-300 px-4 py-2 rounded-t-lg border-b border-gray-700" style={{ fontSize: '14px' }}>
         <div className="flex items-center gap-2">
           <span className="font-medium text-gray-200">
             {language || 'auto-detected'}
           </span>
           <span className="text-gray-500">
-            {lines.length} 行
+            {lines.length} lines
           </span>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowLineNumbers(!showLineNumbersState)}
             className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-white p-1 rounded hover:bg-gray-700"
-            title={showLineNumbersState ? '隐藏行号' : '显示行号'}
+            title={showLineNumbersState ? 'Hide line numbers' : 'Show line numbers'}
           >
             {showLineNumbersState ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
           <button
             onClick={handleCopy}
             className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-white px-2 py-1 rounded hover:bg-gray-700 flex items-center gap-1"
-            title="复制代码"
+            title="Copy code"
           >
             {copied ? <Check size={14} /> : <Copy size={14} />}
-            {copied ? '已复制' : '复制'}
+            {copied ? 'Copied' : 'Copy'}
           </button>
         </div>
       </div>
 
-      {/* 代码内容 */}
+      {/* Code content */}
       <div className="bg-gray-900 rounded-b-lg overflow-hidden">
         <div className="flex">
-          {/* 行号 */}
+          {/* Line numbers */}
           {showLineNumbersState && (
             <div className="flex flex-col text-gray-600 font-mono select-none bg-gray-800 px-3 py-4 border-r border-gray-700" style={{ fontSize: '14px' }}>
               {lineNumbers.map((num) => (
@@ -97,7 +97,7 @@ export default function CodeBlock({
             </div>
           )}
 
-          {/* 代码 */}
+          {/* Code */}
           <div className="flex-1 overflow-x-auto">
             <pre className="p-4 text-sm font-mono text-gray-100 leading-6">
               <code
@@ -113,7 +113,7 @@ export default function CodeBlock({
 }
 
 /**
- * 行内代码组件
+ * Inline code component
  */
 export const InlineCode = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => {
   return (
@@ -124,7 +124,7 @@ export const InlineCode = ({ children, className = '' }: { children: React.React
 };
 
 /**
- * 代码块容器组件（用于渲染完整的多行代码块）
+ * Code block container component (for rendering complete multi-line code blocks)
  */
 export const PreBlock = ({ children }: { children: React.ReactNode }) => {
   return <div className="my-3">{children}</div>;

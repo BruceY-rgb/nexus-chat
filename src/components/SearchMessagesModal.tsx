@@ -40,7 +40,7 @@ interface SearchMessagesModalProps {
   onClose: () => void;
   channelId?: string;
   dmConversationId?: string;
-  contextName?: string; // 用于显示搜索上下文，如"#general"或"张三"
+  contextName?: string; // Used to display search context, like "#general" or "Zhang San"
 }
 
 export default function SearchMessagesModal({
@@ -63,20 +63,20 @@ export default function SearchMessagesModal({
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 防抖处理
+  // Debounce handling
   const debouncedQuery = useDebounce(query, 300);
 
-  // 自动聚焦输入框
+  // Auto-focus input
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
     }
   }, [isOpen]);
 
-  // 执行搜索
+  // Execute search
   useEffect(() => {
     const searchMessages = async () => {
-      // 检查是否需要执行搜索：有关键词或有过滤条件
+      // Check if search needs to be executed: has keyword or filter conditions
       const hasQuery = debouncedQuery.trim();
       const hasFilters = filters.userId || filters.startDate || filters.endDate;
 
@@ -90,12 +90,12 @@ export default function SearchMessagesModal({
         setIsSearching(true);
         const params = new URLSearchParams();
 
-        // 只在有搜索关键词时添加query参数
+        // Only add query parameter when there's a search keyword
         if (hasQuery) {
           params.append('query', debouncedQuery);
         }
 
-        // 添加搜索范围限制（频道或私聊）
+        // Add search scope limit (channel or DM)
         if (channelId) {
           params.append('channelId', channelId);
         }
@@ -103,7 +103,7 @@ export default function SearchMessagesModal({
           params.append('dmConversationId', dmConversationId);
         }
 
-        // 添加过滤参数
+        // Add filter parameters
         if (filters.userId) {
           params.append('userId', filters.userId);
         }
@@ -134,7 +134,7 @@ export default function SearchMessagesModal({
     searchMessages();
   }, [debouncedQuery, filters]);
 
-  // 点击外部关闭弹窗
+  // Close modal when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -151,7 +151,7 @@ export default function SearchMessagesModal({
     };
   }, [isOpen, onClose]);
 
-  // 键盘导航
+  // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!results.length && !isSearching) return;
 
@@ -179,7 +179,7 @@ export default function SearchMessagesModal({
     }
   };
 
-  // 高亮搜索关键词
+  // Highlight search keywords
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
 
@@ -197,7 +197,7 @@ export default function SearchMessagesModal({
     );
   };
 
-  // 格式化时间
+  // Format time
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -206,11 +206,11 @@ export default function SearchMessagesModal({
 
     if (diffInHours < 1) {
       const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-      return `${diffInMinutes}分钟前`;
+      return `${diffInMinutes}m ago`;
     } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}小时前`;
+      return `${Math.floor(diffInHours)}h ago`;
     } else {
-      return date.toLocaleDateString('zh-CN', {
+      return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
@@ -219,7 +219,7 @@ export default function SearchMessagesModal({
     }
   };
 
-  // 获取对话显示名称
+  // Get conversation display name
   const getDmDisplayName = (result: SearchResult) => {
     if (result.type !== 'dm' || !result.dmConversation) return '';
     const participants = result.dmConversation.participants;
@@ -229,7 +229,7 @@ export default function SearchMessagesModal({
     return participants.map(p => p.displayName).join(', ');
   };
 
-  // 跳转到消息
+  // Navigate to message
   const navigateToMessage = (result: SearchResult) => {
     if (result.type === 'channel' && result.channel) {
       router.push(`/dashboard?channel=${result.channel.id}&messageId=${result.id}`);
@@ -243,7 +243,7 @@ export default function SearchMessagesModal({
     setQuery('');
   };
 
-  // 清除搜索
+  // Clear search
   const clearSearch = () => {
     setQuery('');
     setResults([]);
@@ -256,7 +256,7 @@ export default function SearchMessagesModal({
     inputRef.current?.focus();
   };
 
-  // 关闭弹窗
+  // Close modal
   const handleClose = () => {
     onClose();
     setQuery('');
@@ -273,15 +273,15 @@ export default function SearchMessagesModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* 背景遮罩 */}
+      {/* Background overlay */}
       <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
 
-      {/* 弹窗内容 */}
+      {/* Modal content */}
       <div
         ref={searchRef}
         className="relative w-full max-w-2xl mx-4 bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden"
       >
-        {/* 顶部标题栏 */}
+        {/* Top title bar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Search messages</h2>
@@ -299,7 +299,7 @@ export default function SearchMessagesModal({
           </button>
         </div>
 
-        {/* 搜索输入框 */}
+        {/* Search input */}
         <div className="p-4 border-b border-gray-200">
           <div className="relative">
             <Search
@@ -331,9 +331,9 @@ export default function SearchMessagesModal({
           </div>
         </div>
 
-        {/* 主体内容：左侧过滤器 + 右侧搜索结果 */}
+        {/* Main content: left filter + right search results */}
         <div className="flex h-96">
-          {/* 左侧过滤器面板 */}
+          {/* Left filter panel */}
           <SearchFilterPanel
             filters={filters}
             onFiltersChange={setFilters}
@@ -341,7 +341,7 @@ export default function SearchMessagesModal({
             channelId={channelId}
           />
 
-          {/* 搜索结果 */}
+          {/* Search results */}
           <div className="flex-1 overflow-y-auto border-l border-gray-200">
           {isSearching ? (
             <div className="p-8 text-center text-gray-500">
@@ -365,7 +365,7 @@ export default function SearchMessagesModal({
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      {/* 图标 */}
+                      {/* Icon */}
                       <div className="flex-shrink-0 mt-1">
                         {result.type === 'channel' ? (
                           <div className="w-8 h-8 rounded-sm bg-[#1164A3] flex items-center justify-center">
@@ -378,9 +378,9 @@ export default function SearchMessagesModal({
                         )}
                       </div>
 
-                      {/* 内容 */}
+                      {/* Content */}
                       <div className="flex-1 min-w-0">
-                        {/* 顶部信息 */}
+                        {/* Top info */}
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium text-gray-900">
                             {result.type === 'channel'
@@ -397,7 +397,7 @@ export default function SearchMessagesModal({
                           </span>
                         </div>
 
-                        {/* 消息内容 */}
+                        {/* Message content */}
                         <div className="text-sm text-gray-600 line-clamp-2">
                           {highlightText(result.content, query)}
                         </div>
@@ -419,7 +419,7 @@ export default function SearchMessagesModal({
           </div>
         </div>
 
-        {/* 底部提示 */}
+        {/* Bottom hint */}
         <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
           <div className="flex items-center justify-between">
             <span>Use ↑↓ keys to select, Enter to jump</span>

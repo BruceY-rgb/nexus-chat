@@ -42,7 +42,7 @@ export default function ThreadPanel({
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging) return;
 
-    // 左边缘拖动：向右拖动时面板变宽，向左拖动时面板变窄
+    // Left edge drag: dragging right makes panel wider, dragging left makes panel narrower
     const deltaX = dragStartRef.current.x - e.clientX;
     const newWidth = Math.max(320, Math.min(600, dragStartRef.current.width + deltaX));
     setPanelWidth(newWidth);
@@ -103,7 +103,7 @@ export default function ThreadPanel({
       style={{ width: `${panelWidth}px` }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* 左侧拖拽区域 */}
+      {/* Left drag area */}
       <div
         className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 transition-colors"
         onMouseDown={handleMouseDown}

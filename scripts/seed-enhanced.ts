@@ -393,11 +393,11 @@ const seedData: SeedData = {
 };
 
 async function main() {
-  console.log('🌱 开始填充增强版数据库...');
+  console.log('Starting enhanced database seeding...');
 
   try {
     // 清空现有数据
-    console.log('🧹 清空现有数据...');
+    console.log('Clearing existing data...');
     await prisma.notification.deleteMany();
     await prisma.attachment.deleteMany();
     await prisma.messageMention.deleteMany();
@@ -411,10 +411,10 @@ async function main() {
     await prisma.teamMember.deleteMany();
     await prisma.notificationSettings.deleteMany();
     await prisma.user.deleteMany();
-    console.log('✅ 数据已清空');
+    console.log('Data cleared');
 
     // 创建用户
-    console.log('👥 创建用户...');
+    console.log('Creating users...');
     const createdUsers = [];
     for (const userData of seedData.users) {
       const passwordHash = await bcrypt.hash(userData.password, 10);
@@ -432,11 +432,11 @@ async function main() {
         },
       });
       createdUsers.push(user);
-      console.log(`  ✓ 创建用户: ${user.displayName}`);
+      console.log(`  Created user: ${user.displayName}`);
     }
 
     // 创建团队成员关系
-    console.log('👨‍👩‍👧‍👦 创建团队成员关系...');
+    console.log('Creating team member relationships...');
     for (const user of createdUsers) {
       await prisma.teamMember.create({
         data: {
@@ -447,7 +447,7 @@ async function main() {
     }
 
     // 创建频道
-    console.log('📢 创建频道...');
+    console.log('Creating channels...');
     const createdChannels = [];
     for (const channelData of seedData.channels) {
       const channel = await prisma.channel.create({
@@ -459,7 +459,7 @@ async function main() {
         },
       });
       createdChannels.push(channel);
-      console.log(`  ✓ 创建频道: ${channel.name}`);
+      console.log(`  Created channel: ${channel.name}`);
 
       // 将所有用户添加到公共频道
       if (!channelData.isPrivate) {
@@ -476,7 +476,7 @@ async function main() {
     }
 
     // 创建 DM 对话
-    console.log('💬 创建 DM 对话...');
+    console.log('Creating DM conversations...');
     const dmPairs = [
       ['alice@chat.com', 'bob@chat.com'],
       ['charlie@chat.com', 'diana@chat.com'],
@@ -500,12 +500,12 @@ async function main() {
             },
           },
         });
-        console.log(`  ✓ 创建 DM 对话: ${user1.displayName} & ${user2.displayName}`);
+        console.log(`  Created DM conversation: ${user1.displayName} & ${user2.displayName}`);
       }
     }
 
     // 创建消息
-    console.log('💭 创建消息...');
+    console.log('Creating messages...');
     const createdMessages: any[] = [];
     for (let i = 0; i < seedData.messages.length; i++) {
       const messageData = seedData.messages[i];
@@ -563,11 +563,11 @@ async function main() {
         }
       }
 
-      console.log(`  ✓ 创建消息 (${i + 1}/${seedData.messages.length}): ${message.content.substring(0, 50)}...`);
+      console.log(`  Created message (${i + 1}/${seedData.messages.length}): ${message.content.substring(0, 50)}...`);
     }
 
     // 生成额外的随机消息
-    console.log('🎲 生成额外的随机消息...');
+    console.log('Generating extra random messages...');
     const randomMessages = [
       'This looks great! 👍',
       'I agree with that approach',
@@ -602,10 +602,10 @@ async function main() {
       });
       createdMessages.push(message);
     }
-    console.log('  ✓ 生成了 50 条额外消息');
+    console.log('  Generated 50 extra messages');
 
     // 创建通知设置
-    console.log('🔔 创建通知设置...');
+    console.log('Creating notification settings...');
     for (const user of createdUsers) {
       await prisma.notificationSettings.create({
         data: {
@@ -620,7 +620,7 @@ async function main() {
     }
 
     // 创建一些示例通知
-    console.log('📨 创建示例通知...');
+    console.log('Creating sample notifications...');
     for (let i = 0; i < 20; i++) {
       const user = createdUsers[Math.floor(Math.random() * createdUsers.length)];
       const message = createdMessages[Math.floor(Math.random() * createdMessages.length)];
@@ -637,26 +637,26 @@ async function main() {
         },
       });
     }
-    console.log('  ✓ 创建了 20 条示例通知');
+    console.log('  Created 20 sample notifications');
 
-    console.log('✅ 增强版数据库填充完成！');
+    console.log('Enhanced database seeding completed!');
     console.log('');
-    console.log('📊 统计信息:');
-    console.log(`  - 用户: ${createdUsers.length}`);
-    console.log(`  - 频道: ${createdChannels.length}`);
-    console.log(`  - 消息: ${await prisma.message.count()}`);
-    console.log(`  - 提及: ${await prisma.messageMention.count()}`);
-    console.log(`  - 通知: ${await prisma.notification.count()}`);
-    console.log(`  - DM对话: ${await prisma.dMConversation.count()}`);
+    console.log('Statistics:');
+    console.log(`  - Users: ${createdUsers.length}`);
+    console.log(`  - Channels: ${createdChannels.length}`);
+    console.log(`  - Messages: ${await prisma.message.count()}`);
+    console.log(`  - Mentions: ${await prisma.messageMention.count()}`);
+    console.log(`  - Notifications: ${await prisma.notification.count()}`);
+    console.log(`  - DM conversations: ${await prisma.dMConversation.count()}`);
     console.log('');
-    console.log('🔑 测试账户:');
-    console.log('  管理员: admin@chat.com / admin123');
+    console.log('Test accounts:');
+    console.log('  Admin: admin@chat.com / admin123');
     for (let i = 1; i < createdUsers.length; i++) {
       console.log(`  ${createdUsers[i].displayName}: ${createdUsers[i].email} / password123`);
     }
 
   } catch (error) {
-    console.error('❌ 填充数据时出错:', error);
+    console.error('Error seeding data:', error);
     throw error;
   } finally {
     await prisma.$disconnect();

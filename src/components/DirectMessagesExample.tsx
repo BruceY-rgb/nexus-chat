@@ -29,12 +29,12 @@ export default function DirectMessagesExample() {
 
   const handleStartChat = (memberId: string) => {
     console.log('Starting chat with member:', memberId);
-    // TODO: 实现打开私聊窗口逻辑
+    // TODO: Implement open private chat window logic
   };
 
   const handleNewChat = () => {
     console.log('Opening new chat dialog');
-    // TODO: 实现Open new chat dialog逻辑
+    // TODO: Implement open new chat dialog logic
   };
 
   return (

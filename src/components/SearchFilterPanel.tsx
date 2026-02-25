@@ -39,21 +39,21 @@ export default function SearchFilterPanel({
   });
   const [timePreset, setTimePreset] = useState<TimePreset>(null);
 
-  // 加载用户列表（频道中加载频道成员，全局搜索加载所有用户）
+  // Load user list (load channel members in channel, load all users in global search)
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         let url = '/api/users';
-        // 如果在频道中，获取该频道的成员列表
+        // If in a channel, get the channel's member list
         if (channelId) {
           url = `/api/channels/${channelId}/members`;
         }
         const response = await fetch(url, { credentials: 'include' });
         if (response.ok) {
           const data = await response.json();
-          // API返回格式不同，需要适配
+          // API returns different formats, need to adapt
           if (channelId) {
-            // 频道成员API返回 members 数组
+            // Channel member API returns members array
             const members = data.members || data || [];
             setUsers(members.map((m: any) => ({
               id: m.id || m.userId,
@@ -115,9 +115,9 @@ export default function SearchFilterPanel({
         endDate: new Date().toISOString()
       });
     } else if (preset === 'custom') {
-      // 自定义日期范围，不修改日期
+      // Custom date range, don't modify dates
     } else {
-      // 清除时间过滤
+      // Clear time filter
       onFiltersChange({
         ...filters,
         startDate: null,
@@ -152,7 +152,7 @@ export default function SearchFilterPanel({
 
   return (
     <div className="w-56 border-r border-gray-200 bg-gray-50 flex flex-col h-full">
-      {/* 标题栏 */}
+      {/* Title bar */}
       <div className="p-3 border-b border-gray-200 flex items-center justify-between">
         <span className="text-sm font-medium text-gray-700">Filters</span>
         {hasActiveFilters && (
@@ -166,7 +166,7 @@ export default function SearchFilterPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* 发送者过滤 - 在私聊中不显示 */}
+        {/* Sender filter - not shown in DM */}
         {contextType !== 'dm' && (
           <div className="border-b border-gray-200">
             <button
@@ -195,7 +195,7 @@ export default function SearchFilterPanel({
           </div>
         )}
 
-        {/* 时间过滤 */}
+        {/* Time filter */}
         <div className="border-b border-gray-200">
           <button
             onClick={() => toggleSection('time')}

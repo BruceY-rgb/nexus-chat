@@ -10,13 +10,13 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   fallback?: string;
   online?: boolean;
-  // 新增：用户信息，用于生成默认头像
+  // NEW: User information for generating default avatar
   user?: {
     id: string;
     displayName?: string | null;
     email?: string;
   };
-  // 新增：头像风格
+  // NEW: Avatar style
   avatarStyle?: AvatarStyle;
 }
 
@@ -64,10 +64,10 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
 
     const displayText = fallback || alt || 'U';
 
-    // 计算实际尺寸（像素）
+    // Calculate actual size (pixels)
     const actualSize = sizeMap[size];
 
-    // 确定头像 URL
+    // Determine avatar URL
     const avatarUrl = src
       ? src
       : user
@@ -92,7 +92,7 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
             alt={alt}
             className="w-full h-full object-cover"
             onError={(e) => {
-              // 如果图片加载失败，显示文字头像
+              // If image fails to load, show text avatar
               const img = e.target as HTMLImageElement;
               img.style.display = 'none';
               const parent = img.parentElement;

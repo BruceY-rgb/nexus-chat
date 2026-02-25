@@ -47,7 +47,6 @@ function getFileIcon(mimeType: string) {
 }
 
 function getPreviewUrl(attachment: ConversationAttachment): string {
-  if (attachment.previewUrl) return attachment.previewUrl;
   if (attachment.thumbnailUrl) return attachment.thumbnailUrl;
   return attachment.filePath;
 }

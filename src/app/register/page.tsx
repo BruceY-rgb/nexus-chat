@@ -36,6 +36,24 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
+    // Custom validation to avoid browser-native Chinese messages
+    if (!formData.email.trim()) {
+      setError('Please enter your email address');
+      return;
+    }
+    if (!formData.displayName.trim()) {
+      setError('Please enter a display name');
+      return;
+    }
+    if (!formData.password) {
+      setError('Please enter a password');
+      return;
+    }
+    if (!formData.confirmPassword) {
+      setError('Please confirm your password');
+      return;
+    }
+
     // Validate password
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -79,7 +97,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
           {error && (
             <div className="rounded-md bg-red-50 p-4">
               <p className="text-sm text-red-800">{error}</p>

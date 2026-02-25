@@ -64,7 +64,7 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
   }
 ];
 
-// 最近使用的 emoji（从 localStorage 获取）
+// Recently used emojis (from localStorage)
 const getRecentEmojis = (): string[] => {
   if (typeof window === 'undefined') return [];
   try {
@@ -75,7 +75,7 @@ const getRecentEmojis = (): string[] => {
   }
 };
 
-// 保存最近使用的 emoji
+// Save recently used emoji
 const saveRecentEmoji = (emoji: string) => {
   if (typeof window === 'undefined') return;
   try {
@@ -83,7 +83,7 @@ const saveRecentEmoji = (emoji: string) => {
     const updated = [emoji, ...recent.filter(e => e !== emoji)].slice(0, 12);
     localStorage.setItem('recent-emojis', JSON.stringify(updated));
   } catch {
-    // 静默处理错误
+    // Silently handle errors
   }
 };
 
@@ -97,12 +97,12 @@ export default function EmojiPicker({
   const [activeCategory, setActiveCategory] = useState(0);
   const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
 
-  // 加载最近使用的 emojis
+  // Load recently used emojis
   useEffect(() => {
     setRecentEmojis(getRecentEmojis());
   }, []);
 
-  // 关闭处理
+  // Close handling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
@@ -115,7 +115,7 @@ export default function EmojiPicker({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClose]);
 
-  // 处理 emoji 选择
+  // Handle emoji selection
   const handleEmojiClick = (emoji: string) => {
     saveRecentEmoji(emoji);
     setRecentEmojis(getRecentEmojis());
@@ -123,7 +123,7 @@ export default function EmojiPicker({
     onClose();
   };
 
-  // 搜索过滤
+  // Search filtering
   const filteredCategories = EMOJI_CATEGORIES.map(category => ({
     ...category,
     emojis: category.emojis.filter(emoji =>
@@ -131,7 +131,7 @@ export default function EmojiPicker({
     ),
   })).filter(category => category.emojis.length > 0);
 
-  // 合并最近使用和分类
+  // Merge recently used and categories
   const displayCategories = [
     {
       name: 'Recently Used',
@@ -151,7 +151,7 @@ export default function EmojiPicker({
       className={`emoji-picker bg-gray-800/95 backdrop-blur-md rounded-lg shadow-2xl border border-gray-600/30 p-4 w-80 max-h-[420px] flex flex-col ${className}`}
       style={position}
     >
-      {/* 搜索框 */}
+      {/* Search box */}
       <div className="relative mb-3 flex-shrink-0">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
         <input
@@ -163,7 +163,7 @@ export default function EmojiPicker({
         />
       </div>
 
-      {/* 分类导航 */}
+      {/* Category navigation */}
       <div className="flex gap-1 mb-3 overflow-x-auto pb-2 pt-1 flex-shrink-0" style={{ paddingTop: '4px' }}>
         {displayCategories.map((category, index) => (
           <button
@@ -181,7 +181,7 @@ export default function EmojiPicker({
         ))}
       </div>
 
-      {/* Emoji 网格 */}
+      {/* Emoji grid */}
       <div className="flex-1 overflow-y-auto" style={{ paddingTop: '8px' }}>
         <AnimatePresence mode="wait">
           <motion.div
@@ -208,7 +208,7 @@ export default function EmojiPicker({
         </AnimatePresence>
       </div>
 
-      {/* 最近使用提示 */}
+      {/* Recently used hint */}
       {displayCategories[activeCategory]?.isRecent && recentEmojis.length === 0 && (
         <div className="text-center text-gray-400 text-sm py-4">
           <Clock size={32} className="mx-auto mb-2 opacity-50" />

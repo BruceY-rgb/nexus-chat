@@ -23,8 +23,8 @@ export default function MentionToken({
   if (!isEditing) {
     // 显示模式：高亮显示提及
     const tokenClass = isCurrentUserMentioned
-      ? 'inline-block px-1.5 py-0.5 mx-0.5 rounded bg-blue-500/30 text-blue-300 font-semibold border border-blue-400 shadow-sm'
-      : 'inline-block px-1.5 py-0.5 mx-0.5 rounded bg-blue-500/20 text-blue-400 font-medium border border-blue-500/30';
+      ? 'inline-block px-1.5 py-0.5 mx-0.5 rounded-full bg-blue-500/30 text-blue-300 font-semibold border border-blue-400 shadow-sm'
+      : 'inline-block px-1.5 py-0.5 mx-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium border border-blue-500/30';
 
     return (
       <span

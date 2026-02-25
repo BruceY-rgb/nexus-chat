@@ -15,10 +15,10 @@ export async function GET(
       return NextResponse.json(unauthorizedResponse(), { status: 401 });
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
-      return NextResponse.json(unauthorizedResponse("token无效"), {
+      return NextResponse.json(unauthorizedResponse("Invalid token"), {
         status: 401,
       });
     }
@@ -26,7 +26,7 @@ export async function GET(
     const channelId = params.id;
     const currentUserId = decoded.userId;
 
-    // 检查频道是否存在
+    // Check if channel exists
     const channel = await prisma.channel.findUnique({
       where: { id: channelId },
       select: {
@@ -38,6 +38,7 @@ export async function GET(
             user: {
               select: {
                 id: true,
+                slackUserId: true,
                 email: true,
                 displayName: true,
                 realName: true,
@@ -57,7 +58,7 @@ export async function GET(
       return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     }
 
-    // 检查用户是否是频道成员（包括私有和公有频道）
+    // Check if user is a channel member (including private and public channels)
     const isMember = channel.members.some(
       (member) => member.user.id === currentUserId,
     );
@@ -69,9 +70,10 @@ export async function GET(
       );
     }
 
-    // 格式化返回数据
+    // Format return data
     const members = channel.members.map((member) => ({
       id: member.user.id,
+      slackUserId: member.user.slackUserId,
       email: member.user.email,
       displayName: member.user.displayName,
       realName: member.user.realName,

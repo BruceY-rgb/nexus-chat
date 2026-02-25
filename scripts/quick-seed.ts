@@ -27,28 +27,28 @@ const prisma = new PrismaClient({
 
 async function seed() {
   // 环境信息日志
-  console.log('🌱 Seeding started (Quick Mode)...');
-  console.log(`📦 Environment: ${isProduction ? 'Production' : 'Development'}${isDokploy ? ' (Dokploy)' : ''}`);
-  console.log(`🕒 Timestamp: ${new Date().toISOString()}`);
+  console.log('Seeding started (Quick Mode)...');
+  console.log(`Environment: ${isProduction ? 'Production' : 'Development'}${isDokploy ? ' (Dokploy)' : ''}`);
+  console.log(`Timestamp: ${new Date().toISOString()}`);
   console.log('─'.repeat(50));
 
   try {
     // 检查是否已有数据
     const userCount = await prisma.user.count();
     if (userCount > 0) {
-      console.log(`⚠️  数据库中已有 ${userCount} 个用户，跳过填充`);
-      console.log('✅ Quick seed completed (data already exists)');
+      console.log(`Database already has ${userCount} users, skipping seed`);
+      console.log('Quick seed completed (data already exists)');
       return;
     }
 
     if (logLevel.showProgress) {
-      console.log('🌱 开始快速填充Mock数据...\n');
+      console.log('Starting quick mock data seeding...\n');
     }
 
     // 创建用户
-    console.log('👥 创建测试用户...');
+    console.log('Creating test users...');
     const users = [
-      { email: 'admin@chat.com', password: 'admin123', name: '管理员', role: 'owner' },
+      { email: 'admin@chat.com', password: 'admin123', name: 'Admin', role: 'owner' },
       { email: 'alice@chat.com', password: 'password123', name: 'Alice Chen', role: 'member' },
       { email: 'bob@chat.com', password: 'password123', name: 'Bob Smith', role: 'member' },
       { email: 'charlie@chat.com', password: 'password123', name: 'Charlie Brown', role: 'member' },
@@ -68,7 +68,7 @@ async function seed() {
         },
       });
       createdUsers.push(user);
-      console.log(`  ✓ ${user.displayName}`);
+      console.log(`  - ${user.displayName}`);
     }
 
     // 创建团队成员
@@ -82,7 +82,7 @@ async function seed() {
     }
 
     // 创建频道
-    console.log('\n📢 创建频道...');
+    console.log('\nCreating channels...');
     const channels = [
       { name: 'general', description: 'General discussion', isPrivate: false },
       { name: 'random', description: 'Random topics', isPrivate: false },
@@ -101,7 +101,7 @@ async function seed() {
         },
       });
       createdChannels.push(channel);
-      console.log(`  ✓ #${channel.name}`);
+      console.log(`  - #${channel.name}`);
 
       // 添加用户到频道
       for (const user of createdUsers) {
@@ -116,7 +116,7 @@ async function seed() {
     }
 
     // 创建消息
-    console.log('\n💬 创建示例消息...');
+    console.log('\nCreating sample messages...');
     const messages = [
       { content: 'Welcome to the chat! 🎉', channel: 'general' },
       { content: 'Hey everyone!', channel: 'general' },
@@ -149,8 +149,8 @@ async function seed() {
       });
     }
 
-    console.log('\n✅ Mock数据填充完成！');
-    console.log('\n🔑 测试账户:');
+    console.log('\nMock data seeding completed!');
+    console.log('\nTest accounts:');
     console.log('  admin@chat.com / admin123');
     console.log('  alice@chat.com / password123');
     console.log('  bob@chat.com / password123');
@@ -158,13 +158,13 @@ async function seed() {
     console.log('  diana@chat.com / password123');
 
   } catch (error) {
-    console.error('\n❌ 填充失败:', error);
+    console.error('\nSeeding failed:', error);
     console.error('Stack trace:', error instanceof Error ? error.stack : 'Unknown error');
     throw error;
   } finally {
     await prisma.$disconnect();
-    console.log('🔌 Database disconnected');
-    console.log('✅ Quick seed completed successfully');
+    console.log('Database disconnected');
+    console.log('Quick seed completed successfully');
   }
 }
 

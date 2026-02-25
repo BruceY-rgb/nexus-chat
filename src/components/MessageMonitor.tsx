@@ -120,7 +120,7 @@ export default function MessageMonitor({
   };
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('zh-CN', {
+    return date.toLocaleTimeString('en-US', {
       hour12: false,
       hour: '2-digit',
       minute: '2-digit',
@@ -137,11 +137,11 @@ export default function MessageMonitor({
     <div className={`fixed top-4 right-4 w-96 h-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-        <h3 className="text-sm font-semibold text-gray-800">实时消息监控</h3>
+        <h3 className="text-sm font-semibold text-gray-800">Live Message Monitor</h3>
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
           <span className="text-xs text-gray-600">
-            {isConnected ? '已连接' : '未连接'}
+            {isConnected ? 'Connected' : 'Disconnected'}
           </span>
         </div>
       </div>
@@ -186,7 +186,7 @@ export default function MessageMonitor({
               {log.data && (
                 <details className="mt-1">
                   <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
-                    查看详情
+                    View Details
                   </summary>
                   <pre className="mt-1 p-2 bg-gray-100 rounded text-xs overflow-x-auto">
                     {JSON.stringify(log.data, null, 2)}
@@ -201,13 +201,13 @@ export default function MessageMonitor({
       {/* Footer */}
       <div className="flex items-center justify-between p-2 border-t border-gray-200 bg-gray-50 rounded-b-lg">
         <span className="text-xs text-gray-500">
-          {logs.length} 条日志
+          {logs.length} logs
         </span>
         <button
           onClick={() => setLogs([])}
           className="text-xs text-blue-600 hover:text-blue-800"
         >
-          清空
+          Clear
         </button>
       </div>
     </div>

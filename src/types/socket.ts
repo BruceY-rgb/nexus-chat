@@ -1,13 +1,13 @@
 // =====================================================
-// WebSocket 相关 TypeScript 类型定义
+// WebSocket related TypeScript type definitions
 // =====================================================
 
 import { Socket } from 'socket.io-client';
 
-// 扩展 Socket 类型
+// Extended Socket type
 export interface CustomSocket extends Socket {}
 
-// WebSocket 事件类型
+// WebSocket event types
 export type SocketEventType =
   | 'connect'
   | 'disconnect'
@@ -28,14 +28,14 @@ export type SocketEventType =
   | 'message-read'
   | 'get-online-users'
   | 'new-notification'
-  // 线程相关事件
+  // Thread related events
   | 'thread-reply-created'
   | 'thread-reply-updated'
   | 'thread-reply-deleted'
   | 'thread-read-status-changed'
   | 'thread-unread-count-updated';
 
-// WebSocket message events负载
+// WebSocket message events payload
 export interface NewMessagePayload {
   id: string;
   content: string;
@@ -59,7 +59,7 @@ export interface NewMessagePayload {
   };
 }
 
-// 打字事件负载
+// Typing event payload
 export interface TypingPayload {
   userId: string;
   channelId?: string;
@@ -68,7 +68,7 @@ export interface TypingPayload {
   displayName?: string;
 }
 
-// Message read事件负载
+// Message read event payload
 export interface MessageReadPayload {
   userId: string;
   messageIds: string[];
@@ -76,7 +76,7 @@ export interface MessageReadPayload {
   dmConversationId?: string;
 }
 
-// 新通知事件负载
+// New notification event payload
 export interface NewNotificationPayload {
   id: string;
   type: 'mention' | 'dm' | 'channel_invite' | 'system' | 'thread_reply' | 'thread_mention';
@@ -95,77 +95,77 @@ export interface NewNotificationPayload {
   };
 }
 
-// 用户Online status event payload
+// User online status event payload
 export interface PresenceUpdatePayload {
   userId: string;
   isOnline: boolean;
   lastSeenAt?: Date | string;
 }
 
-// 线程回复事件负载
+// Thread reply event payload
 export interface ThreadReplyCreatedPayload {
   threadId: string;
   message: NewMessagePayload;
   replyCount: number;
 }
 
-// 线程回复更新事件负载
+// Thread reply update event payload
 export interface ThreadReplyUpdatedPayload {
   threadId: string;
   message: NewMessagePayload;
 }
 
-// 线程回复删除事件负载
+// Thread reply deleted event payload
 export interface ThreadReplyDeletedPayload {
   threadId: string;
   replyId: string;
 }
 
-// 线程已读状态变更事件负载
+// Thread read status changed event payload
 export interface ThreadReadStatusChangedPayload {
   threadId: string;
   readAt: string;
   unreadThreadsCount: number;
 }
 
-// 线程未读计数更新事件负载
+// Thread unread count updated event payload
 export interface ThreadUnreadCountUpdatedPayload {
   count: number;
 }
 
-// 在线用户列表负载
+// Online users list payload
 export interface OnlineUsersPayload {
   userId: string;
   channels: string[];
   dmConversations: string[];
 }
 
-// 加入频道事件负载
+// Join channel event payload
 export interface JoinChannelPayload {
   channelId: string;
 }
 
-// 离开频道事件负载
+// Leave channel event payload
 export interface LeaveChannelPayload {
   channelId: string;
 }
 
-// 加入私聊事件负载
+// Join DM event payload
 export interface JoinDMPayload {
   conversationId: string;
 }
 
-// 离开私聊事件负载
+// Leave DM event payload
 export interface LeaveDMPayload {
   conversationId: string;
 }
 
-// WebSocket 认证负载
+// WebSocket authentication payload
 export interface SocketAuthPayload {
   token: string;
 }
 
-// WebSocket 连接选项
+// WebSocket connection options
 export interface SocketOptions {
   auth?: SocketAuthPayload;
   transports?: ('websocket' | 'polling')[];
@@ -176,17 +176,17 @@ export interface SocketOptions {
   timeout?: number;
 }
 
-// WebSocket 错误事件
+// WebSocket error event
 export interface SocketError {
   message: string;
   description?: string;
   context?: string;
 }
 
-// 房间类型
+// Room type
 export type RoomType = 'channel' | 'dm' | 'self';
 
-// 房间名称生成器
+// Room name generator
 export function getRoomName(type: RoomType, id: string): string {
   return `${type}:${id}`;
 }
@@ -201,10 +201,10 @@ export function parseRoomName(roomName: string): { type: RoomType; id: string } 
   };
 }
 
-// WebSocket 事件监听器类型
+// WebSocket event listener type
 export type EventListener<T = any> = (payload: T) => void;
 
-// 房间成员信息
+// Room member information
 export interface RoomMember {
   userId: string;
   socketId: string;
@@ -212,19 +212,19 @@ export interface RoomMember {
   lastActivityAt: Date;
 }
 
-// 频道房间信息
+// Channel room information
 export interface ChannelRoom {
   channelId: string;
   members: Map<string, RoomMember>;
 }
 
-// 私聊房间信息
+// DM room information
 export interface DMRoom {
   conversationId: string;
   members: Map<string, RoomMember>;
 }
 
-// WebSocket 统计信息
+// WebSocket statistics
 export interface SocketStats {
   connectedUsers: number;
   totalChannels: number;
@@ -233,14 +233,14 @@ export interface SocketStats {
   activeConnections: number;
 }
 
-// 消息队列（用于离线消息）
+// Message queue (for offline messages)
 export interface MessageQueue {
   userId: string;
   messages: NewMessagePayload[];
   queuedAt: Date;
 }
 
-// WebSocket 配置
+// WebSocket configuration
 export interface WebSocketConfig {
   url: string;
   options: SocketOptions;
@@ -251,14 +251,14 @@ export interface WebSocketConfig {
   enableMessageHistory: boolean;
 }
 
-// 事件总线接口（用于服务器内部通信）
+// Event bus interface (for server internal communication)
 export interface EventBus {
   emit(event: string, data: any): boolean;
   on(event: string, listener: (...args: any[]) => void): this;
   off(event: string, listener?: (...args: any[]) => void): this;
 }
 
-// 扩展全局变量类型
+// Extend global variable types
 declare global {
   var io: import('socket.io').Server | undefined;
 }

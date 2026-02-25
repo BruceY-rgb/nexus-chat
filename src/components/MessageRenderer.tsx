@@ -1,19 +1,22 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Message } from '@/types/message';
 import { TeamMember } from '@/types';
 import MentionToken from './MentionToken';
 import AttachmentCard from './AttachmentCard';
 import MarkdownRenderer from './MarkdownRenderer';
 import { MarkdownProcessor } from '@/lib/markdown';
+import { convertShortcodesToEmoji } from '@/lib/emoji';
 import { X } from 'lucide-react';
+import ImageGallery from './ImageGallery';
 
 interface MessageRendererProps {
   message: Message;
   currentUserId: string;
   className?: string;
   members?: { id: string; displayName: string }[];
+  markdownVariant?: 'dark' | 'light';
 }
 
 interface ImageModalProps {
@@ -128,6 +131,16 @@ interface MentionedUser {
 }
 
 /**
+ * Helper to get the correct file URL
+ */
+function getFileUrl(attachment: { thumbnailUrl?: string | null; filePath: string }): string {
+  if (attachment.thumbnailUrl) {
+    return attachment.thumbnailUrl;
+  }
+  return attachment.filePath;
+}
+
+/**
  * 将消息内容中的 @提及高亮显示
  * 支持 Token 化提及和传统文本提及
  */
@@ -135,7 +148,8 @@ export default function MessageRenderer({
   message,
   currentUserId,
   className = '',
-  members = []
+  members = [],
+  markdownVariant = 'dark'
 }: MessageRendererProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
@@ -151,7 +165,7 @@ export default function MessageRenderer({
   // 获取当前选中的图片
   const imageAttachments = message.attachments?.filter(att => att.mimeType.startsWith('image/')) || [];
   const selectedImage = selectedImageIndex !== null ? {
-    src: imageAttachments[selectedImageIndex].thumbnailUrl || imageAttachments[selectedImageIndex].filePath,
+    src: getFileUrl(imageAttachments[selectedImageIndex]),
     alt: imageAttachments[selectedImageIndex].fileName
   } : null;
 
@@ -248,24 +262,27 @@ export default function MessageRenderer({
    * 和混合文本中的中等尺寸 Emoji
    */
   const EmojiText = ({ text }: { text: string }) => {
+    // Convert Slack :shortcode: to Unicode emoji first
+    const convertedText = convertShortcodesToEmoji(text);
+
     // 匹配各种 Unicode 范围的 Emoji 字符
     // 包括：基本多语言平面、补充多语言平面、杂项符号、表情符号等
     const emojiRegex = /(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})/gu;
 
     // 检查是否是纯 Emoji 文本（去除空格和换行后）
-    const isPureEmoji = text.replace(/\s/g, '').match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})+$/u);
+    const isPureEmoji = convertedText.replace(/\s/g, '').match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})+$/u);
 
     if (isPureEmoji) {
       // 纯 Emoji 消息：统一14px字体大小
       return (
         <span style={{ fontSize: '14px', lineHeight: '1.5' }}>
-          {text}
+          {convertedText}
         </span>
       );
     }
 
     // 混合文本：按字符分割并渲染
-    const parts = [...text];
+    const parts = [...convertedText];
 
     return (
       <>
@@ -311,230 +328,21 @@ export default function MessageRenderer({
     const imageAttachments = message.attachments.filter(att => att.mimeType.startsWith('image/'));
     const otherAttachments = message.attachments.filter(att => !att.mimeType.startsWith('image/'));
 
+    // 使用ImageGallery组件处理图片渲染
+    const handleImageClick = useCallback((index: number) => {
+      setSelectedImageIndex(index);
+    }, []);
+
     return (
       <div className="mt-2">
-        {/* 渲染图片附件 - 使用原有布局 */}
+        {/* 渲染图片附件 - 使用ImageGallery组件 */}
         {imageAttachments.length > 0 && (
           <div className="mb-2">
-            {(() => {
-              const imageCount = imageAttachments.length;
-
-              if (imageCount === 1) {
-                // 单张图片 - 显示较大
-                return (
-                  <div className="relative group cursor-pointer rounded-lg overflow-hidden max-w-md">
-                    <img
-                      src={imageAttachments[0].thumbnailUrl || imageAttachments[0].filePath}
-                      alt={imageAttachments[0].fileName}
-                      className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
-                      style={{ maxHeight: '400px' }}
-                      onClick={() => setSelectedImageIndex(0)}
-                      onError={(e) => {
-                        // 图片加载失败时显示错误占位符
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent) {
-                          parent.innerHTML = `
-                            <div class="w-full h-48 bg-gray-800 flex flex-col items-center justify-center rounded-lg">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              <span class="text-gray-400 text-sm">Image loading failed</span>
-                              <button onclick="window.open('${imageAttachments[0].filePath}', '_blank')" class="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
-                                Open in new tab
-                              </button>
-                            </div>
-                          `;
-                        }
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-                  </div>
-                );
-              } else if (imageCount === 2) {
-                // 两张图片 - 水平排列
-                return (
-                  <div className="grid grid-cols-2 gap-2">
-                    {imageAttachments.map((attachment) => (
-                      <div
-                        key={attachment.id}
-                        className="relative group cursor-pointer rounded-lg overflow-hidden"
-                        onClick={() => {
-                          const index = imageAttachments.findIndex(att => att.id === attachment.id);
-                          if (index !== -1) {
-                            setSelectedImageIndex(index);
-                          }
-                        }}
-                      >
-                        <img
-                          src={attachment.thumbnailUrl || attachment.filePath}
-                          alt={attachment.fileName}
-                          className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
-                          style={{ aspectRatio: '1', maxHeight: '200px' }}
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `
-                                <div class="w-full h-32 bg-gray-800 flex flex-col items-center justify-center rounded-lg">
-                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                  <span class="text-gray-400 text-xs">Loading failed</span>
-                                </div>
-                              `;
-                            }
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-                      </div>
-                    ))}
-                  </div>
-                );
-              } else if (imageCount === 3) {
-                // 三张图片 - 第一个占一半，剩下两个在右边
-                return (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div
-                      className="relative group cursor-pointer rounded-lg overflow-hidden row-span-2"
-                      onClick={() => setSelectedImageIndex(0)}
-                    >
-                      <img
-                        src={imageAttachments[0].thumbnailUrl || imageAttachments[0].filePath}
-                        alt={imageAttachments[0].fileName}
-                        className="w-full h-full object-cover hover:opacity-90 transition-opacity"
-                        style={{ aspectRatio: '1', maxHeight: '400px' }}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-                    </div>
-                    {imageAttachments.slice(1, 3).map((attachment) => (
-                      <div
-                        key={attachment.id}
-                        className="relative group cursor-pointer rounded-lg overflow-hidden"
-                        onClick={() => {
-                          const index = imageAttachments.findIndex(att => att.id === attachment.id);
-                          if (index !== -1) {
-                            setSelectedImageIndex(index);
-                          }
-                        }}
-                      >
-                        <img
-                          src={attachment.thumbnailUrl || attachment.filePath}
-                          alt={attachment.fileName}
-                          className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
-                          style={{ aspectRatio: '1' }}
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `
-                                <div class="w-full h-32 bg-gray-800 flex flex-col items-center justify-center rounded-lg">
-                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                  <span class="text-gray-400 text-xs">Loading failed</span>
-                                </div>
-                              `;
-                            }
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-                      </div>
-                    ))}
-                  </div>
-                );
-              } else if (imageCount === 4) {
-                // 四张图片 - 2x2 网格
-                return (
-                  <div className="grid grid-cols-2 gap-2">
-                    {imageAttachments.map((attachment) => (
-                      <div
-                        key={attachment.id}
-                        className="relative group cursor-pointer rounded-lg overflow-hidden"
-                        onClick={() => {
-                          const index = imageAttachments.findIndex(att => att.id === attachment.id);
-                          if (index !== -1) {
-                            setSelectedImageIndex(index);
-                          }
-                        }}
-                      >
-                        <img
-                          src={attachment.thumbnailUrl || attachment.filePath}
-                          alt={attachment.fileName}
-                          className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
-                          style={{ aspectRatio: '1' }}
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `
-                                <div class="w-full h-32 bg-gray-800 flex flex-col items-center justify-center rounded-lg">
-                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                  <span class="text-gray-400 text-xs">Loading failed</span>
-                                </div>
-                              `;
-                            }
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-                      </div>
-                    ))}
-                  </div>
-                );
-              } else {
-                // 超过四张图片 - 显示前四张，其余显示计数
-                return (
-                  <div className="grid grid-cols-2 gap-2">
-                    {imageAttachments.slice(0, 4).map((attachment, imgIndex) => (
-                      <div
-                        key={attachment.id}
-                        className="relative group cursor-pointer rounded-lg overflow-hidden"
-                        onClick={() => {
-                          const index = imageAttachments.findIndex(att => att.id === attachment.id);
-                          if (index !== -1) {
-                            setSelectedImageIndex(index);
-                          }
-                        }}
-                      >
-                        <img
-                          src={attachment.thumbnailUrl || attachment.filePath}
-                          alt={attachment.fileName}
-                          className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
-                          style={{ aspectRatio: '1' }}
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `
-                                <div class="w-full h-32 bg-gray-800 flex flex-col items-center justify-center rounded-lg">
-                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                  <span class="text-gray-400 text-xs">Loading failed</span>
-                                </div>
-                              `;
-                            }
-                          }}
-                        />
-                        {imgIndex === 3 && imageCount > 4 && (
-                          <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                            <span className="text-white text-2xl font-bold">+{imageCount - 4}</span>
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-                      </div>
-                    ))}
-                  </div>
-                );
-              }
-            })()}
+            <ImageGallery
+              attachments={imageAttachments}
+              onImageClick={handleImageClick}
+              getFileUrl={getFileUrl}
+            />
           </div>
         )}
 
@@ -568,6 +376,7 @@ export default function MessageRenderer({
             members={members as TeamMember[]}
             currentUserId={currentUserId}
             className="text-sm"
+            variant={markdownVariant}
           />
         ) : (
           renderMessageContent()

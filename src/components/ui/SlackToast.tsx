@@ -1,6 +1,6 @@
 // =====================================================
-// Slack 风格自定义 Toast 组件
-// 完全模拟 Slack 通知的视觉设计和交互
+// Slack-style custom Toast component
+// Fully simulates Slack notification visual design and interaction
 // =====================================================
 
 'use client';
@@ -18,19 +18,19 @@ interface SlackToastProps {
 export function SlackToast({ notification, onDismiss }: SlackToastProps) {
   const router = useRouter();
 
-  // 根据通知类型选择图标和颜色
+  // Select icon and color based on notification type
   const getTypeConfig = (type: string) => {
     switch (type) {
       case 'mention':
         return {
           icon: AtSign,
-          color: '#E8912D', // 橘黄色
+          color: '#E8912D', // Orange
           buttonText: 'Reply',
         };
       case 'dm':
         return {
           icon: MessageSquare,
-          color: '#1D9BD1', // 蓝色
+          color: '#1D9BD1', // Blue
           buttonText: 'Reply',
         };
       case 'channel_invite':
@@ -51,18 +51,18 @@ export function SlackToast({ notification, onDismiss }: SlackToastProps) {
   const config = getTypeConfig(notification.type);
   const Icon = config.icon;
 
-  // 处理点击查看按钮
+  // Handle view button click
   const handleView = () => {
-    // 根据通知类型跳转到相应页面
+    // Navigate to corresponding page based on notification type
     if (notification.type === 'mention' && notification.relatedChannelId) {
-      // 跳转到频道
+      // Jump to channel
       console.log('jump to channel:', notification.relatedChannelId);
       const url = notification.relatedMessageId
         ? `/dashboard?channel=${notification.relatedChannelId}&messageId=${notification.relatedMessageId}`
         : `/dashboard?channel=${notification.relatedChannelId}`;
       router.push(url);
     } else if (notification.type === 'dm' && notification.relatedDmConversationId) {
-      // 跳转到私聊
+      // Jump to direct message
       console.log('jump to dm:', notification.relatedDmConversationId);
       const url = notification.relatedMessageId
         ? `/dm/${notification.relatedDmConversationId}?messageId=${notification.relatedMessageId}`
@@ -70,13 +70,13 @@ export function SlackToast({ notification, onDismiss }: SlackToastProps) {
       router.push(url);
     }
 
-    // 关闭 toast
+    // Close toast
     onDismiss();
   };
 
-  // 处理忽略按钮
+  // Handle ignore button
   const handleDismiss = () => {
-    console.log('忽略通知:', notification.id);
+    console.log('Dismiss notification:', notification.id);
     onDismiss();
   };
 
@@ -88,14 +88,14 @@ export function SlackToast({ notification, onDismiss }: SlackToastProps) {
         bg-[#1A1D21]
       "
     >
-      {/* 左侧彩色指示条 */}
+      {/* Left color indicator strip */}
       <div
         className="w-1 h-full absolute left-0"
         style={{ backgroundColor: config.color }}
       />
 
       <div className="flex items-start p-4 gap-3">
-        {/* 图标区域 */}
+        {/* Icon area */}
         <div
           className="
             w-10 h-10 rounded-md flex items-center justify-center
@@ -106,14 +106,14 @@ export function SlackToast({ notification, onDismiss }: SlackToastProps) {
           <Icon size={20} color={config.color} />
         </div>
 
-        {/* 内容区域 */}
+        {/* Content area */}
         <div className="flex-1 min-w-0">
-          {/* 标题 */}
+          {/* Title */}
           <h4 className="text-[#D1D2D3] font-semibold text-sm truncate">
             {notification.title}
           </h4>
 
-          {/* 内容 */}
+          {/* Content */}
           {notification.content && (
             <p
               className="text-[#D1D2D3] text-sm mt-1"
@@ -129,7 +129,7 @@ export function SlackToast({ notification, onDismiss }: SlackToastProps) {
             </p>
           )}
 
-          {/* 按钮区域 */}
+          {/* Button area */}
           <div className="flex gap-3 mt-3">
             <button
               onClick={handleView}
@@ -160,7 +160,7 @@ export function SlackToast({ notification, onDismiss }: SlackToastProps) {
   );
 }
 
-// 创建 Slack 风格 toast 的辅助函数
+// Helper function to create Slack-style toast
 export function showSlackToast(notification: NewNotificationPayload) {
   return toast.custom(
     (t) => (

@@ -17,12 +17,12 @@ export default function Badge({
   size = 'md',
   className = ''
 }: BadgeProps) {
-  // 不显示的条件
+  // Conditions for not showing
   if (!showZero && count === 0) {
     return null;
   }
 
-  // 显示小红点模式
+  // Display dot mode
   if (dot) {
     return (
       <span
@@ -33,10 +33,10 @@ export default function Badge({
     );
   }
 
-  // 计算显示的数字
+  // Calculate display number
   const displayCount = count > max ? `${max}+` : count;
 
-  // 尺寸样式
+  // Size styles
   const sizeStyles = {
     sm: 'min-w-[16px] h-4 px-1 text-[10px]',
     md: 'min-w-[20px] h-5 px-1.5 text-xs',

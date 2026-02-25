@@ -1,6 +1,7 @@
 'use client';
 
 import { TeamMember } from '../types';
+import { getAvatarUrl } from '@/lib/avatar';
 
 interface DirectMessagesProps {
   members?: TeamMember[];
@@ -17,7 +18,7 @@ export default function DirectMessagesDebug({
   onStartChat,
   onNewChat
 }: DirectMessagesProps) {
-  // 显示所有成员，包括当前用户
+  // Display all members, including current user
 
   const getStatusIndicator = (isOnline: boolean) => {
     if (isOnline) {
@@ -32,19 +33,19 @@ export default function DirectMessagesDebug({
 
   const handleMemberClick = (member: TeamMember) => {
     console.log('\n🔵 ===== DIRECT MESSAGES CLICK DEBUG =====');
-    console.log('🔵 [DirectMessages] 成员被点击:', {
+    console.log('🔵 [DirectMessages] Member clicked:', {
       memberId: member.id,
       memberName: member.displayName,
       currentUserId: currentUserId,
       timestamp: new Date().toISOString()
     });
 
-    console.log('🔵 [DirectMessages] 准备调用 onStartChat...');
+    console.log('🔵 [DirectMessages] Preparing to call onStartChat...');
     if (onStartChat) {
       onStartChat(member.id);
-      console.log('🔵 [DirectMessages] onStartChat 已调用，参数:', member.id);
+      console.log('🔵 [DirectMessages] onStartChat called, parameter:', member.id);
     } else {
-      console.error('🔴 [DirectMessages] onStartChat 未定义！');
+      console.error('🔴 [DirectMessages] onStartChat is undefined!');
     }
     console.log('🔵 ===== END DEBUG =====\n');
   };
@@ -101,7 +102,7 @@ export default function DirectMessagesDebug({
               {/* Avatar with status indicator */}
               <div className="relative flex-shrink-0">
                 <img
-                  src={member.avatarUrl || `https://api.dicebear.com/7.x/identicon/png?seed=${member.displayName || member.id}&size=24`}
+                  src={getAvatarUrl(member.avatarUrl, member, 24)}
                   alt={member.displayName}
                   className="w-5 h-5 rounded-sm"
                   style={{ borderRadius: '4px' }}
