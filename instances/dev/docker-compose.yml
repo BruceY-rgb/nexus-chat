@@ -28,6 +28,43 @@ services:
       timeout: 5s
       retries: 5
 
+  # Database initialization service - runs Prisma migrations
+  db-init:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.dev
+    container_name: ${INSTANCE_NAME:-slack}_db_init
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD:-ysx050223}@db:5432/${DB_NAME:-slack_chat}?schema=public
+      DB_USER: ${DB_USER:-yangsmac}
+      DB_PASSWORD: ${DB_PASSWORD:-ysx050223}
+      DB_NAME: ${DB_NAME:-slack_chat}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - slack_network
+    volumes:
+      - ../../db/init.sql:/init.sql:ro
+      - ../../db/slack-init.sql:/slack-init.sql:ro
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        echo "Running Prisma migrations..."
+        npx prisma generate
+        # 首先尝试 migrate deploy（标准迁移）
+        npx prisma migrate deploy || true
+        # 如果没有迁移，使用 db push 来同步 schema
+        npx prisma db push --accept-data-loss || true
+        echo "Database schema synchronized!"
+        echo "Applying init.sql (triggers and indexes)..."
+        PGPASSWORD=$DB_PASSWORD psql -h db -U $DB_USER -d $DB_NAME -f /init.sql || true
+        echo "Applying Slack data init.sql..."
+        PGPASSWORD=$DB_PASSWORD psql -h db -U $DB_USER -d $DB_NAME -f /slack-init.sql --set ON_ERROR_STOP=on || true
+        echo "Init SQL applied!"
+        exit 0
+
   # Next.js开发应用
   app:
     build:
@@ -70,7 +107,8 @@ services:
       LOG_FORMAT: ${LOG_FORMAT:-dev}
     ports:
       - "${APP_PORT:-3000}:3000"
-      - "${WEBSOCKET_PORT:-3001}:3001"
+      - "${MCP_PORT:-3002}:3002"   # MCP Server
+      - "24678:24678"              # Next.js HMR port
     depends_on:
       db:
         condition: service_healthy
@@ -81,25 +119,6 @@ services:
       - ../../:/app
       - /app/node_modules
       - /app/.next
-
-  # MCP Server
-  mcp:
-    build:
-      context: ../../mcp-server
-      dockerfile: Dockerfile
-    container_name: ${INSTANCE_NAME:-slack}_mcp
-    restart: unless-stopped
-    environment:
-      HOST: 0.0.0.0
-      PORT: ${MCP_PORT:-3002}
-      DATABASE_URL: postgresql://${DB_USER:-yangsmac}:${DB_PASSWORD:-ysx050223}@db:5432/${DB_NAME:-slack_chat}?schema=public
-    ports:
-      - "${MCP_PORT:-3002}:${MCP_PORT:-3002}"
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - slack_network
 
 volumes:
   postgres_data:
