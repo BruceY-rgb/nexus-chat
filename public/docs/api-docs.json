@@ -1,0 +1,730 @@
+{
+  "info": {
+    "title": "Slack-like Chat API Documentation",
+    "version": "1.0.0",
+    "description": "This is a complete RESTful API that supports real-time messaging, channel management, user authentication, and more.",
+    "authentication": "This API uses JWT Token for authentication. After successful login, the system sets auth_token in the Cookie.",
+    "baseUrl": "http://localhost:3000"
+  },
+  "responseFormat": "{\n  \"success\": true,\n  \"data\": { ... },\n  \"message\": \"Operation successful\"\n}",
+  "statusCodes": [],
+  "restApis": [
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "description": "User login endpoint, supporting both password and verification code login methods.",
+      "parameters": [],
+      "requestExample": "# Password login\ncurl -X POST http://localhost:3000/api/auth/login \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n  }'\n\n# Verification code login\ncurl -X POST http://localhost:3000/api/auth/login \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"email\": \"user@example.com\",\n    \"code\": \"123456\"\n  }'",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"123\",\n      \"email\": \"user@example.com\",\n      \"displayName\": \"John Doe\",\n      \"realName\": \"John Doe\",\n      \"avatarUrl\": \"https://example.com/avatar.jpg\",\n      \"status\": \"active\",\n      \"role\": \"member\",\n      \"isOnline\": true,\n      \"notificationSettings\": {\n        \"emailNotifications\": true,\n        \"pushNotifications\": true\n      }\n    }\n  },\n  \"message\": \"Login successful\"\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/register",
+      "description": "User registration endpoint.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/auth/register \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\",\n    \"displayName\": \"John Doe\",\n    \"realName\": \"John Doe\"\n  }'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Registration successful. Please check your email to verify your account.\",\n  \"data\": {\n    \"userId\": \"user123\",\n    \"email\": \"user@example.com\",\n    \"displayName\": \"John Doe\"\n  }\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "description": "Get detailed information of the currently logged in user.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/auth/send-verification \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"email\": \"user@example.com\"\n  }'",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"user123\",\n    \"email\": \"user@example.com\",\n    \"displayName\": \"John Doe\",\n    \"realName\": \"John Doe\",\n    \"avatarUrl\": \"https://example.com/avatar.jpg\",\n    \"status\": \"active\",\n    \"role\": \"member\"\n  }\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "description": "User logout.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/auth/send-verification \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"email\": \"user@example.com\"\n  }'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Logged out successfully\"\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/send-verification",
+      "description": "Send verification code to user email.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/auth/send-verification \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"email\": \"user@example.com\"\n  }'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Verification code sent to your email\"\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/profile",
+      "description": "Get detailed profile of the current user.",
+      "parameters": [],
+      "requestExample": "curl -X PUT http://localhost:3000/api/auth/profile \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\n    \"displayName\": \"New Name\",\n    \"bio\": \"Updated bio\"\n  }'",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"123\",\n    \"email\": \"user@example.com\",\n    \"displayName\": \"John Doe\",\n    \"realName\": \"John Doe\",\n    \"avatarUrl\": \"https://example.com/avatar.jpg\",\n    \"bio\": \"This is my bio\",\n    \"location\": \"New York\",\n    \"website\": \"https://example.com\"\n  }\n}"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/auth/profile",
+      "description": "Update current user's profile information.",
+      "parameters": [],
+      "requestExample": "curl -X PUT http://localhost:3000/api/auth/profile \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\n    \"displayName\": \"New Name\",\n    \"bio\": \"Updated bio\"\n  }'",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"123\",\n    \"displayName\": \"New Name\",\n    \"bio\": \"Updated bio\"\n  },\n  \"message\": \"Profile updated successfully\"\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages",
+      "description": "Send a new message to a channel or direct message.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/messages \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\n    \"content\": \"Hello everyone!\",\n    \"channelId\": \"channel123\"\n  }'",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"msg123\",\n    \"content\": \"Hello everyone!\",\n    \"messageType\": \"text\",\n    \"channelId\": \"channel123\",\n    \"userId\": \"user123\",\n    \"createdAt\": \"2024-01-01T12:00:00.000Z\",\n    \"updatedAt\": \"2024-01-01T12:00:00.000Z\",\n    \"attachments\": [],\n    \"reactions\": []\n  }\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages",
+      "description": "Get a list of messages from a channel or direct message.",
+      "parameters": [],
+      "requestExample": "curl -X GET \"http://localhost:3000/api/messages?channelId=channel123&limit=20\" \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"messages\": [\n      {\n        \"id\": \"msg123\",\n        \"content\": \"Hello world\",\n        \"messageType\": \"text\",\n        \"channelId\": \"channel123\",\n        \"userId\": \"user123\",\n        \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n      }\n    ]\n  }\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/search",
+      "description": "Search for messages containing keywords.",
+      "parameters": [],
+      "requestExample": "curl -X GET \"http://localhost:3000/api/messages/search?q=keyword&channelId=channel123\" \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"messages\": [\n      {\n        \"id\": \"msg123\",\n        \"content\": \"This message contains the keyword\",\n        \"messageType\": \"text\",\n        \"channelId\": \"channel123\",\n        \"userId\": \"user456\",\n        \"createdAt\": \"2024-01-01T10:30:00.000Z\"\n      },\n      {\n        \"id\": \"msg456\",\n        \"content\": \"Another message with keyword\",\n        \"messageType\": \"text\",\n        \"channelId\": \"channel123\",\n        \"userId\": \"user789\",\n        \"createdAt\": \"2024-01-01T09:15:00.000Z\"\n      }\n    ]\n  }\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/context-search",
+      "description": "Get context messages (10 before and after) for a specified message.",
+      "parameters": [],
+      "requestExample": "curl -X GET \"http://localhost:3000/api/messages/context-search?messageId=msg123\" \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"messages\": [\n      {\"id\": \"msg120\", \"content\": \"Previous message\", \"createdAt\": \"2024-01-01T11:59:00.000Z\"},\n      {\"id\": \"msg123\", \"content\": \"Target message\", \"createdAt\": \"2024-01-01T12:00:00.000Z\"},\n      {\"id\": \"msg126\", \"content\": \"Next message\", \"createdAt\": \"2024-01-01T12:01:00.000Z\"}\n    ]\n  }\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/read",
+      "description": "Mark messages as read.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/messages/read \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\"channelId\": \"channel123\"}'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Messages marked as read\",\n  \"data\": {\n    \"channelId\": \"channel123\",\n    \"lastReadMessageId\": \"msg456\",\n    \"updatedAt\": \"2024-01-01T12:00:00.000Z\"\n  }\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/clear",
+      "description": "Clear all messages from a channel or direct message (admin permission required).",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/messages/clear \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\"channelId\": \"channel123\"}'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"All messages cleared from channel\",\n  \"data\": {\n    \"channelId\": \"channel123\",\n    \"clearedMessageCount\": 42,\n    \"clearedAt\": \"2024-01-01T12:00:00.000Z\"\n  }\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/[id]",
+      "description": "Get a specific message by ID.",
+      "parameters": [],
+      "requestExample": "curl -X GET http://localhost:3000/api/messages/msg123 \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"msg123\",\n    \"content\": \"This is the message content\",\n    \"messageType\": \"text\",\n    \"channelId\": \"channel123\",\n    \"userId\": \"user456\",\n    \"createdAt\": \"2024-01-01T10:00:00.000Z\",\n    \"updatedAt\": \"2024-01-01T10:00:00.000Z\",\n    \"attachments\": [],\n    \"reactions\": [\n      {\"emoji\": \"thumbsup\", \"count\": 2, \"users\": [\"user123\", \"user789\"]}\n    ]\n  }\n}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/messages/[id]",
+      "description": "Update message content (only the author can edit).",
+      "parameters": [],
+      "requestExample": "curl -X PATCH http://localhost:3000/api/messages/msg123 \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\"content\": \"Updated message content\"}'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Message updated successfully\",\n  \"data\": {\n    \"id\": \"msg123\",\n    \"content\": \"Updated message content\",\n    \"updatedAt\": \"2024-01-01T12:00:00.000Z\"\n  }\n}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/messages/[id]",
+      "description": "Delete a message (only the author can delete).",
+      "parameters": [],
+      "requestExample": "curl -X DELETE http://localhost:3000/api/messages/msg123 \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Message deleted successfully\"\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/[id]/reply",
+      "description": "Reply to a message, creating a thread.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/messages/msg123/reply \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\"content\": \"This is a reply\"}'",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"msg456\",\n    \"content\": \"This is a reply\",\n    \"messageType\": \"thread\",\n    \"parentId\": \"msg123\",\n    \"channelId\": \"channel123\",\n    \"userId\": \"user123\",\n    \"createdAt\": \"2024-01-01T12:00:00.000Z\"\n  }\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/[id]/thread-replies",
+      "description": "Get all thread replies for a message.",
+      "parameters": [],
+      "requestExample": "curl -X GET http://localhost:3000/api/messages/msg123/thread-replies \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"replies\": [\n      {\n        \"id\": \"msg456\",\n        \"content\": \"First reply\",\n        \"messageType\": \"thread\",\n        \"parentId\": \"msg123\",\n        \"userId\": \"user456\",\n        \"createdAt\": \"2024-01-01T12:00:00.000Z\"\n      },\n      {\n        \"id\": \"msg789\",\n        \"content\": \"Second reply\",\n        \"messageType\": \"thread\",\n        \"parentId\": \"msg123\",\n        \"userId\": \"user123\",\n        \"createdAt\": \"2024-01-01T12:05:00.000Z\"\n      }\n    ],\n    \"totalCount\": 2\n  }\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/[id]/reactions",
+      "description": "Add a reaction to a message.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/messages/msg123/reactions \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\"emoji\": \"thumbsup\"}'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Reaction added\",\n  \"data\": {\n    \"messageId\": \"msg123\",\n    \"emoji\": \"thumbsup\",\n    \"count\": 1,\n    \"users\": [\"user123\"]\n  }\n}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/messages/[id]/reactions",
+      "description": "Remove a reaction from a message.",
+      "parameters": [],
+      "requestExample": "curl -X DELETE \"http://localhost:3000/api/messages/msg123/reactions?emoji=thumbsup\" \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Reaction removed\",\n  \"data\": {\n    \"messageId\": \"msg123\",\n    \"emoji\": \"thumbsup\",\n    \"count\": 0,\n    \"users\": []\n  }\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/channels",
+      "description": "Get a list of all channels visible to the current user.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/channels \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\n    \"name\": \"project-alpha\",\n    \"description\": \"Alpha project discussion channel\",\n    \"isPrivate\": false\n  }'",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"channels\": [\n      {\n        \"id\": \"channel123\",\n        \"name\": \"general\",\n        \"description\": \"General discussion\",\n        \"isPrivate\": false,\n        \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n      }\n    ]\n  }\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/channels",
+      "description": "Create a new channel.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/channels \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\n    \"name\": \"project-alpha\",\n    \"description\": \"Alpha project discussion channel\",\n    \"isPrivate\": false\n  }'",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"channel\": {\n      \"id\": \"channel123\",\n      \"name\": \"project-alpha\",\n      \"description\": \"Alpha project discussion channel\",\n      \"isPrivate\": false,\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  },\n  \"message\": \"Channel created successfully\"\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/channels/[id]/join",
+      "description": "User joins a specified channel.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/channels/channel123/join \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Joined channel successfully\"\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/channels/[id]/leave",
+      "description": "User leaves a specified channel.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/channels/channel123/leave \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Left channel successfully\"\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/channels/[id]/members",
+      "description": "Get a list of members in a specified channel.",
+      "parameters": [],
+      "requestExample": "curl -X GET http://localhost:3000/api/channels/channel123/members \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"members\": [\n      {\n        \"id\": \"user123\",\n        \"email\": \"user@example.com\",\n        \"displayName\": \"John Doe\",\n        \"role\": \"member\"\n      }\n    ]\n  }\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/channels/[id]/join-all",
+      "description": "Admin batch invites users to join a channel.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/channels/channel123/join-all \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\"userIds\": [\"user123\", \"user456\", \"user789\"]}'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Successfully added 3 members to the channel\"\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/channels/[id]",
+      "description": "Get detailed information about a specific channel.",
+      "parameters": [],
+      "requestExample": "curl -X GET http://localhost:3000/api/channels/channel123 \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"channel\": {\n      \"id\": \"channel123\",\n      \"name\": \"general\",\n      \"description\": \"General discussion\",\n      \"isPrivate\": false,\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  }\n}"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/channels/[id]",
+      "description": "Update channel information.",
+      "parameters": [],
+      "requestExample": "curl -X PUT http://localhost:3000/api/channels/channel123 \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\"name\": \"general-updated\", \"description\": \"Updated description\"}'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Channel deleted successfully\"\n}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/channels/[id]",
+      "description": "Delete a channel.",
+      "parameters": [],
+      "requestExample": "curl -X DELETE http://localhost:3000/api/channels/channel123 \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Channel deleted successfully\"\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/channels/[id]/invite",
+      "description": "Invite a user to join a channel.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/channels/channel123/invite \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\"userId\": \"user456\"}'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"User invited successfully\"\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/channels/[id]/members/remove",
+      "description": "Remove a member from a channel.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/channels/channel123/members/remove \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\"userId\": \"user456\"}'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Member removed successfully\"\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/channels/[id]/notification-preferences",
+      "description": "Get notification preferences for a channel.",
+      "parameters": [],
+      "requestExample": "curl -X GET http://localhost:3000/api/channels/channel123/notification-preferences \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"notificationLevel\": \"all\"\n  }\n}"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/channels/[id]/notification-preferences",
+      "description": "Update notification preferences for a channel.",
+      "parameters": [],
+      "requestExample": "curl -X PUT http://localhost:3000/api/channels/channel123/notification-preferences \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\"notifyOnNewMessage\": true, \"notifyOnMention\": true, \"notifyOnThread\": false}'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Notification preferences updated successfully\"\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/search",
+      "description": "Search for users.",
+      "parameters": [],
+      "requestExample": "curl -X GET \"http://localhost:3000/api/users/search?q=john&limit=10\" \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"users\": [\n      {\n        \"id\": \"user123\",\n        \"email\": \"user@example.com\",\n        \"displayName\": \"John Doe\"\n      }\n    ]\n  }\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "description": "Get user list (admin permission required).",
+      "parameters": [],
+      "requestExample": "curl -X GET \"http://localhost:3000/api/users?limit=20&status=active\" \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"users\": [\n      {\n        \"id\": \"user123\",\n        \"email\": \"john@example.com\",\n        \"displayName\": \"John Doe\",\n        \"realName\": \"John Doe\",\n        \"avatarUrl\": \"https://example.com/avatar.jpg\",\n        \"status\": \"active\",\n        \"role\": \"member\",\n        \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n      },\n      {\n        \"id\": \"user456\",\n        \"email\": \"jane@example.com\",\n        \"displayName\": \"Jane Smith\",\n        \"realName\": \"Jane Smith\",\n        \"avatarUrl\": \"https://example.com/avatar2.jpg\",\n        \"status\": \"active\",\n        \"role\": \"admin\",\n        \"createdAt\": \"2024-01-02T00:00:00.000Z\"\n      }\n    ],\n    \"total\": 2\n  }\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/unread-counts",
+      "description": "Get unread message counts for all channels and direct messages of the current user.",
+      "parameters": [],
+      "requestExample": "curl -X GET http://localhost:3000/api/users/unread-counts \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"channels\": [\n      {\"channelId\": \"channel123\", \"unreadCount\": 5},\n      {\"channelId\": \"channel456\", \"unreadCount\": 2}\n    ],\n    \"conversations\": [\n      {\"conversationId\": \"conv789\", \"unreadCount\": 3}\n    ],\n    \"totalUnread\": 10\n  }\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/starred",
+      "description": "Get user's starred messages/channels list.",
+      "parameters": [],
+      "requestExample": "curl -X GET http://localhost:3000/api/users/starred \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"stars\": [\n      {\"type\": \"channel\", \"id\": \"channel123\", \"addedAt\": \"2024-01-01T12:00:00.000Z\"},\n      {\"type\": \"message\", \"id\": \"msg456\", \"addedAt\": \"2024-01-01T10:00:00.000Z\"},\n      {\"type\": \"conversation\", \"id\": \"conv789\", \"addedAt\": \"2024-01-01T08:00:00.000Z\"}\n    ]\n  }\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/starred",
+      "description": "Add a star.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/users/starred \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Cookie: auth_token=your_token_here\" \\\n  -d '{\"type\": \"channel\", \"id\": \"channel123\"}'",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Star added successfully\",\n  \"data\": {\n    \"type\": \"channel\",\n    \"id\": \"channel123\",\n    \"addedAt\": \"2024-01-01T12:00:00.000Z\"\n  }\n}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/users/starred",
+      "description": "Remove a star.",
+      "parameters": [],
+      "requestExample": "curl -X DELETE \"http://localhost:3000/api/users/starred?type=channel&id=channel123\" \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"message\": \"Star removed successfully\"\n}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "description": "Get system health status.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/health \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"status\": \"ok\",\n  \"timestamp\": \"2024-01-01T12:00:00.000Z\",\n  \"checks\": {\n    \"database\": \"connected\",\n    \"websocket\": \"available\",\n    \"auth\": \"no-token\"\n  },\n  \"websocket\": {\n    \"connectedClients\": 15,\n    \"namespaces\": 2\n  }\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/upload",
+      "description": "Upload files to the server.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/health \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"file123\",\n    \"filename\": \"document.pdf\",\n    \"originalName\": \"document.pdf\",\n    \"mimeType\": \"application/pdf\",\n    \"size\": 1024000,\n    \"url\": \"/uploads/files/document.pdf\",\n    \"uploadedAt\": \"2024-01-01T12:00:00.000Z\"\n  }\n}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/health",
+      "description": "Get detailed system information and user statistics.",
+      "parameters": [],
+      "requestExample": "curl -X POST http://localhost:3000/api/health \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"status\": \"healthy\",\n    \"timestamp\": \"2024-01-01T12:00:00.000Z\",\n    \"uptime\": 3600,\n    \"memory\": {\n      \"used\": 150000000,\n      \"total\": 500000000\n    },\n    \"users\": {\n      \"total\": 100,\n      \"active\": 75,\n      \"inactive\": 25\n    },\n    \"channels\": {\n      \"total\": 20,\n      \"public\": 15,\n      \"private\": 5\n    },\n    \"messages\": {\n      \"today\": 500,\n      \"total\": 10000\n    }\n  }\n}"
+    },
+    {
+      "method": "JavaScript",
+      "path": "(Node.js)",
+      "description": "&copy; 2026 Slack-like Chat API. All rights reserved.",
+      "parameters": [],
+      "requestExample": "curl -X GET http://localhost:3000/api/conversations/dm \\\n  -H \"Cookie: auth_token=your_token_here\"",
+      "responseExample": "{\n  \"success\": true,\n  \"data\": {\n    \"conversations\": [\n      {\n        \"id\": \"conv123\",\n        \"participants\": [\n          {\"id\": \"user123\", \"displayName\": \"John\"},\n          {\"id\": \"user456\", \"displayName\": \"Jane\"}\n        ],\n        \"lastMessage\": {\n          \"id\": \"msg789\",\n          \"content\": \"Hello!\",\n          \"createdAt\": \"2024-01-01T12:00:00.000Z\"\n        },\n        \"unreadCount\": 2,\n        \"createdAt\": \"2024-01-01T10:00:00.000Z\"\n      }\n    ]\n  }\n}"
+    }
+  ],
+  "mcpTools": [
+    {
+      "name": "health_check",
+      "fullName": "Health Check",
+      "description": "Check the health status of the MCP server, database, and WebSocket connections.",
+      "inputSchema": "{\n  \"userToken\": string  // Optional authentication token\n}",
+      "outputSchema": "{\n  \"status\": \"ok\",\n  \"timestamp\": \"2024-01-01T00:00:00.000Z\",\n  \"checks\": {\n    \"database\": \"connected\",\n    \"websocket\": \"available\",\n    \"auth\": \"valid-token\"\n  }\n}"
+    },
+    {
+      "name": "register",
+      "fullName": "Register",
+      "description": "Create a new user account.",
+      "inputSchema": "{\n  \"email\": string,      // User email address\n  \"password\": string,   // User password\n  \"displayName\": string // Display name for the user\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"user123\",\n    \"email\": \"user@example.com\",\n    \"displayName\": \"John Doe\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n  },\n  \"message\": \"Registration successful\"\n}"
+    },
+    {
+      "name": "login",
+      "fullName": "Login",
+      "description": "Authenticate user and obtain access token.",
+      "inputSchema": "{\n  \"email\": string,    // User email address\n  \"password\": string // User password\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"data\": {\n    \"token\": \"eyJhbGciOiJIUzI1NiIs...\",\n    \"user\": {\n      \"id\": \"user123\",\n      \"email\": \"user@example.com\",\n      \"displayName\": \"John Doe\"\n    }\n  },\n  \"message\": \"Login successful\"\n}"
+    },
+    {
+      "name": "send_verification",
+      "fullName": "Send Verification",
+      "description": "Send a verification code to user email for email verification login.",
+      "inputSchema": "{\n  \"email\": string  // User email address\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Verification code sent\"\n}"
+    },
+    {
+      "name": "logout",
+      "fullName": "Logout",
+      "description": "Logout user and invalidate the current token.",
+      "inputSchema": "{\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Logged out\"\n}"
+    },
+    {
+      "name": "get_me",
+      "fullName": "Get Me",
+      "description": "Get the current authenticated user's information.",
+      "inputSchema": "{\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"id\": \"user123\",\n  \"email\": \"user@example.com\",\n  \"displayName\": \"John Doe\",\n  \"avatarUrl\": \"https://...\",\n  \"timezone\": \"UTC\"\n}"
+    },
+    {
+      "name": "get_profile",
+      "fullName": "Get Profile",
+      "description": "Get user profile information.",
+      "inputSchema": "{\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"id\": \"user123\",\n  \"email\": \"user@example.com\",\n  \"displayName\": \"John Doe\",\n  \"realName\": \"John Doe\",\n  \"avatarUrl\": \"https://...\",\n  \"timezone\": \"UTC\"\n}"
+    },
+    {
+      "name": "update_profile",
+      "fullName": "Update Profile",
+      "description": "Update user profile information.",
+      "inputSchema": "{\n  \"displayName\": string,  // New display name\n  \"realName\": string,     // New real name\n  \"avatarUrl\": string,    // New avatar URL\n  \"timezone\": string,     // New timezone\n  \"userToken\": string   // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Profile updated\",\n  \"user\": {\n    \"id\": \"user123\",\n    \"displayName\": \"New Name\",\n    \"avatarUrl\": \"https://...\"\n  }\n}"
+    },
+    {
+      "name": "list_channels",
+      "fullName": "List Channels",
+      "description": "Get a list of all channels visible to the current user.",
+      "inputSchema": "{\n  \"type\": \"all\" | \"joined\",  // Filter: all channels or only joined (default: \"all\")\n  \"limit\": number,          // Maximum number of results (default: 50)\n  \"offset\": number,          // Offset for pagination (default: 0)\n  \"userToken\": string       // Current user authentication token\n}",
+      "outputSchema": "{\n  \"channels\": [\n    {\n      \"id\": \"channel123\",\n      \"name\": \"general\",\n      \"description\": \"General discussion\",\n      \"isPrivate\": false,\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ]\n}"
+    },
+    {
+      "name": "create_channel",
+      "fullName": "Create Channel",
+      "description": "Create a new channel.",
+      "inputSchema": "{\n  \"name\": string,           // Channel name (required)\n  \"description\": string,   // Channel description\n  \"isPrivate\": boolean,    // Whether it's a private channel (default: false)\n  \"userToken\": string     // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"channel\": {\n    \"id\": \"channel123\",\n    \"name\": \"new-channel\",\n    \"description\": \"Channel description\",\n    \"isPrivate\": false,\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n  }\n}"
+    },
+    {
+      "name": "get_channel",
+      "fullName": "Get Channel",
+      "description": "Get detailed information about a specific channel.",
+      "inputSchema": "{\n  \"id\": string,       // Channel ID\n  \"userToken\": string // Current user authentication token\n}",
+      "outputSchema": "{\n  \"id\": \"channel123\",\n  \"name\": \"general\",\n  \"description\": \"General discussion\",\n  \"isPrivate\": false,\n  \"isArchived\": false,\n  \"createdById\": \"user123\",\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n}"
+    },
+    {
+      "name": "update_channel",
+      "fullName": "Update Channel",
+      "description": "Update channel information.",
+      "inputSchema": "{\n  \"id\": string,           // Channel ID (required)\n  \"name\": string,         // New channel name\n  \"description\": string,  // New channel description\n  \"userToken\": string    // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Channel updated successfully\",\n  \"channel\": { ... }\n}"
+    },
+    {
+      "name": "delete_channel",
+      "fullName": "Delete Channel",
+      "description": "Delete a channel.",
+      "inputSchema": "{\n  \"id\": string,       // Channel ID (required)\n  \"userToken\": string // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Channel deleted\"\n}"
+    },
+    {
+      "name": "join_channel",
+      "fullName": "Join Channel",
+      "description": "User joins a specified channel.",
+      "inputSchema": "{\n  \"id\": string,       // Channel ID (required)\n  \"userToken\": string // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Joined channel\"\n}"
+    },
+    {
+      "name": "leave_channel",
+      "fullName": "Leave Channel",
+      "description": "User leaves a specified channel.",
+      "inputSchema": "{\n  \"id\": string,       // Channel ID (required)\n  \"userToken\": string // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Left channel\"\n}"
+    },
+    {
+      "name": "list_channel_members",
+      "fullName": "List Channel Members",
+      "description": "Get a list of members in a specified channel.",
+      "inputSchema": "{\n  \"id\": string,       // Channel ID (required)\n  \"limit\": number,    // Maximum number of results (default: 50)\n  \"offset\": number,   // Offset for pagination (default: 0)\n  \"userToken\": string // Current user authentication token\n}",
+      "outputSchema": "{\n  \"members\": [\n    {\n      \"id\": \"user123\",\n      \"email\": \"user@example.com\",\n      \"displayName\": \"John Doe\",\n      \"role\": \"member\"\n    }\n  ]\n}"
+    },
+    {
+      "name": "invite_channel_member",
+      "fullName": "Invite Channel Member",
+      "description": "Invite a user to join a channel.",
+      "inputSchema": "{\n  \"id\": string,       // Channel ID (required)\n  \"userId\": string,   // User ID to invite (required)\n  \"userToken\": string // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"User invited\"\n}"
+    },
+    {
+      "name": "join_all_channel_members",
+      "fullName": "Join All Channel Members",
+      "description": "Add all users to a specified channel.",
+      "inputSchema": "{\n  \"channelId\": string,  // Channel ID (required)\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Successfully added N members to the channel\"\n}"
+    },
+    {
+      "name": "get_channel_permissions",
+      "fullName": "Get Channel Permissions",
+      "description": "Get the current user's role and permissions in a channel.",
+      "inputSchema": "{\n  \"channelId\": string,  // Channel ID (required)\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"isMember\": true,\n  \"role\": \"owner\",\n  \"channelId\": \"channel123\",\n  \"channelName\": \"general\",\n  \"permissions\": {\n    \"canEdit\": true,\n    \"canDelete\": true,\n    \"canManageMembers\": true,\n    \"canManageSettings\": true\n  }\n}"
+    },
+    {
+      "name": "list_messages",
+      "fullName": "List Messages",
+      "description": "Get messages from a channel or direct message.",
+      "inputSchema": "{\n  \"channelId\": string,        // Channel ID (required if dmConversationId not provided)\n  \"dmConversationId\": string, // DM conversation ID (required if channelId not provided)\n  \"limit\": number,           // Number of results (default: 50, max: 100)\n  \"offset\": number,           // Offset for pagination (default: 0)\n  \"userToken\": string        // Current user authentication token\n}",
+      "outputSchema": "{\n  \"messages\": [\n    {\n      \"id\": \"msg123\",\n      \"content\": \"Hello world\",\n      \"messageType\": \"text\",\n      \"channelId\": \"channel123\",\n      \"userId\": \"user123\",\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"total\": 50,\n  \"hasMore\": false\n}"
+    },
+    {
+      "name": "send_message",
+      "fullName": "Send Message",
+      "description": "Send a new message to a channel or direct message.",
+      "inputSchema": "{\n  \"content\": string,          // Message content (required if attachments not provided)\n  \"channelId\": string,        // Channel ID (required if dmConversationId not provided)\n  \"dmConversationId\": string, // DM conversation ID (required if channelId not provided)\n  \"attachments\": array,       // Array of attachments\n  \"userToken\": string        // Current user authentication token\n}",
+      "outputSchema": "{\n  \"id\": \"msg123\",\n  \"content\": \"Hello world\",\n  \"messageType\": \"text\",\n  \"channelId\": \"channel123\",\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n}"
+    },
+    {
+      "name": "get_message",
+      "fullName": "Get Message",
+      "description": "Get a specific message by ID.",
+      "inputSchema": "{\n  \"id\": string,         // Message ID (required)\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"id\": \"msg123\",\n  \"content\": \"Hello world\",\n  \"messageType\": \"text\",\n  \"channelId\": \"channel123\",\n  \"userId\": \"user123\",\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n}"
+    },
+    {
+      "name": "update_message",
+      "fullName": "Update Message",
+      "description": "Update message content (only the author can edit).",
+      "inputSchema": "{\n  \"id\": string,         // Message ID (required)\n  \"content\": string,   // New message content (required)\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Message updated\",\n  \"updatedMessage\": {\n    \"id\": \"msg123\",\n    \"content\": \"Updated content\",\n    \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n  }\n}"
+    },
+    {
+      "name": "delete_message",
+      "fullName": "Delete Message",
+      "description": "Delete a message (only the author can delete).",
+      "inputSchema": "{\n  \"id\": string,         // Message ID (required)\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Message deleted\"\n}"
+    },
+    {
+      "name": "reply_to_message",
+      "fullName": "Reply to Message",
+      "description": "Reply to a message, creating a thread.",
+      "inputSchema": "{\n  \"id\": string,           // Parent message ID (required)\n  \"content\": string,      // Reply content (required if attachments not provided)\n  \"attachments\": array,   // Attachments array\n  \"userToken\": string   // Current user authentication token\n}",
+      "outputSchema": "{\n  \"id\": \"msg123\",\n  \"content\": \"Thread reply\",\n  \"messageType\": \"text\",\n  \"parentMessageId\": \"parent123\",\n  \"channelId\": \"channel123\",\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n}"
+    },
+    {
+      "name": "get_thread_replies",
+      "fullName": "Get Thread Replies",
+      "description": "Get all thread replies for a message.",
+      "inputSchema": "{\n  \"id\": string,         // Parent message ID (required)\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"replies\": [\n    {\n      \"id\": \"msg123\",\n      \"content\": \"Thread reply\",\n      \"parentMessageId\": \"parent123\",\n      \"userId\": \"user123\",\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"totalReplies\": 5\n}"
+    },
+    {
+      "name": "add_reaction",
+      "fullName": "Add Reaction",
+      "description": "Add a reaction to a message.",
+      "inputSchema": "{\n  \"id\": string,       // Message ID (required)\n  \"emoji\": string,   // Reaction emoji (required)\n  \"userToken\": string // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Reaction added\"\n}"
+    },
+    {
+      "name": "remove_reaction",
+      "fullName": "Remove Reaction",
+      "description": "Remove a reaction from a message.",
+      "inputSchema": "{\n  \"id\": string,       // Message ID (required)\n  \"emoji\": string,   // Reaction emoji (required)\n  \"userToken\": string // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Reaction removed\"\n}"
+    },
+    {
+      "name": "search_messages",
+      "fullName": "Search Messages",
+      "description": "Search for messages containing keywords.",
+      "inputSchema": "{\n  \"q\": string,           // Search keyword (required)\n  \"channelId\": string,   // Channel ID (searches all visible channels if not specified)\n  \"limit\": number,       // Number of results (default: 20)\n  \"userToken\": string   // Current user authentication token\n}",
+      "outputSchema": "[\n  {\n    \"id\": \"msg123\",\n    \"content\": \"Message with keyword\",\n    \"channelId\": \"channel123\"\n  }\n]"
+    },
+    {
+      "name": "get_reactions",
+      "fullName": "Get Reactions",
+      "description": "Get all reactions on a specific message.",
+      "inputSchema": "{\n  \"messageId\": string,  // Message ID (required)\n  \"userToken\": string   // Current user authentication token\n}",
+      "outputSchema": "[\n  { \"emoji\": \"thumbsup\", \"count\": 3, \"users\": [\"user1\", \"user2\", \"user3\"] }\n]"
+    },
+    {
+      "name": "context_search_messages",
+      "fullName": "Context Search Messages",
+      "description": "Search for messages with context around each result.",
+      "inputSchema": "{\n  \"query\": string,              // Search query (required)\n  \"channelId\": string,          // Channel ID (optional)\n  \"dmConversationId\": string,  // DM conversation ID (optional)\n  \"userToken\": string           // Current user authentication token\n}",
+      "outputSchema": "{\n  \"results\": [...],\n  \"context\": { ... }\n}"
+    },
+    {
+      "name": "mark_messages_read",
+      "fullName": "Mark Messages Read",
+      "description": "Mark messages in a channel or DM as read.",
+      "inputSchema": "{\n  \"channelId\": string,          // Channel ID (optional)\n  \"dmConversationId\": string,  // DM conversation ID (optional)\n  \"lastReadMessageId\": string,  // Last read message ID (optional)\n  \"userToken\": string           // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Messages marked as read\"\n}"
+    },
+    {
+      "name": "mark_all_messages_read",
+      "fullName": "Mark All Messages Read",
+      "description": "Mark all messages in all channels as read.",
+      "inputSchema": "{\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"All messages marked as read\"\n}"
+    },
+    {
+      "name": "clear_messages",
+      "fullName": "Clear Messages",
+      "description": "Clear all messages in a channel or DM.",
+      "inputSchema": "{\n  \"channelId\": string,          // Channel ID (optional)\n  \"dmConversationId\": string,  // DM conversation ID (optional)\n  \"userToken\": string           // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Messages cleared\"\n}"
+    },
+    {
+      "name": "list_users",
+      "fullName": "List Users",
+      "description": "Get a list of all users.",
+      "inputSchema": "{\n  \"limit\": number,    // Maximum number of results (default: 50)\n  \"offset\": number,   // Offset for pagination (default: 0)\n  \"userToken\": string // Current user authentication token\n}",
+      "outputSchema": "[\n  {\n    \"id\": \"user123\",\n    \"email\": \"user@example.com\",\n    \"displayName\": \"John Doe\"\n  }\n]"
+    },
+    {
+      "name": "search_users",
+      "fullName": "Search Users",
+      "description": "Search for users by name or email.",
+      "inputSchema": "{\n  \"q\": string,        // Search query (required)\n  \"userToken\": string // Current user authentication token\n}",
+      "outputSchema": "[\n  {\n    \"id\": \"user123\",\n    \"email\": \"user@example.com\",\n    \"displayName\": \"John Doe\"\n  }\n]"
+    },
+    {
+      "name": "get_user",
+      "fullName": "Get User",
+      "description": "Get detailed information about a specific user.",
+      "inputSchema": "{\n  \"userId\": string,   // User ID to retrieve\n  \"userToken\": string // Current user authentication token\n}",
+      "outputSchema": "{\n  \"id\": \"user123\",\n  \"email\": \"user@example.com\",\n  \"displayName\": \"John Doe\",\n  \"avatarUrl\": \"https://...\",\n  \"timezone\": \"UTC\"\n}"
+    },
+    {
+      "name": "get_unread_counts",
+      "fullName": "Get Unread Counts",
+      "description": "Get the count of unread messages across all channels and DMs.",
+      "inputSchema": "{\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"totalUnread\": 15,\n  \"channels\": { \"channel123\": 5 },\n  \"dms\": { \"dm123\": 10 }\n}"
+    },
+    {
+      "name": "get_starred_users",
+      "fullName": "Get Starred Users",
+      "description": "Get a list of users starred by the current user.",
+      "inputSchema": "{\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "[\n  {\n    \"id\": \"user123\",\n    \"email\": \"user@example.com\",\n    \"displayName\": \"John Doe\"\n  }\n]"
+    },
+    {
+      "name": "toggle_starred_user",
+      "fullName": "Toggle Starred User",
+      "description": "Star or unstar a user.",
+      "inputSchema": "{\n  \"starredUserId\": string,  // User ID to star/unstar\n  \"userToken\": string      // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"User starred/unstarred\"\n}"
+    },
+    {
+      "name": "create_dm",
+      "fullName": "Create DM",
+      "description": "Create a new direct message conversation.",
+      "inputSchema": "{\n  \"userId\": string,     // Other user's ID (required)\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"id\": \"dm123\",\n  \"participants\": [\"user123\", \"user456\"],\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n}"
+    },
+    {
+      "name": "get_dm",
+      "fullName": "Get DM",
+      "description": "Get direct message conversation with a specified user.",
+      "inputSchema": "{\n  \"userId\": string,      // Other user's ID (required)\n  \"userToken\": string   // Current user authentication token\n}",
+      "outputSchema": "{\n  \"id\": \"dm123\",\n  \"participants\": [\"user123\", \"user456\"],\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n}"
+    },
+    {
+      "name": "get_read_position",
+      "fullName": "Get Read Position",
+      "description": "Get the read position (last read message) in a channel or DM.",
+      "inputSchema": "{\n  \"channelId\": string,          // Channel ID (optional)\n  \"dmConversationId\": string, // DM conversation ID (optional)\n  \"userToken\": string          // Current user authentication token\n}",
+      "outputSchema": "{\n  \"lastReadMessageId\": \"msg123\",\n  \"lastReadAt\": \"2024-01-01T00:00:00.000Z\"\n}"
+    },
+    {
+      "name": "get_channel_notification_prefs",
+      "fullName": "Get Channel Notification Prefs",
+      "description": "Get notification preferences for a channel.",
+      "inputSchema": "{\n  \"channelId\": string,  // Channel ID (required)\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"notificationLevel\": \"all\"\n}"
+    },
+    {
+      "name": "update_channel_notification_prefs",
+      "fullName": "Update Channel Notification Prefs",
+      "description": "Update notification preferences for a channel.",
+      "inputSchema": "{\n  \"channelId\": string,             // Channel ID (required)\n  \"notificationLevel\": string,    // \"all\" | \"mentions\" | \"none\"\n  \"userToken\": string             // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Notification preferences updated successfully\"\n}"
+    },
+    {
+      "name": "get_dm_notification_prefs",
+      "fullName": "Get DM Notification Prefs",
+      "description": "Get notification preferences for a DM conversation.",
+      "inputSchema": "{\n  \"conversationId\": string,  // DM conversation ID (required)\n  \"userToken\": string        // Current user authentication token\n}",
+      "outputSchema": "{\n  \"notificationLevel\": \"all\"\n}"
+    },
+    {
+      "name": "update_dm_notification_prefs",
+      "fullName": "Update DM Notification Prefs",
+      "description": "Update notification preferences for a DM conversation.",
+      "inputSchema": "{\n  \"conversationId\": string,      // DM conversation ID (required)\n  \"notificationLevel\": string,  // \"all\" | \"mentions\" | \"none\"\n  \"userToken\": string           // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Notification preferences updated successfully\"\n}"
+    },
+    {
+      "name": "get_attachments",
+      "fullName": "Get Attachments",
+      "description": "Get all attachments in a conversation.",
+      "inputSchema": "{\n  \"conversationId\": string,   // Conversation ID (required)\n  \"conversationType\": string, // \"channel\" | \"dm\" (required)\n  \"userToken\": string         // Current user authentication token\n}",
+      "outputSchema": "[\n  {\n    \"id\": \"att123\",\n    \"fileName\": \"document.pdf\",\n    \"fileSize\": 1024000,\n    \"mimeType\": \"application/pdf\",\n    \"url\": \"https://...\"\n  }\n]"
+    },
+    {
+      "name": "delete_attachment",
+      "fullName": "Delete Attachment",
+      "description": "Delete an attachment.",
+      "inputSchema": "{\n  \"attachmentId\": string,  // Attachment ID (required)\n  \"userToken\": string     // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Attachment deleted\"\n}"
+    },
+    {
+      "name": "create_attachment_upload_url",
+      "fullName": "Create Attachment Upload URL",
+      "description": "Get a pre-signed URL for uploading an attachment.",
+      "inputSchema": "{\n  \"fileName\": string,    // File name with extension (required)\n  \"mimeType\": string,   // MIME type (required)\n  \"fileSize\": number,   // File size in bytes (optional)\n  \"userToken\": string   // Current user authentication token\n}",
+      "outputSchema": "{\n  \"uploadUrl\": \"https://...\",\n  \"fileUrl\": \"https://...\"\n}"
+    },
+    {
+      "name": "get_thread_count",
+      "fullName": "Get Thread Count",
+      "description": "Get the count of unread threads and total unread replies.",
+      "inputSchema": "{\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"unreadThreadsCount\": 5,\n  \"totalUnreadReplies\": 12\n}"
+    },
+    {
+      "name": "get_unread_threads",
+      "fullName": "Get Unread Threads",
+      "description": "Get list of unread threads.",
+      "inputSchema": "{\n  \"limit\": number,    // Number of results (optional)\n  \"offset\": number,   // Offset for pagination (optional)\n  \"userToken\": string // Current user authentication token\n}",
+      "outputSchema": "{\n  \"threads\": [...],\n  \"totalCount\": 5,\n  \"hasMore\": false\n}"
+    },
+    {
+      "name": "mark_thread_read",
+      "fullName": "Mark Thread Read",
+      "description": "Mark a thread as read.",
+      "inputSchema": "{\n  \"threadId\": string,  // Thread/parent message ID (required)\n  \"userToken\": string  // Current user authentication token\n}",
+      "outputSchema": "{\n  \"success\": true,\n  \"message\": \"Thread marked as read\"\n}"
+    }
+  ]
+}
