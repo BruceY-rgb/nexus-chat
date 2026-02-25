@@ -8,6 +8,7 @@ import MessageEditor from "./MessageEditor";
 import QuoteBlock from "./QuoteBlock";
 import ReactionBadges from "./ReactionBadges";
 import { useReactions } from "@/hooks/useReactions";
+import { getAvatarUrl } from "@/lib/avatar";
 
 interface MessageItemProps {
   message: Message;
@@ -26,6 +27,7 @@ interface MessageItemProps {
   formatMessageTime: (dateString: string | null | undefined) => string;
   messageRefs: React.MutableRefObject<{ [key: string]: HTMLDivElement | null }>;
   scrollContainerRef: React.RefObject<HTMLDivElement>;
+  members?: { id: string; displayName: string }[];
 }
 
 /**
@@ -49,6 +51,7 @@ function MessageItemBase({
   formatMessageTime,
   messageRefs,
   scrollContainerRef,
+  members,
 }: MessageItemProps) {
   // 在组件顶层调用 useReactions hook
   const { reactions, toggleReaction, pendingReactions } = useReactions(
@@ -62,7 +65,7 @@ function MessageItemBase({
       {showReadIndicator === message.id && (
         <div className="flex items-center justify-center my-4 animate-fade-in">
           <div className="bg-blue-500/90 text-white px-4 py-1 rounded-full text-xs font-medium shadow-lg">
-            上次阅读到这里
+            Last read here
           </div>
         </div>
       )}
@@ -71,8 +74,10 @@ function MessageItemBase({
         ref={(el) => {
           messageRefs.current[message.id] = el;
         }}
-        className={`message-row w-full relative group transition-all duration-200 hover:bg-slate-800/50 hover:z-[60] ${
-          isHighlighted ? "bg-yellow-100/50 rounded-lg" : ""
+        className={`message-row w-full min-w-0 relative group transition-all duration-200 hover:bg-slate-800/50 hover:z-[60] py-1 ${
+          isHighlighted
+            ? "bg-yellow-200/70 rounded-lg ring-2 ring-yellow-400 shadow-lg shadow-yellow-400/30 animate-pulse"
+            : ""
         }`}
       >
         {/* 🧠 智能对侧悬停工具栏 - 脱离内容容器，悬浮在行级别 */}
@@ -96,10 +101,7 @@ function MessageItemBase({
           {/* 头像 */}
           {showAvatar ? (
             <img
-              src={
-                message.user.avatarUrl ||
-                `https://api.dicebear.com/7.x/identicon/png?seed=${message.user.displayName || message.user.id}&size=40`
-              }
+              src={getAvatarUrl(message.user.avatarUrl, message.user, 40)}
               alt={message.user.displayName}
               className="w-10 h-10 rounded-sm flex-shrink-0"
             />
@@ -108,7 +110,7 @@ function MessageItemBase({
           )}
 
           {/* 消息内容 */}
-          <div className={`flex-1 min-w-0 ${isOwnMessage ? "text-right" : ""}`}>
+          <div className="flex-1 min-w-0">
             {/* 用户名和时间（仅在需要时显示） */}
             {showAvatar && (
               <div
@@ -180,6 +182,7 @@ function MessageItemBase({
                   <MessageRenderer
                     message={message}
                     currentUserId={currentUserId}
+                    members={members}
                   />
                 </div>
               )}

@@ -57,13 +57,13 @@ export default function WebSocketStatus({
     const getStatusText = () => {
       switch (connectionStatus) {
         case 'connected':
-          return '已连接';
+          return 'Connected';
         case 'reconnecting':
-          return '重连中';
+          return 'Reconnecting';
         case 'error':
-          return '连接错误';
+          return 'Error';
         default:
-          return '未连接';
+          return 'Disconnected';
       }
     };
 
@@ -80,28 +80,28 @@ export default function WebSocketStatus({
     switch (connectionStatus) {
       case 'connected':
         return {
-          text: '已连接',
+          text: 'Connected',
           color: 'text-green-600',
           bgColor: 'bg-green-50',
           borderColor: 'border-green-200'
         };
       case 'reconnecting':
         return {
-          text: '重连中',
+          text: 'Reconnecting',
           color: 'text-yellow-600',
           bgColor: 'bg-yellow-50',
           borderColor: 'border-yellow-200'
         };
       case 'error':
         return {
-          text: '连接错误',
+          text: 'Connection Error',
           color: 'text-red-600',
           bgColor: 'bg-red-50',
           borderColor: 'border-red-200'
         };
       default:
         return {
-          text: '未连接',
+          text: 'Disconnected',
           color: 'text-gray-600',
           bgColor: 'bg-gray-50',
           borderColor: 'border-gray-200'
@@ -131,7 +131,7 @@ export default function WebSocketStatus({
           }`}
         />
         <h3 className={`font-semibold ${statusInfo.color}`}>
-          WebSocket 状态: {statusInfo.text}
+          WebSocket Status: {statusInfo.text}
         </h3>
       </div>
 
@@ -145,15 +145,15 @@ export default function WebSocketStatus({
               </span>
             </div>
             <div>
-              <span className="text-gray-500">重连次数:</span>
+              <span className="text-gray-500">Reconnect Attempts:</span>
               <span className="ml-2">{reconnectAttempts}</span>
             </div>
             <div>
-              <span className="text-gray-500">连接状态:</span>
+              <span className="text-gray-500">Status:</span>
               <span className="ml-2">{connectionStatus}</span>
             </div>
             <div>
-              <span className="text-gray-500">最后连接:</span>
+              <span className="text-gray-500">Last Connected:</span>
               <span className="ml-2">
                 {lastConnected ? lastConnected.toLocaleTimeString() : 'N/A'}
               </span>
@@ -164,7 +164,7 @@ export default function WebSocketStatus({
             <div className="mt-3 pt-3 border-t border-gray-200">
               <div className="text-xs text-gray-500 space-y-1">
                 <div>
-                  <span className="font-semibold">传输方式:</span>{' '}
+                  <span className="font-semibold">Transport:</span>{' '}
                   {socket.io.engine.transport.name}
                 </div>
                 <div>

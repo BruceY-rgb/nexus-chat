@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { shortcodeToEmoji } from '@/lib/emoji';
 
 interface GroupedReaction {
   emoji: string;
@@ -51,6 +52,18 @@ export default function ReactionBadges({
   if (!reactions || reactions.length === 0) {
     return null;
   }
+
+  /**
+   * Normalize emoji display: if the stored value is a plain shortcode name
+   * (e.g. "rocket", "eyes"), convert it to Unicode. If it's already Unicode
+   * (e.g. "🚀"), return as-is.
+   */
+  const displayEmoji = (emoji: string): string => {
+    // If already a Unicode emoji (not purely ASCII), return as-is
+    if (/[^\x00-\x7F]/.test(emoji)) return emoji;
+    // Otherwise treat as a shortcode name and convert
+    return shortcodeToEmoji(emoji);
+  };
 
   // 处理鼠标悬停
   const handleMouseEnter = (emoji: string, event: React.MouseEvent) => {
@@ -121,7 +134,7 @@ export default function ReactionBadges({
                   ${isPending ? 'cursor-wait' : 'cursor-pointer'}
                 `}
               >
-                <span className="text-sm">{reaction.emoji}</span>
+                <span className="text-sm">{displayEmoji(reaction.emoji)}</span>
                 <span className="font-semibold">{reaction.count}</span>
 
                 {/* 加载动画 */}
@@ -163,7 +176,7 @@ export default function ReactionBadges({
           >
             <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl border border-gray-700 whitespace-nowrap">
               <div className="flex items-center gap-1.5">
-                <span className="text-base">{hoveredReaction.emoji}</span>
+                <span className="text-base">{displayEmoji(hoveredReaction.emoji)}</span>
                 <span className="text-gray-300">
                   {hoveredReaction.users.map(u => u.displayName).join(', ')}
                 </span>

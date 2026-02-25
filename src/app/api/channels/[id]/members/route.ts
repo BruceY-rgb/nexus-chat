@@ -18,7 +18,7 @@ export async function GET(
     // 验证 token
     const decoded = verifyToken(token);
     if (!decoded) {
-      return NextResponse.json(unauthorizedResponse("token无效"), {
+      return NextResponse.json(unauthorizedResponse("Invalid token"), {
         status: 401,
       });
     }
@@ -38,6 +38,7 @@ export async function GET(
             user: {
               select: {
                 id: true,
+                slackUserId: true,
                 email: true,
                 displayName: true,
                 realName: true,
@@ -72,6 +73,7 @@ export async function GET(
     // 格式化返回数据
     const members = channel.members.map((member) => ({
       id: member.user.id,
+      slackUserId: member.user.slackUserId,
       email: member.user.email,
       displayName: member.user.displayName,
       realName: member.user.realName,

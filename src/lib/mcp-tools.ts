@@ -1947,6 +1947,34 @@ registerTool({
   },
 });
 
+registerTool({
+  name: "create_attachment_upload_url",
+  description: "Get a presigned URL for uploading a file. Agent flow: 1) Call this tool to get uploadUrl and attachment metadata 2) PUT the file to uploadUrl 3) Call send_message with attachments containing the metadata (fileName, mimeType, fileSize, s3Key, s3Bucket, fileUrl, thumbnailUrl)",
+  parameters: z.object({
+    fileName: z.string().describe('Original file name with extension, e.g. "photo.jpg"'),
+    mimeType: z.string().describe('MIME type, e.g. "image/jpeg"'),
+    fileSize: z.number().optional().describe('File size in bytes (for validation)'),
+    userToken: z.string().optional(),
+  }),
+  execute: async (args, context): Promise<ToolResult> => {
+    try {
+      const { fileName, mimeType, fileSize } = args as { fileName: string; mimeType: string; fileSize?: number };
+      const userToken = getToken(args, context);
+      if (!userToken) return errResult("userToken is required");
+      const result = await apiExecutor.post(
+        "/api/upload/presign",
+        userToken,
+        { fileName, mimeType, fileSize },
+      );
+      return okResult(result);
+    } catch (error: unknown) {
+      return errResult(
+        error instanceof Error ? error.message : "Unknown error",
+      );
+    }
+  },
+});
+
 // Health Tool
 registerTool({
   name: "health_check",

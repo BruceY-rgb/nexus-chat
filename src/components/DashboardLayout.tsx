@@ -12,6 +12,7 @@ import { useUnreadCount } from "@/hooks/useUnreadCount";
 import { useUnreadStore } from "@/store/unreadStore";
 import { useMarkAllAsRead } from "@/hooks/useMarkAllAsRead";
 import { LogOut, Settings, CheckCheck } from "lucide-react";
+import SearchBox from "@/components/SearchBox";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -48,6 +49,7 @@ export default function DashboardLayout({
   const [sidebarWidth, setSidebarWidth] = useState(256); // Default 256px (w-64)
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const sidebarDragStart = useRef({ x: 0, width: 256 });
+  const sidebarScrollRef = useRef<HTMLDivElement>(null);
 
   // Left sidebar drag handling
   const handleSidebarDragStart = (e: React.MouseEvent) => {
@@ -84,6 +86,31 @@ export default function DashboardLayout({
       document.body.style.userSelect = "";
     };
   }, [isResizingSidebar]);
+
+  // Sidebar scroll position persistence across route changes
+  useEffect(() => {
+    const el = sidebarScrollRef.current;
+    if (!el) return;
+
+    const saved = sessionStorage.getItem('sidebar-scroll-top');
+    if (saved) {
+      el.scrollTop = parseInt(saved, 10);
+    }
+
+    let timeoutId: NodeJS.Timeout;
+    const handleScroll = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        sessionStorage.setItem('sidebar-scroll-top', String(el.scrollTop));
+      }, 100);
+    };
+
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+      clearTimeout(timeoutId);
+    };
+  }, []);
 
   // Initialize unread count system
   const { markAsRead } = useUnreadCount();
@@ -185,6 +212,11 @@ export default function DashboardLayout({
             </div>
           </div>
 
+          {/* Search box */}
+          <div className="flex-shrink-0 px-3 py-2">
+            <SearchBox />
+          </div>
+
           {/* Mark all as read button */}
           {totalUnreadCount > 0 && (
             <div className="flex-shrink-0 px-2 py-2">
@@ -204,7 +236,7 @@ export default function DashboardLayout({
           )}
 
           {/* Channels and direct messages list - independent scroll */}
-          <div className="flex-1 min-h-0 overflow-y-auto py-4 sidebar-scroll">
+          <div ref={sidebarScrollRef} className="flex-1 min-h-0 overflow-y-auto py-4 sidebar-scroll">
             <Channels
               channels={channels}
               selectedChannelId={selectedChannelId}

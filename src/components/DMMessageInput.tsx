@@ -469,7 +469,6 @@ export default function DMMessageInput({
     const textBeforeCursor = message.substring(0, cursorPos);
 
     // 使用正则表达式匹配 @ 符号以及之后最多30个字符（支持空格）
-    // 模式：/@([^@\n]{0,30})$ - 匹配 @ 后面最多30个非@非换行符的字符
     const mentionMatch = textBeforeCursor.match(/@([^@\n]{0,30})$/);
 
     if (!mentionMatch) {
@@ -480,34 +479,29 @@ export default function DMMessageInput({
     const query = mentionMatch[1]; // @ 后面的内容
     const startIndex = mentionMatch.index!; // @ 符号的位置
 
-    // 智能过滤逻辑：检查是否应该显示自动完成
-    let finalQuery = query;
-
-    // 如果查询包含空格，说明用户可能已经输入完整昵称
+    // Smart termination: check if the query starts with a known member name
+    // followed by a space and additional text (meaning the mention is done)
     if (query.includes(' ')) {
-      // 获取第一个单词（空格前的部分）
-      const firstWord = query.split(' ')[0];
-
-      // 检查是否完全匹配某个成员
-      const exactMatch = availableMembers.find(
-        m => m.displayName.toLowerCase() === firstWord.toLowerCase()
-      );
-
-      if (exactMatch) {
-        // 完全匹配某个成员，说明已完成提及，关闭自动完成
-        setShowAutocomplete(false);
-        return;
-      } else {
-        // 不匹配，说明空格是昵称的一部分，继续显示
-        finalQuery = query;
+      // Try progressively longer substrings to find a matching member name
+      // Check if any prefix of the query (up to a space boundary) matches a member
+      const words = query.split(' ');
+      for (let i = 1; i <= words.length - 1; i++) {
+        const prefix = words.slice(0, i).join(' ');
+        const exactMatch = availableMembers.find(
+          m => m.displayName.toLowerCase() === prefix.toLowerCase()
+        );
+        if (exactMatch) {
+          // The mention matches a known member, and there's text after it
+          // → the mention is complete, close autocomplete
+          setShowAutocomplete(false);
+          return;
+        }
       }
-    } else {
-      // 不包含空格，使用当前内容作为查询
-      finalQuery = query;
+      // No prefix matched a member exactly → space is part of name, keep searching
     }
 
     // 如果查询为空，显示所有成员
-    const displayQuery = finalQuery.trim() === '' ? '' : finalQuery;
+    const displayQuery = query.trim() === '' ? '' : query;
 
     // 计算位置 - 简化相对定位版
     const caretPos = getCaretCoordinates(textarea, cursorPos);
@@ -665,34 +659,26 @@ export default function DMMessageInput({
 
   /**
    * 将 @displayName 转换为 @{userId:displayName} 格式
+   * Uses longest-match-first to correctly delimit mentions from subsequent text.
    */
   const convertDisplayNamesToTokens = (content: string): string => {
-    // 匹配 @开头的文本，支持空格（最多30个字符）
-    // 模式：/@([^@\n]{1,30})(?:(\s)|$) - 匹配 @ 后面1-30个非@非换行符的字符，后跟空格或行尾
-    const mentionPattern = /@([^@\n]{1,30})(?:(\s)|$)/g;
-    let convertedContent = content;
-    let match;
+    if (!availableMembers.length) return content;
 
-    while ((match = mentionPattern.exec(content)) !== null) {
-      const displayName = match[1];
-      const fullMatch = match[0];
-      const trailingChar = match[2]; // 空格（如果存在）
+    // Sort members by displayName length (longest first) to match longest names first
+    const sortedMembers = [...availableMembers].sort(
+      (a, b) => b.displayName.length - a.displayName.length
+    );
 
-      // 在可用成员中查找匹配的用户（使用最长匹配优先原则）
-      const member = availableMembers.find(
-        m => m.displayName.toLowerCase() === displayName.toLowerCase()
-      );
-
-      if (member) {
-        // 替换为 token 格式，如果原始有空格则保留，否则不添加
-        const token = trailingChar
-          ? `@{${member.id}:${member.displayName}} `
-          : `@{${member.id}:${member.displayName}}`;
-        convertedContent = convertedContent.replace(fullMatch, token);
-      }
+    let result = content;
+    for (const member of sortedMembers) {
+      // Escape special regex chars in the display name
+      const escaped = member.displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Match @displayName followed by a word boundary (space, punctuation, or end of string)
+      const pattern = new RegExp(`@${escaped}(?=\\s|$|[^a-zA-Z0-9_])`, 'gi');
+      result = result.replace(pattern, `@{${member.id}:${member.displayName}}`);
     }
 
-    return convertedContent;
+    return result;
   };
 
   /**
@@ -704,23 +690,38 @@ export default function DMMessageInput({
       return null;
     }
 
-    // 匹配 @displayName 并高亮显示（支持空格，最多30个字符）
-    // 模式：/@([^@\n]{1,30}) - 匹配 @ 后面1-30个非@非换行符的字符
-    const mentionPattern = /@([^@\n]{1,30})/g;
+    // Build a regex that matches known member display names after @
+    // Sort by length (longest first) so "Bruce Yang" matches before "Bruce"
+    const sortedMembers = [...availableMembers].sort(
+      (a, b) => b.displayName.length - a.displayName.length
+    );
+
+    if (sortedMembers.length === 0) {
+      return renderEmojiInText(message);
+    }
+
+    // Build alternation pattern from display names
+    const escapedNames = sortedMembers.map(
+      m => m.displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    );
+    // Match @displayName followed by word boundary
+    const mentionPattern = new RegExp(
+      `(@(?:${escapedNames.join('|')}))(?=\\s|$|[^a-zA-Z0-9_])`,
+      'gi'
+    );
+
+    // Split by mention pattern, keeping the delimiter
     const parts = message.split(mentionPattern);
 
     return parts.map((part, index) => {
-      // 奇数索引是 @提及
-      if (index % 2 === 1) {
-        const displayName = part;
-
-        // 检查是否匹配可用成员
-        const member = availableMembers.find(
-          m => m.displayName.toLowerCase() === displayName.toLowerCase()
+      // Check if this part is a mention (starts with @)
+      if (part && part.startsWith('@')) {
+        const nameAfterAt = part.slice(1);
+        const member = sortedMembers.find(
+          m => m.displayName.toLowerCase() === nameAfterAt.toLowerCase()
         );
 
         if (member) {
-          // 高亮显示的提及
           return (
             <span
               key={index}
@@ -730,26 +731,13 @@ export default function DMMessageInput({
                 fontVariantLigatures: 'none'
               }}
             >
-              @{displayName}
-            </span>
-          );
-        } else {
-          // 未匹配的普通文本
-          return (
-            <span
-              key={index}
-              style={{
-                textRendering: 'optimizeLegibility',
-                fontVariantLigatures: 'none'
-              }}
-            >
-              @{displayName}
+              @{member.displayName}
             </span>
           );
         }
       }
 
-      // 偶数索引是普通文本：处理 Emoji
+      // 普通文本：处理 Emoji
       return renderEmojiInText(part);
     });
   };
@@ -1067,7 +1055,7 @@ export default function DMMessageInput({
 
   return (
     <div
-      className="flex-shrink-0 bg-[#313235] border-t border-[#3A3A3D] sticky bottom-0"
+      className="flex-shrink-0 bg-[#313235] border-t border-[#3A3A3D] sticky bottom-0 h-full"
       style={{
         transform: 'none',
         willChange: 'auto'
@@ -1318,7 +1306,7 @@ export default function DMMessageInput({
 
           {/* 主输入框 */}
           <div
-            className="flex-1 relative"
+            className="flex-1 relative min-w-0"
             style={{
               overflow: 'visible',
               transform: 'none',

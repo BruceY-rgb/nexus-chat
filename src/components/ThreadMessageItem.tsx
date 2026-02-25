@@ -5,7 +5,7 @@ import { Message } from '@/types/message';
 import MessageRenderer from './MessageRenderer';
 import ReactionBadges from './ReactionBadges';
 import { useReactions } from '@/hooks/useReactions';
-import { format } from 'date-fns';
+import { formatMessageTime } from '@/lib/time-utils';
 import { MoreHorizontal, Reply, Smile } from 'lucide-react';
 
 interface ThreadMessageItemProps {
@@ -25,21 +25,6 @@ function ThreadMessageItemBase({
 }: ThreadMessageItemProps) {
   const [showActions, setShowActions] = useState(false);
   const { reactions, toggleReaction } = useReactions(message.id, currentUserId);
-
-  const formatTime = (dateString: string | null | undefined) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 24) {
-      return format(date, 'HH:mm');
-    } else if (diffInHours < 24 * 7) {
-      return format(date, 'EEE HH:mm');
-    } else {
-      return format(date, 'yyyy/MM/dd HH:mm');
-    }
-  };
 
   return (
     <div
@@ -76,13 +61,13 @@ function ThreadMessageItemBase({
               </span>
             )}
             <span className="text-xs text-gray-500">
-              {formatTime(message.createdAt)}
+              {formatMessageTime(message.createdAt)}
             </span>
           </div>
 
           {/* Message Content */}
           <div className="text-gray-900">
-            <MessageRenderer message={message} currentUserId={currentUserId} />
+            <MessageRenderer message={message} currentUserId={currentUserId} markdownVariant="light" />
           </div>
 
           {/* Attachments */}

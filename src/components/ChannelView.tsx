@@ -38,6 +38,8 @@ export default function ChannelView({
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [showMembersList, setShowMembersList] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -59,9 +61,9 @@ export default function ChannelView({
   const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
 
   // Input height state
-  const [inputHeight, setInputHeight] = useState(120); // Default height
+  const [inputHeight, setInputHeight] = useState(180); // Default height - increased to show all buttons
   const [isResizingInput, setIsResizingInput] = useState(false);
-  const inputDragStart = useRef({ y: 0, height: 120 });
+  const inputDragStart = useRef({ y: 0, height: 180 });
 
   // Input drag handling
   const handleInputDragStart = (e: React.MouseEvent) => {
@@ -154,21 +156,54 @@ export default function ChannelView({
 
   // Listen for messageId parameter in URL for deep linking
   useEffect(() => {
-    if (!channel?.id || !messageListRef.current) return;
+    if (!channel?.id) return;
 
     const urlParams = new URLSearchParams(window.location.search);
     const messageId = urlParams.get("messageId");
 
     if (messageId) {
-      messageListRef.current.highlightMessage(messageId);
+      // Add retry mechanism for when messageListRef is not ready yet
+      const highlightWithRetry = (retries = 10) => {
+        if (messageListRef.current) {
+          messageListRef.current.highlightMessage(messageId);
 
-      // Clear messageId parameter from URL to avoid duplicate highlight on refresh
-      const newUrl =
-        window.location.pathname +
-        window.location.search.replace(/[?&]messageId=[^&]*/, "");
-      window.history.replaceState({}, "", newUrl);
+          // Clear messageId parameter from URL to avoid duplicate highlight on refresh
+          const newUrl =
+            window.location.pathname +
+            window.location.search.replace(/[?&]messageId=[^&]*/, "");
+          window.history.replaceState({}, "", newUrl);
+        } else if (retries > 0) {
+          // Retry after a short delay
+          setTimeout(() => highlightWithRetry(retries - 1), 200);
+        }
+      };
+
+      highlightWithRetry();
     }
   }, [channel?.id]);
+
+  // Listen for search-navigate-to-message event from GlobalSearchModal
+  useEffect(() => {
+    const handleSearchNavigate = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail?.messageId || !messageListRef.current) return;
+
+      const highlightWithRetry = (retries = 10) => {
+        if (messageListRef.current) {
+          messageListRef.current.highlightMessage(detail.messageId);
+        } else if (retries > 0) {
+          setTimeout(() => highlightWithRetry(retries - 1), 200);
+        }
+      };
+
+      highlightWithRetry();
+    };
+
+    window.addEventListener("search-navigate-to-message", handleSearchNavigate);
+    return () => {
+      window.removeEventListener("search-navigate-to-message", handleSearchNavigate);
+    };
+  }, []);
 
   // ESC key to close thread panel
   useEffect(() => {
@@ -191,6 +226,7 @@ export default function ChannelView({
       const response = await fetch(`/api/channels/${channel.id}/members`);
       if (response.ok) {
         const data = await response.json();
+        console.log("[ChannelView] Members from API:", data.members);
         setMembers(data.members || []);
       }
     } catch (error) {
@@ -249,6 +285,8 @@ export default function ChannelView({
   };
 
   // Get channel messages
+  const PAGE_SIZE = 50;
+
   const fetchMessages = async () => {
     if (!channel?.id || !isJoined) {
       setMessages([]);
@@ -257,7 +295,8 @@ export default function ChannelView({
 
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/messages?channelId=${channel.id}`);
+      setHasMore(true);
+      const response = await fetch(`/api/messages?channelId=${channel.id}&limit=${PAGE_SIZE}`);
 
       if (!response.ok) {
         setMessages([]);
@@ -267,6 +306,7 @@ export default function ChannelView({
 
       const data = await response.json();
       setMessages(data.reverse());
+      setHasMore(data.length >= PAGE_SIZE);
       setIsLoading(false);
     } catch (err) {
       console.error("Error fetching messages:", err);
@@ -274,6 +314,41 @@ export default function ChannelView({
       setIsLoading(false);
     }
   };
+
+  const fetchOlderMessages = useCallback(async () => {
+    if (!channel?.id || !isJoined || isLoadingMore || !hasMore) return;
+
+    try {
+      setIsLoadingMore(true);
+      const container = document.getElementById("messages-scroll-container");
+      const prevScrollHeight = container?.scrollHeight || 0;
+
+      const response = await fetch(
+        `/api/messages?channelId=${channel.id}&limit=${PAGE_SIZE}&offset=${messages.length}`,
+      );
+
+      if (!response.ok) {
+        setIsLoadingMore(false);
+        return;
+      }
+
+      const data = await response.json();
+      setHasMore(data.length >= PAGE_SIZE);
+      if (data.length > 0) {
+        setMessages((prev) => [...data.reverse(), ...prev]);
+        // Restore scroll position after prepending
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight - prevScrollHeight;
+          }
+        });
+      }
+      setIsLoadingMore(false);
+    } catch (err) {
+      console.error("Error fetching older messages:", err);
+      setIsLoadingMore(false);
+    }
+  }, [channel?.id, isJoined, isLoadingMore, hasMore, messages.length]);
 
   // Get messages when join state changes
   useEffect(() => {
@@ -713,6 +788,9 @@ export default function ChannelView({
                         messages={messages}
                         currentUserId={user?.id || ""}
                         isLoading={isLoading}
+                        isLoadingMore={isLoadingMore}
+                        hasMore={hasMore}
+                        onLoadMore={fetchOlderMessages}
                         className="h-full w-full"
                         channelId={channel?.id}
                         onScrollPositionChange={handleScrollPositionChange}
@@ -720,6 +798,7 @@ export default function ChannelView({
                         onDeleteMessage={handleDeleteMessage}
                         onThreadReply={handleThreadReply}
                         onQuote={handleQuote}
+                        members={members}
                       />
                     </div>
 
@@ -749,7 +828,10 @@ export default function ChannelView({
                   }}
                 />
                 <div
-                  style={{ height: `${inputHeight}px` }}
+                  style={{
+                    height: `${inputHeight}px`,
+                    transition: isResizingInput ? 'none' : 'height 0.2s ease-out'
+                  }}
                   className="p-4 overflow-hidden"
                 >
                   <DMMessageInput

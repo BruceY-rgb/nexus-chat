@@ -206,11 +206,11 @@ export default function SearchMessagesModal({
 
     if (diffInHours < 1) {
       const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-      return `${diffInMinutes}分钟前`;
+      return `${diffInMinutes}m ago`;
     } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}小时前`;
+      return `${Math.floor(diffInHours)}h ago`;
     } else {
-      return date.toLocaleDateString('zh-CN', {
+      return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',

@@ -384,10 +384,16 @@ export async function POST(request: NextRequest) {
         if (message.attachments && message.attachments.length > 0) {
           messageInfo.attachments = message.attachments.map((att) => ({
             id: att.id,
+            messageId: att.messageId,
             fileName: att.fileName,
-            mimeType: att.mimeType,
-            fileSize: att.fileSize,
             filePath: att.filePath,
+            fileSize: att.fileSize,
+            mimeType: att.mimeType,
+            fileType: att.fileType,
+            s3Key: att.s3Key,
+            s3Bucket: att.s3Bucket,
+            thumbnailUrl: att.thumbnailUrl,
+            createdAt: att.createdAt?.toISOString(),
           }));
         }
 

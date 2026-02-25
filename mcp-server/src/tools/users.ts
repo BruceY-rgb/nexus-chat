@@ -33,6 +33,11 @@ const getStarredUsersSchema = z.object({
   userToken: z.string(),
 });
 
+const getUserSchema = z.object({
+  userId: z.string(),
+  userToken: z.string(),
+});
+
 const toggleStarredUserSchema = z.object({
   starredUserId: z.string(),
   userToken: z.string(),
@@ -95,6 +100,30 @@ export const userTools: ToolDefinition[] = [
           content: [
             { type: "text", text: JSON.stringify({ error: errorMessage }) },
           ],
+          isError: true,
+        };
+      }
+    },
+  },
+  {
+    name: "get_user",
+    description: "获取指定用户的信息",
+    parameters: getUserSchema,
+    execute: async (args, _context): Promise<ToolResult> => {
+      try {
+        const validatedArgs = getUserSchema.parse(args);
+        const result = await apiExecutor.get(
+          "/api/users",
+          validatedArgs.userToken,
+          { userId: validatedArgs.userId },
+        );
+        return {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return {
+          content: [{ type: "text", text: JSON.stringify({ error: errorMessage }) }],
           isError: true,
         };
       }

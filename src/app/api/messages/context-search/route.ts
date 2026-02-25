@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
-        unauthorizedResponse('token无效'),
+        unauthorizedResponse('Invalid token'),
         { status: 401 }
       );
     }
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     if (!query || query.trim() === '') {
       return NextResponse.json(
-        { error: '搜索关键词不能为空' },
+        { error: 'Search query cannot be empty' },
         { status: 400 }
       );
     }
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     // 检查是否同时提供了channelId和dmConversationId
     if (channelId && dmConversationId) {
       return NextResponse.json(
-        { error: '不能同时指定频道ID和私聊ID' },
+        { error: 'Cannot specify both channel ID and DM conversation ID' },
         { status: 400 }
       );
     }
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
       if (!membership) {
         return NextResponse.json(
-          { error: '您尚未加入该频道' },
+          { error: 'You have not joined this channel' },
           { status: 403 }
         );
       }
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
 
       if (!membership) {
         return NextResponse.json(
-          { error: '您尚未参与该私聊' },
+          { error: 'You are not a participant in this conversation' },
           { status: 403 }
         );
       }
@@ -197,7 +197,7 @@ export async function GET(request: NextRequest) {
     } else {
       // 如果没有指定channelId或dmConversationId，返回错误
       return NextResponse.json(
-        { error: '必须指定频道ID或私聊ID' },
+        { error: 'Must specify either channel ID or DM conversation ID' },
         { status: 400 }
       );
     }

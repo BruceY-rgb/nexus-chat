@@ -12,7 +12,7 @@ import {
 import { useSearchParams } from "next/navigation";
 import { Message } from "@/types/message";
 import { format, formatDistanceToNow } from "date-fns";
-import { zhCN } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import MessageItem from "./MessageItem";
 import { useReadProgress } from "@/hooks/useReadProgress";
 
@@ -20,6 +20,9 @@ interface MessageListProps {
   messages: Message[];
   currentUserId: string;
   isLoading?: boolean;
+  isLoadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
   className?: string;
   channelId?: string;
   dmConversationId?: string;
@@ -28,6 +31,7 @@ interface MessageListProps {
   onDeleteMessage?: (messageId: string) => Promise<void>;
   onThreadReply?: (message: Message) => void;
   onQuote?: (message: Message) => void;
+  members?: { id: string; displayName: string }[];
 }
 
 export interface MessageListRef {
@@ -40,6 +44,9 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       messages,
       currentUserId,
       isLoading = false,
+      isLoadingMore = false,
+      hasMore = false,
+      onLoadMore,
       className = "",
       channelId,
       dmConversationId,
@@ -48,12 +55,35 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       onDeleteMessage,
       onThreadReply,
       onQuote,
+      members,
     },
     ref,
   ) => {
     const searchParams = useSearchParams();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const topSentinelRef = useRef<HTMLDivElement>(null);
+    const isInitialLoadRef = useRef(true);
+    const prevChannelRef = useRef(channelId);
+    const prevDmRef = useRef(dmConversationId);
+
+    // Stable snapshot: captures the first unread message ID once on channel entry.
+    // This does NOT change as the user scrolls — it stays fixed until dismissed.
+    const initialUnreadMessageIdRef = useRef<string | null>(null);
+    const snapshotTakenRef = useRef(false);
+    // Guard: prevents programmatic scrolls from clearing unread UI.
+    const userHasScrolledRef = useRef(false);
+
+    // Reset flags when channel/conversation changes
+    if (prevChannelRef.current !== channelId || prevDmRef.current !== dmConversationId) {
+      isInitialLoadRef.current = true;
+      initialUnreadMessageIdRef.current = null;
+      snapshotTakenRef.current = false;
+      userHasScrolledRef.current = false;
+      prevChannelRef.current = channelId;
+      prevDmRef.current = dmConversationId;
+    }
+
     const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
     const [showReadIndicator] = useState<string | null>(null);
     const [highlightedMessageId, setHighlightedMessageId] = useState<
@@ -63,13 +93,80 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       null,
     );
 
-    // Use read progress hook - remove onScrollToMessage callback to avoid conflict with component highlight logic
-    const { reportReadProgress } = useReadProgress({
+    // Use read progress hook
+    const { reportReadProgress, readPosition } = useReadProgress({
       channelId,
       dmConversationId,
       messages,
       messageRefs,
     });
+
+    // 未读胶囊状态
+    const [showUnreadBadge, setShowUnreadBadge] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const isAtBottomRef = useRef(false);
+    const unreadDividerRef = useRef<HTMLDivElement>(null);
+    // Flag to suppress userHasScrolled during programmatic scrolls
+    const isProgrammaticScrollRef = useRef(false);
+
+    // Take snapshot once when readPosition arrives from the API
+    useEffect(() => {
+      if (snapshotTakenRef.current) return;
+      if (!readPosition || messages.length === 0) return;
+
+      snapshotTakenRef.current = true;
+
+      const lastReadId = readPosition.lastReadMessageId;
+      if (!lastReadId) {
+        // No read position means everything is unread — snapshot first message
+        initialUnreadMessageIdRef.current = messages[0]?.id ?? null;
+      } else if (lastReadId === messages[messages.length - 1]?.id) {
+        // Already read everything — no unread
+        initialUnreadMessageIdRef.current = null;
+      } else {
+        const lastReadIndex = messages.findIndex(m => m.id === lastReadId);
+        if (lastReadIndex === -1 || lastReadIndex >= messages.length - 1) {
+          initialUnreadMessageIdRef.current = null;
+        } else {
+          initialUnreadMessageIdRef.current = messages[lastReadIndex + 1]?.id ?? null;
+        }
+      }
+
+      // Show badge if there are unread messages.
+      // Don't check isAtBottomRef here — the programmatic scrollToBottom hasn't
+      // run yet at this point, so the container may report any scroll position.
+      if (initialUnreadMessageIdRef.current) {
+        const firstUnreadIndex = messages.findIndex(m => m.id === initialUnreadMessageIdRef.current);
+        if (firstUnreadIndex !== -1) {
+          const count = messages.length - firstUnreadIndex;
+          setUnreadCount(count);
+          setShowUnreadBadge(true);
+        }
+      }
+    }, [readPosition, messages]);
+
+    // Use the stable snapshot for divider rendering (not live readPosition)
+    const [unreadDividerMessageId, setUnreadDividerMessageId] = useState<string | null>(null);
+
+    // Sync divider from snapshot
+    useEffect(() => {
+      setUnreadDividerMessageId(initialUnreadMessageIdRef.current);
+    }, [readPosition, messages]);
+
+    // 点击未读胶囊滚动到未读位置
+    const scrollToFirstUnread = useCallback(() => {
+      isProgrammaticScrollRef.current = true;
+      if (unreadDividerRef.current) {
+        unreadDividerRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+      setShowUnreadBadge(false);
+      setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 500);
+    }, []);
 
     // Handle edit message - optimized with useCallback
     const handleEditMessage = useCallback(
@@ -102,8 +199,20 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       setEditingMessageId(null);
     }, []);
 
-    const scrollToBottom = useCallback(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = useCallback((instant = false) => {
+      isProgrammaticScrollRef.current = true;
+      if (instant) {
+        const container = scrollContainerRef.current;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      } else {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+      // Reset after a tick so the scroll event handler sees the flag
+      setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 200);
     }, []);
 
     const scrollToMessage = useCallback(
@@ -123,14 +232,30 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
     // Use useImperativeHandle to expose highlightMessage method
     useImperativeHandle(ref, () => ({
       highlightMessage: (messageId: string) => {
+        // Clear any existing highlight timeouts
         setHighlightedMessageId(messageId);
-        setTimeout(() => {
-          scrollToMessage(messageId);
-        }, 100);
-        // Auto clear highlight after 2 seconds
+
+        // Scroll to message with retry mechanism for stability
+        const scrollWithRetry = (retries = 3) => {
+          const messageElement = messageRefs.current[messageId];
+          if (messageElement) {
+            messageElement.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          } else if (retries > 0) {
+            // Retry after a short delay if element not found yet
+            setTimeout(() => scrollWithRetry(retries - 1), 100);
+          }
+        };
+
+        // Start scrolling after a small delay to ensure rendering
+        setTimeout(() => scrollWithRetry(), 150);
+
+        // Auto clear highlight after 5 seconds (increased from 2s for better UX)
         setTimeout(() => {
           setHighlightedMessageId(null);
-        }, 2000);
+        }, 5000);
       },
     }));
 
@@ -146,6 +271,16 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
         const { scrollTop, scrollHeight, clientHeight } = container;
         // Check if at bottom (allow 100px tolerance)
         isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+        isAtBottomRef.current = isAtBottom;
+
+        // Only dismiss unread badge/divider when the USER has scrolled to bottom,
+        // not from the programmatic initial scrollToBottom.
+        if (isAtBottom && userHasScrolledRef.current) {
+          setShowUnreadBadge(false);
+          // Clear the snapshot so divider disappears too
+          initialUnreadMessageIdRef.current = null;
+          setUnreadDividerMessageId(null);
+        }
 
         // Notify parent component of scroll position change
         if (onScrollPositionChange) {
@@ -155,12 +290,16 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
 
       // Scroll event handler
       const handleScroll = () => {
+        // Don't mark as user scroll if it was triggered programmatically
+        if (!isProgrammaticScrollRef.current) {
+          userHasScrolledRef.current = true;
+        }
         // Use debounce to avoid frequent triggers
         clearTimeout(timeoutId);
         timeoutId = setTimeout(checkScrollPosition, 50);
       };
 
-      // Initial check
+      // Initial check — do NOT set userHasScrolledRef here
       checkScrollPosition();
 
       // Add scroll listener
@@ -179,6 +318,24 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
         clearTimeout(timeoutId);
       };
     }, [onScrollPositionChange, messages]);
+
+    // Infinite scroll: load more when scrolling near top
+    useEffect(() => {
+      const sentinel = topSentinelRef.current;
+      if (!sentinel || !onLoadMore || !hasMore || isLoadingMore) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            onLoadMore();
+          }
+        },
+        { rootMargin: "200px" },
+      );
+
+      observer.observe(sentinel);
+      return () => observer.disconnect();
+    }, [onLoadMore, hasMore, isLoadingMore]);
 
     // Listen for scroll and automatically report read progress
     useEffect(() => {
@@ -228,18 +385,37 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       if (messageId && messages.length > 0) {
         // Set highlight state
         setHighlightedMessageId(messageId);
+
+        // Scroll to message with retry mechanism for stability
+        const scrollWithRetry = (retries = 3) => {
+          const messageElement = messageRefs.current[messageId];
+          if (messageElement) {
+            messageElement.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          } else if (retries > 0) {
+            // Retry after a short delay if element not found yet
+            setTimeout(() => scrollWithRetry(retries - 1), 100);
+          }
+        };
+
         // Delayed execution to ensure message is rendered
-        setTimeout(() => {
-          scrollToMessage(messageId);
-        }, 100);
-        // Auto clear highlight after 2 seconds
+        setTimeout(() => scrollWithRetry(), 150);
+
+        // Auto clear highlight after 5 seconds (increased from 2s for better UX)
         setTimeout(() => {
           setHighlightedMessageId(null);
-        }, 2000);
+        }, 5000);
       } else {
-        // When no specific message, scroll to bottom and clear highlight
+        // When no specific message, scroll to bottom only on initial load
         setHighlightedMessageId(null);
-        scrollToBottom();
+        if (isInitialLoadRef.current) {
+          requestAnimationFrame(() => {
+            scrollToBottom(true); // instant, not smooth
+          });
+          isInitialLoadRef.current = false;
+        }
       }
     }, [searchParams, messages]);
 
@@ -284,12 +460,12 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
         const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
         if (diffInHours < 24) {
-          return format(date, "HH:mm", { locale: zhCN });
+          return format(date, "HH:mm", { locale: enUS });
         } else if (diffInHours < 168) {
           // 7 days
-          return format(date, "MM/dd HH:mm", { locale: zhCN });
+          return format(date, "MM/dd HH:mm", { locale: enUS });
         } else {
-          return format(date, "yyyy/MM/dd HH:mm", { locale: zhCN });
+          return format(date, "yyyy/MM/dd HH:mm", { locale: enUS });
         }
       },
       [],
@@ -320,9 +496,9 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
         } else if (diffInDays === 1) {
           return "Yesterday";
         } else if (diffInDays < 7) {
-          return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
+          return formatDistanceToNow(date, { addSuffix: true, locale: enUS });
         } else {
-          return format(date, "yyyy-MM-dd", { locale: zhCN });
+          return format(date, "yyyy-MM-dd", { locale: enUS });
         }
       },
       [],
@@ -433,13 +609,37 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
     }
 
     return (
-      <div
-        ref={scrollContainerRef}
-        className={`flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden message-scroll h-full p-6`}
-        style={{ scrollbarGutter: "stable" }}
-        id="messages-scroll-container"
-      >
-        <div className="max-w-4xl mx-auto w-full">
+      <div className="relative h-full">
+        {/* 未读胶囊按钮 */}
+        {showUnreadBadge && unreadCount > 0 && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
+            <button
+              onClick={scrollToFirstUnread}
+              className="bg-primary text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-primary/90 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+              {unreadCount} unread
+            </button>
+          </div>
+        )}
+
+        <div
+          ref={scrollContainerRef}
+          className={`flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden message-scroll h-full p-6`}
+          style={{ scrollbarGutter: "stable" }}
+          id="messages-scroll-container"
+        >
+          <div className="max-w-4xl mx-auto w-full">
+            {/* Top sentinel for infinite scroll */}
+            <div ref={topSentinelRef} className="h-1" />
+            {isLoadingMore && (
+            <div className="text-center py-3">
+              <div className="inline-block w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-text-secondary text-xs mt-1">Loading older messages...</p>
+            </div>
+          )}
           {Object.entries(messageGroups).map(([dateKey, dayMessages]) => (
             <div key={dateKey}>
               {/* Date divider */}
@@ -457,27 +657,39 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
                     index === 0 ||
                     dayMessages[index - 1].userId !== message.userId;
                   const isHighlighted = message.id === highlightedMessageId;
+                  const isFirstUnread = message.id === unreadDividerMessageId;
 
                   return (
-                    <MessageItem
-                      key={message.id}
-                      message={message}
-                      currentUserId={currentUserId}
-                      isOwnMessage={isOwnMessage}
-                      showAvatar={showAvatar}
-                      isHighlighted={isHighlighted}
-                      showReadIndicator={showReadIndicator}
-                      editingMessageId={editingMessageId}
-                      onStartEditing={startEditing}
-                      onSaveEdit={handleEditMessage}
-                      onCancelEdit={cancelEditing}
-                      onDeleteMessage={handleDeleteMessage}
-                      onThreadReply={onThreadReply || (() => {})}
-                      onQuote={onQuote || (() => {})}
-                      formatMessageTime={formatMessageTime}
-                      messageRefs={messageRefs}
-                      scrollContainerRef={scrollContainerRef}
-                    />
+                    <div key={message.id}>
+                      {isFirstUnread && (
+                        <div ref={unreadDividerRef} className="flex items-center my-4 gap-3">
+                          <div className="flex-1 h-px bg-gray-300" />
+                          <span className="text-xs text-gray-400 font-medium whitespace-nowrap px-2">
+                            New messages
+                          </span>
+                          <div className="flex-1 h-px bg-gray-300" />
+                        </div>
+                      )}
+                      <MessageItem
+                        message={message}
+                        currentUserId={currentUserId}
+                        isOwnMessage={isOwnMessage}
+                        showAvatar={showAvatar}
+                        isHighlighted={isHighlighted}
+                        showReadIndicator={showReadIndicator}
+                        editingMessageId={editingMessageId}
+                        onStartEditing={startEditing}
+                        onSaveEdit={handleEditMessage}
+                        onCancelEdit={cancelEditing}
+                        onDeleteMessage={handleDeleteMessage}
+                        onThreadReply={onThreadReply || (() => {})}
+                        onQuote={onQuote || (() => {})}
+                        formatMessageTime={formatMessageTime}
+                        messageRefs={messageRefs}
+                        scrollContainerRef={scrollContainerRef}
+                        members={members}
+                      />
+                    </div>
                   );
                 })}
               </div>
@@ -485,6 +697,7 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
           ))}
           {/* Auto-scroll anchor - ensures new messages scroll to bottom when they arrive */}
           <div ref={messagesEndRef} className="h-1" id="messages-end-ref" />
+        </div>
         </div>
       </div>
     );

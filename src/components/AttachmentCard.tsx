@@ -12,6 +12,14 @@ import {
   Archive
 } from 'lucide-react';
 
+// Helper to get the correct file URL
+function getFileUrl(attachment: { thumbnailUrl?: string | null; filePath: string }): string {
+  if (attachment.thumbnailUrl) {
+    return attachment.thumbnailUrl;
+  }
+  return attachment.filePath;
+}
+
 // 动态导入 FilePreviewModal，禁用 SSR
 const FilePreviewModal = dynamic(
   () => import('./FilePreviewModal'),
@@ -82,7 +90,7 @@ export default function AttachmentCard({ attachment }: AttachmentCardProps) {
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     const link = document.createElement('a');
-    link.href = attachment.filePath;
+    link.href = getFileUrl(attachment);
     link.download = attachment.fileName;
     document.body.appendChild(link);
     link.click();
@@ -107,7 +115,7 @@ export default function AttachmentCard({ attachment }: AttachmentCardProps) {
           <div className={`flex-shrink-0 w-12 h-12 rounded flex items-center justify-center ${getFileIconBg()}`}>
             {isImage ? (
               <img
-                src={attachment.thumbnailUrl || attachment.filePath}
+                src={getFileUrl(attachment)}
                 alt={attachment.fileName}
                 className="w-full h-full object-cover rounded"
                 onError={(e) => {

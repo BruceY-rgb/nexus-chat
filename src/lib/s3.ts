@@ -94,6 +94,42 @@ export async function deleteFile(s3Key: string): Promise<void> {
 }
 
 /**
+ * Generate presigned URL for uploading a file directly to OSS
+ */
+export function getPresignedUploadUrl(params: {
+  fileName: string;
+  mimeType: string;
+  userId: string;
+  expiresIn?: number;
+}): { uploadUrl: string; s3Key: string; s3Bucket: string; fileUrl: string; thumbnailUrl?: string } {
+  const { fileName, mimeType, userId, expiresIn = 600 } = params;
+
+  const timestamp = Date.now();
+  const randomString = Math.random().toString(36).substring(7);
+  const extension = fileName.split('.').pop();
+  const s3Key = `${userId}/${timestamp}-${randomString}.${extension}`;
+  const s3Bucket = process.env.OSS_BUCKET!;
+
+  const ossClient = getOssClient();
+  const uploadUrl = ossClient.signatureUrl(s3Key, {
+    method: 'PUT',
+    expires: expiresIn,
+    'Content-Type': mimeType,
+  });
+
+  let fileUrl: string;
+  if (process.env.OSS_CUSTOM_DOMAIN) {
+    fileUrl = `https://${process.env.OSS_CUSTOM_DOMAIN}/${s3Key}`;
+  } else {
+    fileUrl = `https://${s3Bucket}.${(process.env.OSS_REGION || 'oss-cn-hangzhou')}.aliyuncs.com/${s3Key}`;
+  }
+
+  const thumbnailUrl = mimeType.startsWith('image/') ? fileUrl : undefined;
+
+  return { uploadUrl, s3Key, s3Bucket, fileUrl, thumbnailUrl };
+}
+
+/**
  * Generate pre-signed URL (for private bucket access)
  */
 export async function getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
