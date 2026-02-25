@@ -19,20 +19,20 @@ interface MarkdownRendererProps {
 }
 
 /**
- * Emoji文本渲染组件
- * 支持Jumboji效果（纯Emoji消息大尺寸显示）
- * 和混合文本中的中等尺寸Emoji
+ * Emoji text rendering component
+ * Supports Jumboji effect (large size for pure Emoji messages)
+ * and medium size Emoji in mixed text
  */
 const EmojiText = ({ text }: { text: string }) => {
-  // 匹配各种Unicode范围的Emoji字符
-  // 包括：基本多语言平面、补充多语言平面、杂项符号、表情符号等
+  // Match Emoji characters from various Unicode ranges
+  // Including: Basic Multilingual Plane, Supplementary Multilingual Plane, Miscellaneous Symbols, Emoticons, etc.
   const emojiRegex = /(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})/gu;
 
-  // 检查是否是纯Emoji文本（去除空格和换行后）
+  // Check if it's pure Emoji text (after removing spaces and newlines)
   const isPureEmoji = text.replace(/\s/g, '').match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})+$/u);
 
   if (isPureEmoji) {
-    // 纯Emoji消息：统一14px字体大小
+    // Pure Emoji message: unified 14px font size
     return (
       <span style={{ fontSize: '14px', lineHeight: '1.5' }}>
         {text}
@@ -40,7 +40,7 @@ const EmojiText = ({ text }: { text: string }) => {
     );
   }
 
-  // 混合文本：按字符分割并渲染
+  // Mixed text: split by character and render
   const parts = [...text];
 
   return (
@@ -48,9 +48,9 @@ const EmojiText = ({ text }: { text: string }) => {
       {parts.map((char, index) => {
         const isEmoji = emojiRegex.test(char);
         if (isEmoji) {
-          // 重置正则状态
+          // Reset regex state
           emojiRegex.lastIndex = 0;
-          // Emoji字符：统一14px字体大小
+          // Emoji character: unified 14px font size
           return (
             <span
               key={index}
@@ -64,7 +64,7 @@ const EmojiText = ({ text }: { text: string }) => {
             </span>
           );
         }
-        // 普通文本字符：统一14px字体大小
+        // Normal text character: unified 14px font size
         return (
           <span key={index} style={{ fontSize: '14px', lineHeight: '1.5' }}>
             {char}
@@ -82,7 +82,7 @@ export default function MarkdownRenderer({
   className = '',
   variant = 'dark'
 }: MarkdownRendererProps) {
-  // 根据 variant 设置颜色
+  // Set colors based on variant
   const colors = variant === 'light' ? {
     text: 'text-black',
     textMuted: 'text-gray-600',
@@ -168,13 +168,13 @@ export default function MarkdownRenderer({
     });
   };
 
-  // 智能检测是否包含Markdown语法
+  // Smart detection for Markdown syntax
   const hasMarkdownSyntax = useMemo(() => {
     return MarkdownProcessor.hasMarkdownSyntax(protectedContent);
   }, [protectedContent]);
 
-  // 总是渲染内容，无论是普通文本还是Markdown
-  // 普通文本会正常显示，Markdown语法会被正确格式化
+  // Always render content, whether plain text or Markdown
+  // Plain text will display normally, Markdown syntax will be correctly formatted
 
   return (
     <div className={`markdown-content ${className}`}>
@@ -182,7 +182,7 @@ export default function MarkdownRenderer({
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSanitize, rehypeRaw]}
         components={{
-          // 支持HTML标签（如<u>下划线）
+          // Support HTML tags (e.g., <u> underline)
           u: ({ node, children, ...props }) => {
             const uColor = variant === 'light' ? 'decoration-gray-500' : 'decoration-gray-400';
             return (
@@ -191,13 +191,13 @@ export default function MarkdownRenderer({
               </u>
             );
           },
-          // 代码块组件
+          // Code block component
           code: ({ node, className, children, ...props }: any) => {
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : '';
             const isInline = !language;
 
-            // 代码块颜色
+            // Code block colors
             const codeColors = variant === 'light' ? {
               bg: 'bg-gray-100',
               text: 'text-gray-800',
@@ -215,7 +215,7 @@ export default function MarkdownRenderer({
             };
 
             if (!isInline && language) {
-              // 多行代码块
+              // Multi-line code block
               return (
                 <div className="relative group my-3">
                   <div className={`flex items-center justify-between ${codeColors.headerBg} ${codeColors.headerText} px-4 py-2 rounded-t-lg text-xs`}>
@@ -236,7 +236,7 @@ export default function MarkdownRenderer({
               );
             }
 
-            // 行内代码
+            // Inline code
             return (
               <code
                 className={`${codeColors.inlineBg} ${codeColors.inlineText} px-1.5 py-0.5 rounded text-sm font-mono`}
@@ -247,7 +247,7 @@ export default function MarkdownRenderer({
             );
           },
 
-          // 链接组件
+          // Link component
           a: ({ node, href, children, ...props }) => {
             const linkColors = variant === 'light'
               ? 'text-blue-600 hover:text-blue-800'
@@ -265,7 +265,7 @@ export default function MarkdownRenderer({
             );
           },
 
-          // 引用组件
+          // Blockquote component
           blockquote: ({ node, children, ...props }) => (
             <blockquote
               className={`border-l-4 ${colors.border} pl-4 italic ${colors.textLight} my-2 ${colors.bgLight} py-2`}
@@ -275,7 +275,7 @@ export default function MarkdownRenderer({
             </blockquote>
           ),
 
-          // 标题组件
+          // Heading components
           h1: ({ node, children, ...props }) => (
             <h1 className={`text-xl font-bold mt-4 mb-2 ${colors.text}`} {...props}>{children}</h1>
           ),
@@ -286,7 +286,7 @@ export default function MarkdownRenderer({
             <h3 className={`text-base font-bold mt-3 mb-2 ${colors.text}`} {...props}>{children}</h3>
           ),
 
-          // 表格组件
+          // Table components
           table: ({ node, children, ...props }) => (
             <div className="overflow-x-auto my-3">
               <table className={`min-w-full border ${colors.border}`} {...props}>
@@ -321,7 +321,7 @@ export default function MarkdownRenderer({
             />
           ),
 
-          // 列表组件
+          // List components
           ul: ({ node, children, ...props }) => {
             return (
               <ul className="list-disc list-inside space-y-1 my-2 ml-4" {...props}>
@@ -342,14 +342,14 @@ export default function MarkdownRenderer({
             </li>
           ),
 
-          // 段落组件
+          // Paragraph component
           p: ({ node, children, ...props }) => (
             <p className={`${colors.text} text-sm leading-relaxed mb-2`} {...props}>
               {processMentionTokens(children)}
             </p>
           ),
 
-          // 强调组件
+          // Strong emphasis component
           strong: ({ node, children, ...props }) => (
             <strong className={`font-bold ${colors.text}`} {...props}>
               {processMentionTokens(children)}
@@ -362,7 +362,7 @@ export default function MarkdownRenderer({
             </em>
           ),
 
-          // 删除线组件
+          // Strikethrough component
           s: ({ node, children, ...props }) => (
             <s className={`line-through ${colors.textMuted}`} {...props}>
               {children}
@@ -372,7 +372,7 @@ export default function MarkdownRenderer({
           // Emoji handling for span elements
           span: ({ node, children, ...props }) => {
             const text = String(children);
-            // 检查是否包含Emoji
+            // Check if contains Emoji
             if (/(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})/u.test(text)) {
               return (
                 <span {...props}>

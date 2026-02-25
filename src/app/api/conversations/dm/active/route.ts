@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 
-// 强制动态渲染 - 因为这个API使用了 cookies
+// Force dynamic rendering - because this API uses cookies
 export const dynamic = 'force-dynamic';
 
-// 获取活跃DM会话列表 API（按最后消息时间排序）
+// Get active DM conversation list API (sorted by last message time)
 export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('auth_token')?.value;
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
 
-    // 获取当前用户的所有DM会话（包括刚创建的、没有消息的会话）
+    // Get all DM conversations of current user (including newly created, no messages)
     const dmConversations = await prisma.dMConversation.findMany({
       where: {
         members: {
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
           orderBy: {
             createdAt: 'desc'
           },
-          take: 1, // 只获取最后一条消息
+          take: 1, // Only get last message
           include: {
             user: {
               select: {
@@ -85,15 +85,15 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: {
-        lastMessageAt: 'desc' // 按最后消息时间倒序排列
+        lastMessageAt: 'desc' // Sort by last message time descending
       }
     });
 
-    // 处理数据，只返回对方用户的信息
+    // Process data, return only the other user's information
     const processedConversations = dmConversations
-      .filter(conv => conv.members.length === 2) // 确保是两人会话
+      .filter(conv => conv.members.length === 2) // Ensure it's a two-person conversation
       .map(conv => {
-        // 获取对方用户信息（排除当前用户）
+        // Get other user's information (excluding current user)
         const otherMember = conv.members.find(m => m.userId !== currentUserId);
         const lastMessage = conv.messages[0];
 
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
           messageCount: conv._count.messages
         };
       })
-      // 如果有搜索词，进行过滤
+      // Filter if search term exists
       .filter(conv => {
         if (!search) return true;
         const searchLower = search.toLowerCase();

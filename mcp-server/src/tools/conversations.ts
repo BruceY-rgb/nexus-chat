@@ -1,5 +1,5 @@
 /**
- * Conversation Tools - 私聊管理工具
+ * Conversation Tools - Direct Message Management Tools
  */
 
 import { z } from "zod";
@@ -31,7 +31,7 @@ const getReadPositionSchema = z.object({
 export const conversationTools: ToolDefinition[] = [
   {
     name: "create_dm",
-    description: "创建与指定用户的私聊会话",
+    description: "Create DM conversation with specified user",
     parameters: createDMSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -59,7 +59,7 @@ export const conversationTools: ToolDefinition[] = [
   },
   {
     name: "get_dm",
-    description: "获取与指定用户的私聊会话",
+    description: "Get DM conversation with specified user",
     parameters: getDMSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -86,7 +86,7 @@ export const conversationTools: ToolDefinition[] = [
   },
   {
     name: "list_active_dms",
-    description: "获取活跃的私聊会话列表",
+    description: "Get list of active DM conversations",
     parameters: listActiveDMsSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -118,7 +118,7 @@ export const conversationTools: ToolDefinition[] = [
   },
   {
     name: "get_read_position",
-    description: "获取频道或私聊的阅读位置",
+    description: "Get read position for channel or DM",
     parameters: getReadPositionSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {

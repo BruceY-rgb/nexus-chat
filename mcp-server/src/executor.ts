@@ -1,5 +1,5 @@
 /**
- * API Executor - 负责调用 Internal API
+ * API Executor - Responsible for calling Internal API
  */
 
 import { config } from "./config.js";
@@ -111,7 +111,7 @@ export class APIExecutor {
     return this.request<T>("DELETE", endpoint, userToken);
   }
 
-  // 不需要认证的请求 (用于register, login)
+  // Requests that don't require authentication (for register, login)
   async publicPost<T>(endpoint: string, body?: unknown): Promise<T> {
     const url = new URL(`${this.baseURL}${endpoint}`);
 

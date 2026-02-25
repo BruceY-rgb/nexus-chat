@@ -1,6 +1,6 @@
 /**
- * MCP Server 认证模块
- * 复用主应用的认证逻辑
+ * MCP Server Authentication Module
+ * Reuses the main application's authentication logic
  */
 
 import bcrypt from 'bcryptjs';
@@ -14,14 +14,14 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const SALT_ROUNDS = 10;
 
 /**
- * 验证密码
+ * Verify password
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   return bcrypt.compare(password, hash);
 }
 
 /**
- * 生成 JWT token
+ * Generate JWT token
  */
 export function generateToken(userId: string): string {
   return jwt.sign(
@@ -32,7 +32,7 @@ export function generateToken(userId: string): string {
 }
 
 /**
- * 验证 JWT token
+ * Verify JWT token
  */
 export function verifyToken(token: string): { userId: string } | null {
   try {
@@ -44,7 +44,7 @@ export function verifyToken(token: string): { userId: string } | null {
 }
 
 /**
- * 用户登录
+ * User login
  */
 export async function login(email: string, password: string): Promise<{
   success: boolean;
@@ -57,7 +57,7 @@ export async function login(email: string, password: string): Promise<{
   error?: string;
 }> {
   try {
-    // 查找用户
+    // Find user
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -66,12 +66,12 @@ export async function login(email: string, password: string): Promise<{
       return { success: false, error: 'Invalid email or password' };
     }
 
-    // 检查用户状态
+    // Check user status
     if (user.status !== 'active') {
       return { success: false, error: 'Account has been disabled' };
     }
 
-    // 验证密码
+    // Verify password
     if (!user.passwordHash) {
       return { success: false, error: 'Invalid email or password' };
     }
@@ -81,7 +81,7 @@ export async function login(email: string, password: string): Promise<{
       return { success: false, error: 'Invalid email or password' };
     }
 
-    // 生成 token
+    // Generate token
     const token = generateToken(user.id);
 
     return {
@@ -100,7 +100,7 @@ export async function login(email: string, password: string): Promise<{
 }
 
 /**
- * 从 token 获取用户信息
+ * Get user information from token
  */
 export async function getUserFromToken(token: string): Promise<{
   id: string;

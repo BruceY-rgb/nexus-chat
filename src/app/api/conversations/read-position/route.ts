@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 
-// 强制动态渲染 - 因为这个API使用了 cookies
+// Force dynamic rendering - because this API uses cookies
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const channelId = searchParams.get('channelId');
     const dmConversationId = searchParams.get('dmConversationId');
 
-    // 验证：必须指定 channelId 或 dmConversationId 中的一个，但不能同时指定
+    // Validate: must specify either channelId or dmConversationId, but not both
     if (!channelId && !dmConversationId) {
       return NextResponse.json(
         { error: 'Must specify either channelId or dmConversationId' },
@@ -48,9 +48,9 @@ export async function GET(request: NextRequest) {
 
     let readPosition;
 
-    // 获取频道阅读位置
+    // Get channel read position
     if (channelId) {
-      // 验证用户是否是频道成员
+      // Verify user is a channel member
       const channelMember = await prisma.channelMember.findFirst({
         where: {
           channelId,
@@ -75,9 +75,9 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // 获取 DM 会话阅读位置
+    // Get DM conversation read position
     if (dmConversationId) {
-      // 验证用户是否是 DM 会话成员
+      // Verify user is a DM conversation member
       const conversationMember = await prisma.dMConversationMember.findFirst({
         where: {
           conversationId: dmConversationId,

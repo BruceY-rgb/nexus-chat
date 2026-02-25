@@ -1,18 +1,18 @@
 #!/usr/bin/env tsx
 /**
- * 大规模种子数据生成脚本
- * 为 Slack-like Chat Tool 生成 3000+ 条真实合理的测试数据
+ * Large Scale Seed Data Generation Script
+ * Generates 3000+ realistic test data for Slack-like Chat Tool
  *
- * 数据规模：
- * - 150 用户
- * - 35 频道
- * - 3000 消息
- * - 80 DM 对话
- * - 相关的提及、反应、已读状态等
+ * Data Scale:
+ * - 150 Users
+ * - 35 Channels
+ * - 3000 Messages
+ * - 80 DM Conversations
+ * - Related mentions, reactions, read statuses, etc.
  *
- * 使用方法：
+ * Usage:
  * npx tsx scripts/seed-large.ts
- * 或
+ * or
  * npm run db:seed:large
  */
 
@@ -20,7 +20,7 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 // ============================================================================
-// 配置常量
+// Configuration Constants
 // ============================================================================
 
 const SEED_CONFIG = {
@@ -34,15 +34,15 @@ const SEED_CONFIG = {
   THREAD_REPLY_PROBABILITY: 0.2,
 };
 
-// 用户活跃度权重
+// User activity weights
 const USER_ACTIVITY_WEIGHTS = {
-  superActive: 0.05, // 5% 超活跃
-  active: 0.15, // 15% 活跃
-  normal: 0.75, // 75% 普通
-  silent: 0.05, // 5% 沉默
+  superActive: 0.05, // 5% super active
+  active: 0.15, // 15% active
+  normal: 0.75, // 75% normal
+  silent: 0.05, // 5% silent
 };
 
-// 消息类型权重
+// Message type weights
 const MESSAGE_TYPE_WEIGHTS = {
   text: 0.7,
   emoji: 0.15,
@@ -51,10 +51,10 @@ const MESSAGE_TYPE_WEIGHTS = {
 };
 
 // ============================================================================
-// 工具函数
+// Utility Functions
 // ============================================================================
 
-// 随机数工具
+// Random number utilities
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -75,7 +75,7 @@ function randomSample<T>(arr: T[], count: number): T[] {
 function weightedRandom<T>(items: { value: T; weight: number }[]): T {
   const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
 
-  // 如果总权重为0或无效，则使用随机选择
+  // If total weight is 0 or invalid, use random choice
   if (totalWeight <= 0 || !isFinite(totalWeight)) {
     return randomChoice(items.map(item => item.value));
   }
@@ -92,12 +92,12 @@ function weightedRandom<T>(items: { value: T; weight: number }[]): T {
   return items[items.length - 1].value;
 }
 
-// 生成随机日期
+// Generate random date
 function randomDate(start: Date, end: Date): Date {
   return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 }
 
-// Box-Muller变换生成正态分布
+// Box-Muller transform for normal distribution
 function randomNormal(mean = 0, stdDev = 1): number {
   const u1 = Math.random();
   const u2 = Math.random();
@@ -105,7 +105,7 @@ function randomNormal(mean = 0, stdDev = 1): number {
   return z * stdDev + mean;
 }
 
-// 生成用户活跃度分数
+// Generate user activity score
 function generateUserActivityScore(userType: keyof typeof USER_ACTIVITY_WEIGHTS): number {
   switch (userType) {
     case 'superActive':
@@ -122,11 +122,11 @@ function generateUserActivityScore(userType: keyof typeof USER_ACTIVITY_WEIGHTS)
 }
 
 // ============================================================================
-// 数据模板
+// Data Templates
 // ============================================================================
 
 const ENGLISH_NAMES = [
-  // 常见英文名
+  // Common English names
   'James Smith', 'John Johnson', 'Robert Williams', 'Michael Brown', 'David Jones',
   'William Garcia', 'Richard Miller', 'Joseph Davis', 'Thomas Rodriguez', 'Charles Martinez',
   'Christopher Hernandez', 'Daniel Lopez', 'Matthew Gonzalez', 'Anthony Wilson', 'Mark Anderson',
@@ -137,7 +137,7 @@ const ENGLISH_NAMES = [
   'Christian Baker', 'Nathan Gonzalez', 'Zachary Nelson', 'Samuel Carter', 'Gabriel Mitchell',
   'Elijah Torres', 'Angel Ramos', 'Brandon Roberts', 'Hunter Richardson', 'Logan James',
   'Isaac Morgan', 'Luke Patterson', 'Ian Price', 'Cody Barnes', 'Caleb Bell',
-  // 女性英文名
+  // Female English names
   'Mary Johnson', 'Patricia Williams', 'Linda Brown', 'Barbara Jones', 'Elizabeth Davis',
   'Jennifer Miller', 'Maria Rodriguez', 'Susan Wilson', 'Margaret Anderson', 'Dorothy Taylor',
   'Lisa Moore', 'Nancy Jackson', 'Karen White', 'Betty Harris', 'Helen Martin',
@@ -148,7 +148,7 @@ const ENGLISH_NAMES = [
   'Amelia Taylor', 'Harper Jackson', 'Evelyn White', 'Abigail Harris', 'Emily Anderson',
   'Elizabeth Moore', 'Avery Taylor', 'Sofia Jackson', 'Ella White', 'Madison Harris',
   'Scarlett Anderson', 'Victoria Moore', 'Aria Taylor', 'Grace Jackson', 'Chloe White',
-  // 混合族裔姓名
+  // Mixed ethnicity names
   'Alice Chen', 'Bob Smith', 'Charlie Brown', 'Diana Prince', 'Edward Norton',
   'Grace Lee', 'Frank Miller', 'Helen Carter', 'Ivan Petrov', 'Julia Roberts',
   'Kevin Zhang', 'Linda Wang', 'Michael Johnson', 'Nancy Lee', 'Oscar Garcia',
@@ -158,7 +158,7 @@ const ENGLISH_NAMES = [
   'Avery Harris', 'Sofia Johnson', 'Ella Smith', 'Madison Davis', 'Scarlett Wilson',
   'Victoria Brown', 'Aria Garcia', 'Grace Martinez', 'Chloe Lopez', 'Penelope Anderson',
   'Riley Thompson', 'Zoey Taylor', 'Nora Moore', 'Lily Jackson', 'Eleanor White',
-  'Hannah Harris', 'Lillian Johnson', 'Addison Smith', 'Aubrey Davis', 'Stella Wilson',
+  'Hannah Harris', 'Lillian Johnson', 'Addisonubrey Davis', Smith', 'A 'Stella Wilson',
 ];
 
 const WORK_MESSAGES = [
@@ -212,8 +212,8 @@ const CASUAL_MESSAGES = [
   "Did anyone catch the game last night?",
   "Weekend plans?",
   "Recommend a good movie",
-  "Coffee time ☕",
-  "It's Friday! 🎉",
+  "Coffee time",
+  "It's Friday!",
   "Happy Monday everyone",
   "TGIF!",
   "Anyone up for happy hour?",
@@ -225,7 +225,7 @@ const CASUAL_MESSAGES = [
   "Gym session after work?",
   "New restaurant opened downtown",
   "Happy birthday to @user!",
-  "Anniversary celebration! 🎂",
+  "Anniversary celebration!",
   "Team building event next week",
   "Company picnic planned",
   "Game night on Thursday?",
@@ -324,19 +324,19 @@ const SHORT_MESSAGES = [
 ];
 
 const CHANNEL_NAMES = [
-  // 核心频道
+  // Core channels
   'general', 'announcements', 'random',
-  // 团队频道
+  // Team channels
   'development', 'design', 'marketing', 'sales', 'product', 'engineering',
   'qa', 'devops', 'security', 'research',
-  // 项目频道
+  // Project channels
   'project-alpha', 'project-beta', 'project-gamma', 'project-delta',
   'app-v2', 'website-redesign', 'mobile-app', 'api-v3',
   'infrastructure', 'cloud-migration',
-  // 兴趣频道
+  // Interest channels
   'sports', 'music', 'movies', 'books', 'gaming', 'travel',
   'food', 'fitness', 'photography', 'art',
-  // 私有频道
+  // Private channels
   'hr', 'finance', 'legal', 'executives', 'board-meeting',
 ];
 
@@ -352,7 +352,7 @@ const TECH_KEYWORDS = [
 ];
 
 // ============================================================================
-// Prisma 客户端
+// Prisma Client
 // ============================================================================
 
 const prisma = new PrismaClient({
@@ -360,7 +360,7 @@ const prisma = new PrismaClient({
 });
 
 // ============================================================================
-// 数据生成器
+// Data Generators
 // ============================================================================
 
 class ProgressTracker {
@@ -393,13 +393,13 @@ class ProgressTracker {
   }
 }
 
-// 用户生成器
+// User Generator
 class UserGenerator {
   generate(count: number) {
     console.log(`\n👥 Generating ${count} users...`);
     const progress = new ProgressTracker('Users', count);
 
-    // 创建基础管理员账户
+    // Create base admin accounts
     const adminUsers = [
       {
         email: 'admin@chat.com',
@@ -419,12 +419,12 @@ class UserGenerator {
       },
     ];
 
-    // 生成其他用户
+    // Generate other users
     const generatedUsers = [];
     let nameIndex = 0;
 
     for (let i = 0; i < count - adminUsers.length; i++) {
-      // 分配用户类型
+      // Assign user type
       const userTypes: (keyof typeof USER_ACTIVITY_WEIGHTS)[] = [
         'superActive', 'superActive', 'superActive', 'superActive', 'superActive',
         'active', 'active', 'active', 'active', 'active', 'active', 'active', 'active', 'active',
@@ -433,7 +433,7 @@ class UserGenerator {
       ];
       const userType = randomChoice(userTypes);
 
-      // 选择名字（循环使用英文姓名库）
+      // Select name (cycle through English name database)
       const displayName = ENGLISH_NAMES[nameIndex % ENGLISH_NAMES.length];
       const realName = displayName;
       nameIndex++;
@@ -452,7 +452,7 @@ class UserGenerator {
 
     progress.complete();
 
-    // 合并管理员用户
+    // Merge admin users
     return [
       ...adminUsers.map(u => ({ ...u, activityScore: 1.0, userType: 'superActive' as const })),
       ...generatedUsers,
@@ -460,7 +460,7 @@ class UserGenerator {
   }
 }
 
-// 频道生成器
+// Channel Generator
 class ChannelGenerator {
   generate(count: number, createdById: string) {
     console.log(`\n📢 Generating ${count} channels...`);
@@ -471,7 +471,7 @@ class ChannelGenerator {
 
     for (let i = 0; i < count; i++) {
       const name = channelNames[i];
-      // 前30个公共，后5个私有
+      // First 30 public, last 5 private
       const isPrivate = i >= 30;
 
       channels.push({
@@ -534,7 +534,7 @@ class ChannelGenerator {
   }
 }
 
-// 消息生成器
+// Message Generator
 class MessageGenerator {
   generate(count: number, users: any[], channels: any[], dmConversations: any[]) {
     console.log(`\n💬 Generating ${count} messages...`);
@@ -543,7 +543,7 @@ class MessageGenerator {
     const messages = [];
 
     for (let i = 0; i < count; i++) {
-      // 根据权重选择消息类型
+      // Select message type based on weight
       const messageType = weightedRandom([
         { value: 'text', weight: MESSAGE_TYPE_WEIGHTS.text },
         { value: 'emoji', weight: MESSAGE_TYPE_WEIGHTS.emoji },
@@ -551,21 +551,21 @@ class MessageGenerator {
         { value: 'code', weight: MESSAGE_TYPE_WEIGHTS.code },
       ]);
 
-      // 选择发送者（根据活跃度加权）
+      // Select sender (weighted by activity)
       if (!users || users.length === 0) {
         console.error('❌ Users array is empty or undefined');
         throw new Error('Users array is empty');
       }
 
-      // 使用简单的随机选择，避免复杂的加权逻辑
+      // Use simple random selection to avoid complex weighted logic
       const sender = randomChoice(users);
       if (!sender) {
         console.error('❌ Sender is invalid');
         throw new Error('Sender is invalid');
       }
 
-      // 选择目标（频道或DM）
-      const isChannel = Math.random() > 0.3; // 70%频道消息，30%DM消息
+      // Select target (channel or DM)
+      const isChannel = Math.random() > 0.3; // 70% channel messages, 30% DM messages
       let target;
       let targetType: 'channel' | 'dm';
 
@@ -594,15 +594,15 @@ class MessageGenerator {
         }
       }
 
-      // 生成时间（过去90天内）
+      // Generate time (within past 90 days)
       const now = new Date();
       const daysBack = SEED_CONFIG.TIME_RANGE_DAYS;
       const baseTime = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
 
-      // 生成时间（工作日模式）
+      // Generate time (weekday mode)
       let createdAt = this.generateWorkTimeMessage(baseTime, now);
 
-      // 生成内容
+      // Generate content
       const content = this.generateContent(messageType, users, sender);
 
       messages.push({
@@ -612,8 +612,8 @@ class MessageGenerator {
         dmConversationId: targetType === 'dm' ? target.id : null,
         userId: sender.id,
         createdAt,
-        isEdited: Math.random() > 0.9, // 10%被编辑
-        parentMessageId: null, // 将在后续设置
+        isEdited: Math.random() > 0.9, // 10% edited
+        parentMessageId: null, // will be set later
       });
 
       progress.update(i + 1);
@@ -624,11 +624,11 @@ class MessageGenerator {
   }
 
   private generateWorkTimeMessage(start: Date, end: Date): Date {
-    const isWeekday = Math.random() > 0.25; // 75%工作日
+    const isWeekday = Math.random() > 0.25; // 75% weekdays
     let date = new Date(start);
 
     if (isWeekday) {
-      // 工作日
+      // Weekday
       const hour = weightedRandom([
         { value: 9, weight: 0.05 },
         { value: 10, weight: 0.1 },
@@ -644,13 +644,13 @@ class MessageGenerator {
       const minute = randomInt(0, 59);
       date.setHours(hour, minute, randomInt(0, 59), 0);
     } else {
-      // 周末
+      // Weekend
       const hour = randomInt(10, 22);
       const minute = randomInt(0, 59);
       date.setHours(hour, minute, randomInt(0, 59), 0);
     }
 
-    // 确保日期在范围内
+    // Ensure date is within range
     if (date < start) {
       date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
     }
@@ -678,7 +678,7 @@ class MessageGenerator {
         return `\`\`\`${language}\n${this.generateCodeSnippet(language)}\n\`\`\``;
 
       default:
-        // 文本消息
+        // Text message
         return this.generateTextMessage(users, sender);
     }
   }
@@ -699,12 +699,12 @@ class MessageGenerator {
       },
       () => randomChoice(SHORT_MESSAGES),
       () => {
-        // 生成简单的@提及
+        // Generate simple @mention
         const mentionedUser = randomChoice(users.filter(u => u.id !== sender.id));
         return `Hey @${mentionedUser.displayName}, quick question`;
       },
       () => {
-        // 生成问题
+        // Generate question
         const questions = [
           "Does anyone know how to fix this?",
           "Can someone help me with this?",
@@ -724,49 +724,49 @@ class MessageGenerator {
   private fillTemplate(template: string, users: any[], sender: any): string {
     let result = template;
 
-    // 替换 {tech}
+    // Replace {tech}
     if (result.includes('{tech}')) {
       const tech = randomChoice(TECH_KEYWORDS);
       result = result.replace('{tech}', tech);
     }
 
-    // 替换 {time}
+    // Replace {time}
     if (result.includes('{time}')) {
       const times = ['2 PM', '3 PM tomorrow', 'Monday morning', 'end of day', 'next week'];
       result = result.replace('{time}', randomChoice(times));
     }
 
-    // 替换 {npm_package}
+    // Replace {npm_package}
     if (result.includes('{npm_package}')) {
       const packages = ['lodash', 'moment', 'axios', 'express', 'react', 'vue'];
       result = result.replace('{npm_package}', randomChoice(packages));
     }
 
-    // 替换 {framework}
+    // Replace {framework}
     if (result.includes('{framework}')) {
       const frameworks = ['React', 'Vue', 'Angular', 'Node.js', 'Express', 'Django'];
       result = result.replace('{framework}', randomChoice(frameworks));
     }
 
-    // 替换 {error}
+    // Replace {error}
     if (result.includes('{error}')) {
       const errors = ['TypeError', 'NullPointerException', '404 error', 'timeout', 'memory leak'];
       result = result.replace('{error}', randomChoice(errors));
     }
 
-    // 替换 {tool}
+    // Replace {tool}
     if (result.includes('{tool}')) {
       const tools = ['Docker', 'Kubernetes', 'Jest', 'Webpack', 'ESLint', 'Prettier'];
       result = result.replace('{tool}', randomChoice(tools));
     }
 
-    // 替换 {topic}
+    // Replace {topic}
     if (result.includes('{topic}')) {
       const topics = ['algorithms', 'design patterns', 'best practices', 'performance', 'security'];
       result = result.replace('{topic}', randomChoice(topics));
     }
 
-    // 替换 {user}
+    // Replace {user}
     if (result.includes('{user}')) {
       const mentionedUser = randomChoice(users.filter(u => u.id !== sender.id));
       result = result.replace('{user}', mentionedUser.displayName.split(' ')[0]);
@@ -814,7 +814,7 @@ class MessageGenerator {
   }
 }
 
-// 互动数据生成器
+// Interaction Data Generator
 class InteractionGenerator {
   generateMentions(messages: any[], users: any[]) {
     console.log('\n🏷️  Generating mentions...');
@@ -843,7 +843,7 @@ class InteractionGenerator {
   private generateMentionsForMessage(message: any, users: any[]) {
     const mentions = [];
 
-    // 问题类消息：40%概率提及
+    // Question messages: 40% probability
     if (message.content.includes('?') || message.content.includes('anyone') || message.content.includes('know')) {
       if (Math.random() < SEED_CONFIG.MENTION_PROBABILITY) {
         const activeUsers = users.filter(u => u.activityScore > 0.5);
@@ -851,14 +851,14 @@ class InteractionGenerator {
       }
     }
 
-    // 感谢类消息：60%概率提及
+    // Thank you messages: 60% probability
     if (message.content.includes('thanks') || message.content.includes('thank you') || message.content.includes('appreciate')) {
       if (Math.random() < 0.6) {
         mentions.push(randomChoice(users));
       }
     }
 
-    // 技术类消息：70%概率提及开发人员
+    // Technical messages: 70% probability to mention developers
     if (message.content.includes('code') || message.content.includes('bug') || message.content.includes('deploy') || message.content.includes('PR')) {
       const devs = users.filter(u => u.activityScore > 0.6);
       if (devs.length > 0 && Math.random() < 0.7) {
@@ -866,7 +866,7 @@ class InteractionGenerator {
       }
     }
 
-    // 直接@提及
+    // Direct @mention
     const atMention = message.content.match(/@(\w+)/);
     if (atMention) {
       const mentionedName = atMention[1];
@@ -876,7 +876,7 @@ class InteractionGenerator {
       }
     }
 
-    // 去重
+    // Deduplicate
     const uniqueMentions = mentions.filter((mention, index, self) =>
       index === self.findIndex(m => m.id === mention.id)
     );
@@ -927,12 +927,12 @@ class InteractionGenerator {
     for (let i = 0; i < messages.length; i++) {
       const message = messages[i];
 
-      // 模拟已读状态（60%用户会读消息）
+      // Simulate read status (60% users will read the message)
       const probability = 0.6;
       const readerCount = Math.floor(users.length * probability);
 
       for (const user of randomSample(users, readerCount)) {
-        const readDelay = Math.random() * 60 * 60 * 1000; // 1小时内
+        const readDelay = Math.random() * 60 * 60 * 1000; // within 1 hour
         reads.push({
           messageId: message.id,
           userId: user.id,
@@ -949,7 +949,7 @@ class InteractionGenerator {
 }
 
 // ============================================================================
-// 主函数
+// Main Function
 // ============================================================================
 
 async function main() {
@@ -968,7 +968,7 @@ async function main() {
   console.log('🚀 =======================================\n');
 
   try {
-    // 清空现有数据
+    // Clear existing data
     console.log('🧹 Clearing existing data...');
     const startTime = Date.now();
 
@@ -989,7 +989,7 @@ async function main() {
 
     console.log(`✅ Existing data cleared in ${((Date.now() - startTime) / 1000).toFixed(2)}s\n`);
 
-    // 生成用户
+    // Generate users
     const userGenerator = new UserGenerator();
     const userData = userGenerator.generate(SEED_CONFIG.USER_COUNT);
 
@@ -1018,7 +1018,7 @@ async function main() {
     }
     console.log(`✅ Created ${createdUsers.length} users\n`);
 
-    // 创建团队成员关系
+    // Create team member relationships
     console.log('👨‍👩‍👧‍👦 Creating team memberships...');
     for (const user of createdUsers) {
       await prisma.teamMember.create({
@@ -1030,7 +1030,7 @@ async function main() {
     }
     console.log(`✅ Created team memberships\n`);
 
-    // 生成频道
+    // Generate channels
     const channelGenerator = new ChannelGenerator();
     const channelData = channelGenerator.generate(SEED_CONFIG.CHANNEL_COUNT, createdUsers[0].id);
 
@@ -1044,10 +1044,10 @@ async function main() {
     }
     console.log(`✅ Created ${createdChannels.length} channels\n`);
 
-    // 创建频道成员关系
+    // Create channel member relationships
     console.log('👥 Adding users to channels...');
     for (const channel of createdChannels) {
-      // 公共频道：所有用户加入
+      // Public channels: all users join
       if (!channel.isPrivate) {
         for (const user of createdUsers) {
           await prisma.channelMember.create({
@@ -1062,11 +1062,11 @@ async function main() {
     }
     console.log(`✅ Added users to channels\n`);
 
-    // 创建 DM 对话
+    // Create DM conversations
     console.log('💬 Creating DM conversations...');
     const dmConversations = [];
 
-    // 预先计算所有可能的用户对
+    // Pre-calculate all possible user pairs
     const allUserPairs: [any, any][] = [];
     for (let i = 0; i < createdUsers.length; i++) {
       for (let j = i + 1; j < createdUsers.length; j++) {
@@ -1074,10 +1074,10 @@ async function main() {
       }
     }
 
-    // 随机打乱用户对
+    // Shuffle user pairs randomly
     const shuffledPairs = randomSample(allUserPairs, allUserPairs.length);
 
-    // 选择所需数量的用户对
+    // Select required number of user pairs
     const selectedPairs = shuffledPairs.slice(0, SEED_CONFIG.DM_CONVERSATION_COUNT);
 
     for (const [user1, user2] of selectedPairs) {
@@ -1096,7 +1096,7 @@ async function main() {
     }
     console.log(`✅ Created ${dmConversations.length} DM conversations (${selectedPairs.length} unique pairs)\n`);
 
-    // 生成消息
+    // Generate messages
     const messageGenerator = new MessageGenerator();
     const messageData = messageGenerator.generate(
       SEED_CONFIG.TARGET_MESSAGE_COUNT,
@@ -1125,16 +1125,16 @@ async function main() {
     }
     console.log(`✅ Created ${createdMessages.length} messages\n`);
 
-    // 生成线程回复
+    // Generate thread replies
     console.log('🧵 Creating thread replies...');
     const threadCount = Math.floor(createdMessages.length * SEED_CONFIG.THREAD_REPLY_PROBABILITY);
 
-    // 先查询已创建的消息（它们现在有ID了）
+    // First query created messages (they now have IDs)
     const savedMessages = await prisma.message.findMany({
       where: {
-        parentMessageId: null, // 只选择没有父消息的消息
+        parentMessageId: null, // Only select messages without parent
       },
-      take: threadCount, // 限制查询数量
+      take: threadCount, // Limit query count
     });
 
     for (const parentMessage of savedMessages) {
@@ -1157,10 +1157,10 @@ async function main() {
     }
     console.log(`✅ Created ${threadCount} thread replies\n`);
 
-    // 生成互动数据
+    // Generate interaction data
     const interactionGenerator = new InteractionGenerator();
 
-    // 重新获取所有消息（包括线程回复）
+    // Re-fetch all messages (including thread replies)
     const allMessages = await prisma.message.findMany();
 
     const mentions = interactionGenerator.generateMentions(allMessages, createdUsers);
@@ -1181,7 +1181,7 @@ async function main() {
       console.log(`✅ Created ${reads.length} read statuses\n`);
     }
 
-    // 创建通知设置
+    // Create notification settings
     console.log('🔔 Creating notification settings...');
     for (const user of createdUsers) {
       await prisma.notificationSettings.create({
@@ -1197,7 +1197,7 @@ async function main() {
     }
     console.log(`✅ Created notification settings\n`);
 
-    // 创建通知
+    // Create notifications
     console.log('📨 Creating notifications...');
     const notifications = [];
     for (let i = 0; i < 1000; i++) {
@@ -1230,7 +1230,7 @@ async function main() {
     }
     console.log(`✅ Created ${notifications.length} notifications\n`);
 
-    // 生成统计报告
+    // Generate statistics report
     const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
 
     console.log('\n✅ =======================================');
@@ -1269,7 +1269,7 @@ async function main() {
   }
 }
 
-// 执行
+// Execute
 main()
   .catch((e) => {
     console.error(e);

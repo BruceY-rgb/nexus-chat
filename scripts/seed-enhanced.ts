@@ -1,22 +1,22 @@
 // =====================================================
-// 增强版数据库填充脚本
-// 为 Slack-like Chat Tool 添加丰富的测试数据
+// Enhanced Database Seeding Script
+// Adds rich test data for Slack-like Chat Tool
 // =====================================================
 
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
-// 定义消息类型
+// Define message type
 type MessageType = 'text' | 'image' | 'file' | 'system';
 
 const prisma = new PrismaClient();
 
-// 生成随机日期
+// Generate random date
 function randomDate(start: Date, end: Date): Date {
   return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 }
 
-// 生成随机整数
+// Generate random integer
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -162,7 +162,7 @@ const seedData: SeedData = {
   messages: [
     // General channel messages
     {
-      content: 'Welcome to our new Slack-like chat platform! 🎉',
+      content: 'Welcome to our new Slack-like chat platform!',
       messageType: 'system',
       channelName: 'general',
       createdAt: randomDate(new Date(2024, 0, 1), new Date()),
@@ -218,19 +218,19 @@ const seedData: SeedData = {
       createdAt: randomDate(new Date(2024, 0, 1), new Date()),
     },
     {
-      content: 'I love this random channel, so much fun! 😄',
+      content: 'I love this random channel, so much fun!',
       messageType: 'text',
       channelName: 'random',
       createdAt: randomDate(new Date(2024, 0, 1), new Date()),
     },
     {
-      content: 'Share some memes here! 😂',
+      content: 'Share some memes here!',
       messageType: 'text',
       channelName: 'random',
       createdAt: randomDate(new Date(2024, 0, 1), new Date()),
     },
     {
-      content: 'Coffee break time! ☕',
+      content: 'Coffee break time!',
       messageType: 'text',
       channelName: 'random',
       createdAt: randomDate(new Date(2024, 0, 1), new Date()),
@@ -396,7 +396,7 @@ async function main() {
   console.log('Starting enhanced database seeding...');
 
   try {
-    // 清空现有数据
+    // Clear existing data
     console.log('Clearing existing data...');
     await prisma.notification.deleteMany();
     await prisma.attachment.deleteMany();
@@ -413,7 +413,7 @@ async function main() {
     await prisma.user.deleteMany();
     console.log('Data cleared');
 
-    // 创建用户
+    // Create users
     console.log('Creating users...');
     const createdUsers = [];
     for (const userData of seedData.users) {
@@ -435,7 +435,7 @@ async function main() {
       console.log(`  Created user: ${user.displayName}`);
     }
 
-    // 创建团队成员关系
+    // Create team member relationships
     console.log('Creating team member relationships...');
     for (const user of createdUsers) {
       await prisma.teamMember.create({
@@ -446,7 +446,7 @@ async function main() {
       });
     }
 
-    // 创建频道
+    // Create channels
     console.log('Creating channels...');
     const createdChannels = [];
     for (const channelData of seedData.channels) {
@@ -461,7 +461,7 @@ async function main() {
       createdChannels.push(channel);
       console.log(`  Created channel: ${channel.name}`);
 
-      // 将所有用户添加到公共频道
+      // Add all users to public channels
       if (!channelData.isPrivate) {
         for (const user of createdUsers) {
           await prisma.channelMember.create({
@@ -475,7 +475,7 @@ async function main() {
       }
     }
 
-    // 创建 DM 对话
+    // Create DM conversations
     console.log('Creating DM conversations...');
     const dmPairs = [
       ['alice@chat.com', 'bob@chat.com'],
@@ -504,7 +504,7 @@ async function main() {
       }
     }
 
-    // 创建消息
+    // Create messages
     console.log('Creating messages...');
     const createdMessages: any[] = [];
     for (let i = 0; i < seedData.messages.length; i++) {
@@ -530,7 +530,7 @@ async function main() {
         dmConversationId = dmConv?.id;
       }
 
-      // 随机选择一个用户作为消息发送者
+      // Randomly select a user as message sender
       const randomUser = createdUsers[Math.floor(Math.random() * createdUsers.length)];
 
       const message = await prisma.message.create({
@@ -545,7 +545,7 @@ async function main() {
       });
       createdMessages.push(message);
 
-      // 处理 @ 提及
+      // Handle @ mentions
       const mentionRegex = /@(\w+)/g;
       const mentions = messageData.content.match(mentionRegex);
       if (mentions) {
@@ -566,20 +566,20 @@ async function main() {
       console.log(`  Created message (${i + 1}/${seedData.messages.length}): ${message.content.substring(0, 50)}...`);
     }
 
-    // 生成额外的随机消息
+    // Generate extra random messages
     console.log('Generating extra random messages...');
     const randomMessages = [
-      'This looks great! 👍',
+      'This looks great!',
       'I agree with that approach',
       'Let me review and get back to you',
       'Thanks for the update',
       'Could you provide more details?',
-      'Looks good to me ✅',
+      'Looks good to me',
       'I have a question about this',
       'Let\'s schedule a call to discuss',
       'Working on it now',
       'Done! Please check it out',
-      'Awesome work team! 🎉',
+      'Awesome work team!',
       'Just pushed an update',
       'Bug fixed and deployed',
       'Ready for testing',
@@ -604,7 +604,7 @@ async function main() {
     }
     console.log('  Generated 50 extra messages');
 
-    // 创建通知设置
+    // Create notification settings
     console.log('Creating notification settings...');
     for (const user of createdUsers) {
       await prisma.notificationSettings.create({
@@ -619,7 +619,7 @@ async function main() {
       });
     }
 
-    // 创建一些示例通知
+    // Create some sample notifications
     console.log('Creating sample notifications...');
     for (let i = 0; i < 20; i++) {
       const user = createdUsers[Math.floor(Math.random() * createdUsers.length)];

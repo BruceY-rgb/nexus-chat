@@ -1,5 +1,5 @@
 /**
- * Message Resources - 消息资源
+ * Message Resources - Message Resources
  */
 
 import { apiExecutor } from '../executor.js';
@@ -9,7 +9,7 @@ export const messageResources: ResourceDefinition[] = [
   {
     uri: 'messages://recent',
     name: 'Recent Messages',
-    description: '获取最近的消息列表',
+    description: 'Get recent message list',
     mimeType: 'application/json',
   },
 ];

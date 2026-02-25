@@ -46,7 +46,7 @@ export default function MessageActions({
   const toolbarRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
 
-  // 智能定位计算
+  // Smart positioning calculation
   useEffect(() => {
     if (showEmojiPicker) {
       const updatePosition = () => {
@@ -111,7 +111,7 @@ export default function MessageActions({
     }
   }, [showEmojiPicker, isOwnMessage, containerRef]);
 
-  // 智能对侧定位逻辑
+  // Smart opposite-side positioning logic
   const getToolbarPosition = () => {
     if (isOwnMessage) {
       return 'absolute top-0 -translate-y-1/2 left-4 right-auto z-[100]';
@@ -136,12 +136,12 @@ export default function MessageActions({
     }
   };
 
-  // 表情回复处理
+  // Emoji reaction handling
   const handleEmojiClick = async (emoji: string) => {
     await toggleReaction(emoji);
   };
 
-  // 如果是已删除的消息，不显示任何操作
+  // If message is deleted, don't show any actions
   if (message.isDeleted) {
     return null;
   }
@@ -260,7 +260,7 @@ export default function MessageActions({
             )}
           </div>
 
-          {/* EmojiPicker 面板 */}
+          {/* EmojiPicker panel */}
           {showEmojiPicker && (
             <Portal>
               <div
@@ -284,7 +284,7 @@ export default function MessageActions({
           )}
         </div>
 
-        {/* 删除确认对话框 */}
+        {/* Delete confirmation dialog */}
         <AnimatePresence>
           {showDeleteConfirm && (
             <>
@@ -332,7 +332,7 @@ export default function MessageActions({
   );
 }
 
-// Portal 辅助组件
+// Portal helper component
 function Portal({ children }: { children: React.ReactNode }) {
   const container = typeof window !== 'undefined' ? document.body : null;
   if (!container) return null;

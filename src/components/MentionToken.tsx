@@ -21,7 +21,7 @@ export default function MentionToken({
   const [isHovered, setIsHovered] = useState(false);
 
   if (!isEditing) {
-    // 显示模式：高亮显示提及
+    // Display mode: highlight mention
     const tokenClass = isCurrentUserMentioned
       ? 'inline-block px-1.5 py-0.5 mx-0.5 rounded-full bg-blue-500/30 text-blue-300 font-semibold border border-blue-400 shadow-sm'
       : 'inline-block px-1.5 py-0.5 mx-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium border border-blue-500/30';
@@ -36,7 +36,7 @@ export default function MentionToken({
     );
   }
 
-  // 编辑模式：可删除的 Token
+  // Edit mode: removable Token
   return (
     <span
       className="inline-flex items-center gap-1 px-2 py-1 mx-0.5 rounded bg-[#1164A3] text-white text-sm font-medium border border-blue-400"
@@ -53,7 +53,7 @@ export default function MentionToken({
           <X size={14} />
         </button>
       )}
-      {/* 隐藏的输入框用于光标定位 */}
+      {/* Hidden input for cursor positioning */}
       <input
         type="text"
         value={`@{${userId}:${displayName}}`}
@@ -66,17 +66,17 @@ export default function MentionToken({
 }
 
 /**
- * Token 化提及文本
- * 将 @{displayName} 转换为特殊的标记格式，用于后端解析
+ * Tokenize mention text
+ * Convert @{displayName} to special marker format for backend parsing
  */
 export function createMentionToken(userId: string, displayName: string): string {
-  // 使用特殊格式：@{userId:displayName}
+  // Use special format: @{userId:displayName}
   return `@{${userId}:${displayName}}`;
 }
 
 /**
- * 解析提及 Token
- * 从特殊标记中提取 userId 和 displayName
+ * Parse mention Token
+ * Extract userId and displayName from special marker
  */
 export function parseMentionToken(token: string): { userId: string; displayName: string } | null {
   const match = token.match(/@\{([^:]+):([^}]+)\}/);
@@ -90,14 +90,14 @@ export function parseMentionToken(token: string): { userId: string; displayName:
 }
 
 /**
- * 检查文本是否包含 Token
+ * Check if text contains Token
  */
 export function containsMentionTokens(text: string): boolean {
   return /@\{[^:]+:[^}]+\}/.test(text);
 }
 
 /**
- * 提取所有提及 Token
+ * Extract all mention Tokens
  */
 export function extractMentionTokens(text: string): string[] {
   const tokens = text.match(/@\{[^:]+:[^}]+\}/g);
@@ -105,7 +105,7 @@ export function extractMentionTokens(text: string): string[] {
 }
 
 /**
- * 从 Token 化文本中提取用户名（用于显示）
+ * Extract username from tokenized text (for display)
  */
 export function extractDisplayNames(text: string): string[] {
   const tokens = text.match(/@\{[^:]+:([^}]+)\}/g);

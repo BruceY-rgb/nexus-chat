@@ -46,7 +46,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { socket, isConnected, connectionStatus, joinChannel, leaveChannel, joinDM, leaveDM, sendTypingStart, sendTypingStop } = useSocket();
 
-  // 自动滚动到底部
+  // Auto scroll to bottom
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, []);
@@ -63,7 +63,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
     return () => clearTimeout(timer);
   }, [messages, scrollToBottom]);
 
-  // 组件挂载后自动聚焦
+  // Auto focus after component mount
   useEffect(() => {
     const timer = setTimeout(() => {
       if (inputRef.current) {
@@ -73,7 +73,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
     return () => clearTimeout(timer);
   }, []);
 
-  // 加载历史消息
+  // Load historical messages
   const PAGE_SIZE = 50;
 
   const loadMessages = useCallback(async () => {
@@ -154,7 +154,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
     }
   }, [isLoadingMore, hasMore, loadOlderMessages]);
 
-  // 加入房间
+  // Join room
   useEffect(() => {
     if (isConnected) {
       if (channelId) {
@@ -173,22 +173,22 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
     };
   }, [isConnected, channelId, dmConversationId, joinChannel, leaveChannel, joinDM, leaveDM]);
 
-  // 初始化加载消息
+  // Initial load messages
   useEffect(() => {
     loadMessages();
   }, [loadMessages]);
 
-  // 监听 WebSocket 事件
+  // Listen to WebSocket events
   useEffect(() => {
     if (!socket) return;
 
-    // 新消息
+    // New message
     socket.on('new-message', (message: Message) => {
       console.log('📨 Received new message:', message);
       setMessages(prev => [...prev, message]);
     });
 
-    // 打字指示器
+    // Typing indicator
     socket.on('user-typing', (data: { userId: string; channelId?: string; dmConversationId?: string; isTyping: boolean }) => {
       setTypingUsers(prev => {
         const filtered = prev.filter(u => u.userId !== data.userId);
@@ -196,7 +196,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
         if (data.isTyping) {
           return [...filtered, {
             userId: data.userId,
-            displayName: 'User', // 这里应该从用户信息中获取实际名称
+            displayName: 'User', // Should get actual name from user info
             channelId: data.channelId,
             dmConversationId: data.dmConversationId,
             isTyping: true
@@ -207,20 +207,20 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
       });
     });
 
-    // 消息更新
+    // Message update
     socket.on('message-updated', (message: Message) => {
       setMessages(prev => prev.map(m => m.id === message.id ? message : m));
     });
 
-    // 消息删除
+    // Message deletion
     socket.on('message-deleted', (data: { messageId: string }) => {
       setMessages(prev => prev.filter(m => m.id !== data.messageId));
     });
 
-    // 用户在线状态更新
+    // User presence update
     socket.on('user-presence-update', (data: { userId: string; isOnline: boolean }) => {
       console.log('👤 User presence update:', data);
-      // 这里可以更新用户列表中的在线状态
+      // Can update online status in user list here
     });
 
     return () => {
@@ -232,7 +232,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
     };
   }, [socket]);
 
-  // 发送消息
+  // Send message
   const sendMessage = async () => {
     if (!newMessage.trim() || isSending) return;
 
@@ -255,13 +255,13 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
         throw new Error('Failed to send message');
       }
 
-      // 先清空输入框
+      // First clear input
       setNewMessage('');
 
-      // 停止打字指示器
+      // Stop typing indicator
       sendTypingStop({ channelId, dmConversationId });
 
-      // 强制回焦：在下一个事件循环中自动聚焦
+      // Force refocus: auto focus in the next event loop
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
@@ -275,29 +275,29 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
     }
   };
 
-  // 处理输入变化（带打字指示器）
+  // Handle input change (with typing indicator)
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setNewMessage(value);
 
-    // 发送打字开始事件
+    // Send typing start event
     if (value.trim() && !typingTimeoutRef.current) {
       sendTypingStart({ channelId, dmConversationId });
     }
 
-    // 清除之前的定时器
+    // Clear previous timer
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // 设置新的定时器，3秒后发送打字停止
+    // Set new timer, send typing stop after 3 seconds
     typingTimeoutRef.current = setTimeout(() => {
       sendTypingStop({ channelId, dmConversationId });
       typingTimeoutRef.current = null;
     }, 3000);
   };
 
-  // 处理按键事件（Enter发送，Shift+Enter换行）
+  // Handle key event (Enter to send, Shift+Enter for newline)
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -305,7 +305,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
     }
   };
 
-  // 渲染连接状态
+  // Render connection status
   const renderConnectionStatus = () => {
     const statusMap = {
       connecting: 'Connecting...',
@@ -324,7 +324,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
 
   return (
     <div className={`flex flex-col h-full ${className}`}>
-      {/* 头部 - 固定不滚动 */}
+      {/* Header - Fixed, does not scroll */}
       <div className="flex-shrink-0 flex items-center justify-between p-4 border-b bg-white">
         <h2 className="text-lg font-semibold">
           {channelId ? 'Channel Chat' : 'Direct Message'}
@@ -332,7 +332,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
         {renderConnectionStatus()}
       </div>
 
-      {/* 消息列表 - 独立滚动 */}
+      {/* Message list - Independent scroll */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
@@ -375,7 +375,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
           ))
         )}
 
-        {/* 打字指示器 */}
+        {/* Typing indicator */}
         {typingUsers.length > 0 && (
           <div className="text-sm text-gray-500 italic">
             {typingUsers.map(u => u.displayName).join(', ')} is typing...
@@ -385,7 +385,7 @@ export function ChatWindow({ channelId, dmConversationId, className = '' }: Chat
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 输入框 - 固定不滚动 */}
+      {/* Input box - Fixed, does not scroll */}
       <div className="flex-shrink-0 p-4 border-t bg-white">
         <div className="flex space-x-2">
           <textarea

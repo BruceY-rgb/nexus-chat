@@ -1,11 +1,11 @@
 /**
- * Slack数据导入脚本
- * 将抓取的Slack数据导入到本地数据库
+ * Slack Data Import Script
+ * Imports scraped Slack data into the local database
  *
- * 使用方法:
- * 1. 先运行 slack-scraper.ts 获取数据
- * 2. 设置环境变量 DATABASE_URL, OSS_*, SLACK_USER_TOKEN
- * 3. 运行: npx tsx scripts/import-slack-data.ts
+ * Usage:
+ * 1. First run slack-scraper.ts to get data
+ * 2. Set environment variables DATABASE_URL, OSS_*, SLACK_USER_TOKEN
+ * 3. Run: npx tsx scripts/import-slack-data.ts
  */
 
 import { PrismaClient, Prisma } from "@prisma/client";
@@ -15,16 +15,16 @@ import { fileURLToPath } from "url";
 import * as bcrypt from "bcryptjs";
 import OSS from "ali-oss";
 
-// ES模块兼容的__dirname
+// ES module compatible __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 配置
+// Configuration
 const INPUT_FILE = path.join(__dirname, "slack-data.json");
-const DEFAULT_PASSWORD = "password123"; // 默认密码
+const DEFAULT_PASSWORD = "password123"; // Default password
 const SLACK_TOKEN = process.env.SLACK_USER_TOKEN;
 
-// OSS 客户端初始化
+// OSS client initialization
 function getOssClient(): OSS {
   return new OSS({
     accessKeyId: process.env.OSS_ACCESS_KEY_ID!,
@@ -35,7 +35,7 @@ function getOssClient(): OSS {
   });
 }
 
-// 下载 Slack 文件
+// Download Slack file
 async function downloadSlackFile(
   fileUrl: string,
   token: string,
@@ -54,7 +54,7 @@ async function downloadSlackFile(
   return Buffer.from(arrayBuffer);
 }
 
-// 上传文件到 OSS
+// Upload file to OSS
 async function uploadToOss(
   fileBuffer: Buffer,
   fileName: string,
@@ -82,7 +82,7 @@ async function uploadToOss(
     },
   });
 
-  // 使用 ali-oss 返回的 URL
+  // Use URL returned by ali-oss
   let fileUrl = result.url;
   if (process.env.OSS_CUSTOM_DOMAIN) {
     fileUrl = `https://${process.env.OSS_CUSTOM_DOMAIN}/${s3Key}`;
@@ -101,25 +101,25 @@ async function uploadToOss(
   };
 }
 
-// 导入文件附件
+// Import file attachment
 async function importAttachment(
   slackFile: SlackFile,
   messageId: string,
   userId: string,
 ): Promise<number> {
   try {
-    // 下载文件（优先使用下载专用 URL）
+    // Download file (prefer download-specific URL)
     const downloadUrl = slackFile.url_private_download || slackFile.url_private;
     const fileBuffer = await downloadSlackFile(downloadUrl, SLACK_TOKEN!);
 
-    // 上传到 OSS
+    // Upload to OSS
     const uploadResult = await uploadToOss(
       fileBuffer,
       slackFile.name,
       slackFile.mimetype,
     );
 
-    // 创建附件记录
+    // Create attachment record
     await prisma.attachment.create({
       data: {
         messageId,
@@ -212,7 +212,7 @@ const prisma = new PrismaClient({
   log: ["info", "warn", "error"],
 });
 
-// 映射表
+// Mapping table
 interface UserMapping {
   slackUserId: string;
   localUserId: string;
@@ -225,17 +225,17 @@ interface ChannelMapping {
   slackChannelName: string;
 }
 
-// 转换Slack时间戳为Date
+// Convert Slack timestamp to Date
 function slackTimestampToDate(ts: string): Date {
   return new Date(parseFloat(ts) * 1000);
 }
 
-// 重置模式：清空现有数据
+// Reset mode: clear existing data
 async function resetData() {
   console.log("Warning: Clearing existing data (reset mode)...");
 
   try {
-    // 按依赖顺序删除数据（先删除有外键依赖的表）
+    // Delete data in dependency order (tables with foreign keys first)
     await prisma.attachment.deleteMany();
     console.log("   - Attachments cleared");
 
@@ -251,7 +251,7 @@ async function resetData() {
     await prisma.teamMember.deleteMany();
     console.log("   - Team members cleared");
 
-    // 私信相关（依赖 user，需要先删除）
+    // DM related (depends on user, need to delete first)
     await prisma.dMConversationMember.deleteMany();
     console.log("   - DM conversation members cleared");
 
@@ -271,12 +271,12 @@ async function resetData() {
   }
 }
 
-// 生成随机ID
+// Generate random ID
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// 导入用户（重置模式）
+// Import users (reset mode)
 async function importUsers(slackData: SlackData): Promise<UserMapping[]> {
   console.log("Users: Importing users (reset mode)...");
 
@@ -288,7 +288,7 @@ async function importUsers(slackData: SlackData): Promise<UserMapping[]> {
     try {
       const email = `${slackUser.name}@slack-import.local`;
 
-      // 检查用户是否已存在
+      // Check if user already exists
       const existingUser = await prisma.user.findUnique({
         where: { email },
       });
@@ -347,7 +347,7 @@ async function importUsers(slackData: SlackData): Promise<UserMapping[]> {
   return userMappings;
 }
 
-// 导入频道（重置模式）
+// Import channels (reset mode)
 async function importChannels(
   slackData: SlackData,
   userMappings: UserMapping[],
@@ -367,12 +367,12 @@ async function importChannels(
 
   for (const slackChannel of slackData.channels) {
     try {
-      // 跳过私人频道
+      // Skip private channels
       if (slackChannel.is_private) {
         continue;
       }
 
-      // 检查频道是否已存在
+      // Check if channel already exists
       const existingChannel = await prisma.channel.findUnique({
         where: { name: slackChannel.name },
       });
@@ -404,7 +404,7 @@ async function importChannels(
         slackChannelName: slackChannel.name,
       });
 
-      // 将所有用户添加到频道
+      // Add all users to channel
       for (const mapping of userMappings) {
         await prisma.channelMember.create({
           data: {
@@ -427,7 +427,7 @@ async function importChannels(
   return channelMappings;
 }
 
-// 导入消息（重置模式）
+// Import messages (reset mode)
 async function importMessages(
   slackData: SlackData,
   userMappings: UserMapping[],
@@ -436,7 +436,7 @@ async function importMessages(
   console.log("");
   console.log("Messages: Importing messages (reset mode)...");
 
-  // 创建映射查找表
+  // Create mapping lookup table
   const userIdMap = new Map(
     userMappings.map((m) => [m.slackUserId, m.localUserId]),
   );
@@ -444,7 +444,7 @@ async function importMessages(
     channelMappings.map((m) => [m.slackChannelId, m.localChannelId]),
   );
 
-  // 创建时间戳到本地消息ID的映射，用于处理线程
+  // Create timestamp to local message ID mapping for thread handling
   const tsToLocalId = new Map<string, string>();
 
   let totalImported = 0;
@@ -452,19 +452,19 @@ async function importMessages(
   let duplicateSkipped = 0;
   let totalAttachmentsImported = 0;
 
-  // 先按时间顺序导入所有消息（不包括线程回复）
+  // First import all messages in chronological order (excluding thread replies)
   for (const slackChannel of slackData.channels) {
     const localChannelId = channelIdMap.get(slackChannel.id);
     if (!localChannelId) continue;
 
     const messages = slackData.messages[slackChannel.id] || [];
 
-    // 按时间戳排序
+    // Sort by timestamp
     messages.sort((a, b) => parseFloat(a.ts) - parseFloat(b.ts));
 
     for (const slackMsg of messages) {
       try {
-        // 跳过系统消息（但保留file_share类型的用户上传文件消息）
+        // Skip system messages (but keep file_share type user uploaded file messages)
         if (
           slackMsg.subtype &&
           !["file_share", "thread_broadcast"].includes(slackMsg.subtype)
@@ -475,7 +475,7 @@ async function importMessages(
           continue;
         }
 
-        // 跳过没有用户的消息（除非是文件分享消息）
+        // Skip messages without user (unless it's a file share message)
         if (!slackMsg.user && slackMsg.subtype !== "file_share") {
           totalSkipped++;
           continue;
@@ -483,7 +483,7 @@ async function importMessages(
 
         let localUserId = slackMsg.user ? userIdMap.get(slackMsg.user) : null;
 
-        // 如果是文件分享消息，尝试找第一个用户作为替代
+        // If it's a file share message, try to find the first user as fallback
         if (!localUserId && slackMsg.subtype === "file_share") {
           localUserId = userMappings[0]?.localUserId;
         }
@@ -493,7 +493,7 @@ async function importMessages(
           continue;
         }
 
-        // 检查消息是否已存在（通过时间和用户判断）
+        // Check if message already exists (determined by time and user)
         const msgCreatedAt = slackTimestampToDate(slackMsg.ts);
         const existingMessage = await prisma.message.findFirst({
           where: {
@@ -512,12 +512,12 @@ async function importMessages(
           continue;
         }
 
-        // 判断是否为线程根消息
+        // Determine if it's a thread root message
         const isThreadRoot = !!(
           slackMsg.thread_ts && slackMsg.ts === slackMsg.thread_ts
         );
 
-        // 判断消息类型（根据附件）
+        // Determine message type (based on attachments)
         let messageType = "text";
         if (slackMsg.files && slackMsg.files.length > 0) {
           const hasImage = slackMsg.files.some((f) =>
@@ -535,11 +535,11 @@ async function importMessages(
             createdAt: msgCreatedAt,
             isEdited: !!slackMsg.edited,
             isThreadRoot: isThreadRoot || false,
-            // parentMessageId稍后处理
+            // parentMessageId handled later
           },
         });
 
-        // 导入附件
+        // Import attachments
         let attachmentCount = 0;
         if (slackMsg.files && slackMsg.files.length > 0) {
           for (const slackFile of slackMsg.files) {
@@ -558,7 +558,7 @@ async function importMessages(
           }
         }
 
-        // 存储时间戳到本地ID的映射
+        // Store timestamp to local ID mapping
         tsToLocalId.set(`${slackChannel.id}-${slackMsg.ts}`, message.id);
 
         totalImported++;
@@ -576,7 +576,7 @@ async function importMessages(
 
   console.log(`   - First round import complete, ${totalImported} messages`);
 
-  // 第二轮：处理线程关系
+  // Second round: handle thread relationships
   console.log("   Processing thread relationships...");
   let threadCount = 0;
 
@@ -587,7 +587,7 @@ async function importMessages(
     const messages = slackData.messages[slackChannel.id] || [];
 
     for (const slackMsg of messages) {
-      // 只有当消息是线程回复时才处理
+      // Only handle messages that are thread replies
       if (!slackMsg.thread_ts || slackMsg.ts === slackMsg.thread_ts) continue;
 
       const localMessageId = tsToLocalId.get(
@@ -599,13 +599,13 @@ async function importMessages(
 
       if (localMessageId && parentMessageId) {
         try {
-          // 检查是否已经设置了parentMessageId
+          // Check if parentMessageId is already set
           const message = await prisma.message.findUnique({
             where: { id: localMessageId },
           });
 
           if (message && message.parentMessageId) {
-            continue; // 已处理过
+            continue; // Already processed
           }
 
           await prisma.message.update({
@@ -616,7 +616,7 @@ async function importMessages(
             },
           });
 
-          // 更新父消息的回复计数
+          // Update parent message reply count
           await prisma.message.update({
             where: { id: parentMessageId },
             data: {
@@ -627,7 +627,7 @@ async function importMessages(
 
           threadCount++;
         } catch (error) {
-          // 忽略更新错误
+          // Ignore update errors
         }
       }
     }
@@ -641,29 +641,29 @@ async function importMessages(
   console.log(`   - Skipped others: ${totalSkipped}`);
 }
 
-// 主函数
+// Main function
 async function main() {
   console.log("Slack Data Import Tool (Reset Mode)");
   console.log("=".repeat(50));
 
-  // 1. 检查输入文件
+  // 1. Check input file
   if (!fs.existsSync(INPUT_FILE)) {
     console.error(`Error: Data file not found ${INPUT_FILE}`);
     console.log("   Please run first: npx tsx scripts/slack-scraper.ts");
     process.exit(1);
   }
 
-  // 1.1 检查 Slack Token
+  // 1.1 Check Slack Token
   if (!SLACK_TOKEN) {
     console.error(`Error: Please set SLACK_USER_TOKEN environment variable`);
     console.log("   To download Slack files, you need a Slack User Token");
     process.exit(1);
   }
 
-  // 2. 重置模式：清空现有数据
+  // 2. Reset mode: clear existing data
   await resetData();
 
-  // 3. 读取数据
+  // 3. Read data
   console.log(`Reading data file: ${INPUT_FILE}`);
   const fileContent = fs.readFileSync(INPUT_FILE, "utf-8");
   const slackData: SlackData = JSON.parse(fileContent);
@@ -675,7 +675,7 @@ async function main() {
   console.log(`   - Messages: ${slackData.metadata.totalMessages}`);
   console.log("");
 
-  // 3. 导入用户（重置模式）
+  // 3. Import users (reset mode)
   const userMappings = await importUsers(slackData);
 
   if (userMappings.length === 0) {
@@ -683,7 +683,7 @@ async function main() {
     process.exit(1);
   }
 
-  // 4. 创建团队成员关系（重置模式）
+  // 4. Create team member relationships (reset mode)
   console.log("");
   console.log("Creating team member relationships (reset mode)...");
   const users = await prisma.user.findMany();
@@ -706,13 +706,13 @@ async function main() {
   }
   console.log(`   - New team members: ${newTeamMemberCount}`);
 
-  // 5. 导入频道（重置模式）
+  // 5. Import channels (reset mode)
   const channelMappings = await importChannels(slackData, userMappings);
 
-  // 6. 导入消息（重置模式）
+  // 6. Import messages (reset mode)
   await importMessages(slackData, userMappings, channelMappings);
 
-  // 7. 创建通知设置（重置模式）
+  // 7. Create notification settings (reset mode)
   console.log("");
   console.log("Creating notification settings (reset mode)...");
   let newNotificationSettingsCount = 0;
@@ -733,7 +733,7 @@ async function main() {
   }
   console.log(`   - New notification settings: ${newNotificationSettingsCount}`);
 
-  // 8. 统计
+  // 8. Statistics
   console.log("");
   console.log("=".repeat(50));
   console.log("Reset import completed!");

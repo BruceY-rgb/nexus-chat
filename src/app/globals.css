@@ -4,7 +4,7 @@
 
 /* Slack Design System - Global Styles */
 
-/* 1. 全局基础样式调整 */
+/* 1. Global base style adjustments */
 * {
   margin: 0;
   padding: 0;
@@ -13,20 +13,20 @@
 
 html, body {
   height: 100%;
-  /* Slack 使用更加系统化的无衬线字体 */
+  /* Slack uses a more systematic sans-serif font */
   font-family: "Slack-Lato", "appleLogo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  /* Aubergine 深色模式 - Slack 风格 */
+  /* Aubergine dark mode - Slack style */
   background-color: #1A1D21;
   color: #FFFFFF;
   line-height: 1.4;
 }
 
-/* 2. 滚动条美化 - Slack 风格 */
+/* 2. Scrollbar styling - Slack style */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -54,7 +54,7 @@ body {
   background-clip: padding-box;
 }
 
-/* 侧边栏滚动条 - 更明显的样式 */
+/* Sidebar scrollbar - more prominent style */
 .sidebar-scroll::-webkit-scrollbar {
   width: 8px;
 }
@@ -74,7 +74,7 @@ body {
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* 消息区域滚动条 - 细线风格 */
+/* Message area scrollbar - thin line style */
 .message-scroll::-webkit-scrollbar {
   width: 6px;
 }
@@ -92,7 +92,7 @@ body {
   background: rgba(255, 255, 255, 0.25);
 }
 
-/* Firefox 滚动条样式 */
+/* Firefox scrollbar style */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
@@ -108,9 +108,9 @@ body {
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
-/* 3. 组件层级重写 */
+/* 3. Component layer overrides */
 @layer components {
-  /* 验证码/密码切换按钮组 - Aubergine 深色模式 */
+  /* Verification code/password toggle button group - Aubergine dark mode */
   .auth-tabs {
     @apply flex border border-[#3E4144] rounded-md p-1 bg-[#222529] mb-6;
   }
@@ -125,10 +125,10 @@ body {
     color: #FFFFFF;
   }
 
-  /* 输入框：Aubergine 深色模式 */
+  /* Input: Aubergine dark mode */
   .input {
     @apply w-full px-3 py-2.5 bg-[#222529] border border-[#3E4144] rounded text-[#FFFFFF] placeholder-[#6B7280] transition-all duration-200;
-    font-size: 16px; /* 移动端防止自动放大 */
+    font-size: 16px; /* Prevent auto-zoom on mobile */
   }
 
   .input:focus {
@@ -136,44 +136,44 @@ body {
     background-color: #1A1D21;
   }
 
-  /* 标签文字 */
+  /* Label text */
   .input-label {
     @apply block text-sm font-bold mb-2 text-[#D1D2D3];
   }
 
-  /* 登录卡片容器 - Aubergine 深色模式 */
+  /* Login card container - Aubergine dark mode */
   .auth-card {
     @apply w-full max-w-[480px] p-10 bg-[#222529] border border-[#3E4144];
-    /* Slack 官网登录页通常不带阴影和重边框，靠间距撑起高级感 */
+    /* Slack official login page typically doesn't have shadows or heavy borders, uses spacing for premium feel */
   }
 
   .auth-container {
     @apply min-h-screen flex flex-col items-center justify-center p-6 bg-[#1A1D21];
   }
 
-  /* 按钮：Slack Aubergine 深紫色 */
+  /* Button: Slack Aubergine deep purple */
   .btn-primary {
     @apply w-full bg-[#4A154B] text-white py-3 rounded font-bold text-lg hover:bg-[#5D1B5E] active:scale-[0.98] transition-all;
-    /* Slack 经典深紫色，富有品牌辨识度 */
+    /* Slack classic deep purple, full of brand recognition */
   }
 
   .btn-outline {
     @apply w-full border-2 border-[#3E4144] text-[#D1D2D3] py-2.5 rounded font-bold mt-4 hover:bg-[#222529] transition-all;
   }
 
-  /* 底部声明 - Aubergine 深色模式 */
+  /* Footer text - Aubergine dark mode */
   .auth-footer-text {
     @apply text-xs text-[#ABABAD] mt-8 text-center max-w-xs leading-relaxed;
   }
 
-  /* Select 下拉框 - Aubergine 深色模式 */
+  /* Select dropdown - Aubergine dark mode */
   select option {
     @apply bg-[#222529] text-[#FFFFFF];
-    /* 为下拉选项添加深色背景 */
+    /* Add dark background for dropdown options */
   }
 }
 
-/* 4. 实用类微调 */
+/* 4. Utility class tweaks */
 @layer utilities {
   .text-slack-gray {
     color: #616061;

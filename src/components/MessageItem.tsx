@@ -53,7 +53,7 @@ function MessageItemBase({
   scrollContainerRef,
   members,
 }: MessageItemProps) {
-  // 在组件顶层调用 useReactions hook
+  // Call useReactions hook at the top level of the component
   const { reactions, toggleReaction, pendingReactions } = useReactions(
     message.id,
     currentUserId,
@@ -61,7 +61,7 @@ function MessageItemBase({
 
   return (
     <div>
-      {/* 阅读指示器 */}
+      {/* Read indicator */}
       {showReadIndicator === message.id && (
         <div className="flex items-center justify-center my-4 animate-fade-in">
           <div className="bg-blue-500/90 text-white px-4 py-1 rounded-full text-xs font-medium shadow-lg">
@@ -80,7 +80,7 @@ function MessageItemBase({
             : ""
         }`}
       >
-        {/* 🧠 智能对侧悬停工具栏 - 脱离内容容器，悬浮在行级别 */}
+        {/* Smart hover toolbar on the side - detached from content container, floating at row level */}
         <MessageActions
           message={message}
           currentUserId={currentUserId}
@@ -92,13 +92,13 @@ function MessageItemBase({
           containerRef={scrollContainerRef}
         />
 
-        {/* 头像 + 消息内容容器 */}
+        {/* Avatar + message content container */}
         <div
           className={`flex w-full items-start gap-3 ${
             isOwnMessage ? "flex-row-reverse" : ""
           }`}
         >
-          {/* 头像 */}
+          {/* Avatar */}
           {showAvatar ? (
             <img
               src={getAvatarUrl(message.user.avatarUrl, message.user, 40)}
@@ -109,9 +109,9 @@ function MessageItemBase({
             <div className="w-10 flex-shrink-0" />
           )}
 
-          {/* 消息内容 */}
+          {/* Message content */}
           <div className="flex-1 min-w-0">
-            {/* 用户名和时间（仅在需要时显示） */}
+            {/* Username and time (only shown when needed) */}
             {showAvatar && (
               <div
                 className={`flex items-baseline gap-2 mb-1 ${
@@ -139,7 +139,7 @@ function MessageItemBase({
               </div>
             )}
 
-            {/* Quote Block - 显示被引用的消息 */}
+            {/* Quote Block - Display quoted message */}
             {(message.quotedContent || message.quotedUserName) &&
               !message.isDeleted && (
                 <div className="mb-2">
@@ -153,7 +153,7 @@ function MessageItemBase({
                 </div>
               )}
 
-            {/* 消息气泡 */}
+            {/* Message bubble */}
             <div
               className={`relative max-w-full px-4 py-2 rounded-lg break-words ${
                 isOwnMessage
@@ -161,7 +161,7 @@ function MessageItemBase({
                   : "bg-background-component text-text-primary"
               } ${message.isDeleted ? "opacity-50 italic" : ""}`}
             >
-              {/* 消息内容 */}
+              {/* Message content */}
               {editingMessageId === message.id ? (
                 <MessageEditor
                   message={message}

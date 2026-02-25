@@ -1,5 +1,5 @@
 /**
- * Thread Tools - 线程管理工具
+ * Thread Tools - Thread Management Tools
  */
 
 import { z } from "zod";
@@ -25,7 +25,7 @@ const markThreadReadSchema = z.object({
 export const threadTools: ToolDefinition[] = [
   {
     name: "get_thread_count",
-    description: "获取未读线程数量和未读回复总数",
+    description: "Get unread thread count and total unread replies",
     parameters: getThreadCountSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -52,7 +52,7 @@ export const threadTools: ToolDefinition[] = [
   },
   {
     name: "get_unread_threads",
-    description: "获取有未读回复的线程列表",
+    description: "Get list of threads with unread replies",
     parameters: getUnreadThreadsSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -85,7 +85,7 @@ export const threadTools: ToolDefinition[] = [
   },
   {
     name: "mark_thread_read",
-    description: "标记线程为已读",
+    description: "Mark thread as read",
     parameters: markThreadReadSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {

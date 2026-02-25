@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { channelId, dmConversationId, lastReadMessageId } = body;
 
-    // 验证：必须指定 channelId 或 dmConversationId 中的一个，但不能同时指定
+    // Validate: must specify either channelId or dmConversationId, but not both
     if (!channelId && !dmConversationId) {
       return NextResponse.json(
         { error: 'Must specify either channelId or dmConversationId' },
@@ -45,9 +45,9 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
 
-    // 清除频道未读计数
+    // Clear channel unread count
     if (channelId) {
-      // 验证用户是否是频道成员
+      // Verify user is a channel member
       const channelMember = await prisma.channelMember.findFirst({
         where: {
           channelId,
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 更新频道成员的未读计数和最后阅读时间
+      // Update channel member's unread count and last read time
       await prisma.channelMember.update({
         where: {
           channelId_userId: {
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      // 广播未读计数更新
+      // Broadcast unread count update
       if (typeof (global as any).io !== 'undefined') {
         const ioInstance = (global as any).io as SocketIOServer;
         ioInstance.to(`user:${currentUserId}`).emit('unread-count-update', {
@@ -93,9 +93,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 清除 DM 未读计数
+    // Clear DM unread count
     if (dmConversationId) {
-      // 验证用户是否是 DM 会话成员
+      // Verify user is a DM conversation member
       const conversationMember = await prisma.dMConversationMember.findFirst({
         where: {
           conversationId: dmConversationId,
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 更新 DM 成员的未读计数和最后阅读时间
+      // Update DM member's unread count and last read time
       await prisma.dMConversationMember.update({
         where: {
           conversationId_userId: {
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      // 广播未读计数更新
+      // Broadcast unread count update
       if (typeof (global as any).io !== 'undefined') {
         const ioInstance = (global as any).io as SocketIOServer;
         ioInstance.to(`user:${currentUserId}`).emit('unread-count-update', {

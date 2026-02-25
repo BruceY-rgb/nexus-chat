@@ -1,22 +1,22 @@
 #!/usr/bin/env tsx
 /**
- * 快速Mock数据填充脚本
- * 适用于自动部署环境（Vercel、Netlify、Dokploy等）
+ * Quick Mock Data Seeding Script
+ * Suitable for automated deployment environments (Vercel, Netlify, Dokploy, etc.)
  *
- * 使用方法:
- * 1. 在部署平台的环境变量中添加 AUTO_SEED=true
- * 2. 在部署后手动运行: npx tsx scripts/quick-seed.ts
- * 3. 或通过API调用触发
+ * Usage:
+ * 1. Add AUTO_SEED=true to environment variables in deployment platform
+ * 2. Run manually after deployment: npx tsx scripts/quick-seed.ts
+ * 3. Or trigger via API call
  */
 
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
-// 环境检测
+// Environment detection
 const isProduction = process.env.NODE_ENV === 'production';
 const isDokploy = !!process.env.DOKPLOY || !!process.env.DOCKER;
 
-// 设置日志级别
+// Set log level
 const logLevel = {
   showProgress: !isProduction || process.env.SEED_VERBOSE === 'true',
 };
@@ -26,14 +26,14 @@ const prisma = new PrismaClient({
 });
 
 async function seed() {
-  // 环境信息日志
+  // Environment info log
   console.log('Seeding started (Quick Mode)...');
   console.log(`Environment: ${isProduction ? 'Production' : 'Development'}${isDokploy ? ' (Dokploy)' : ''}`);
   console.log(`Timestamp: ${new Date().toISOString()}`);
   console.log('─'.repeat(50));
 
   try {
-    // 检查是否已有数据
+    // Check if data already exists
     const userCount = await prisma.user.count();
     if (userCount > 0) {
       console.log(`Database already has ${userCount} users, skipping seed`);
@@ -45,7 +45,7 @@ async function seed() {
       console.log('Starting quick mock data seeding...\n');
     }
 
-    // 创建用户
+    // Create users
     console.log('Creating test users...');
     const users = [
       { email: 'admin@chat.com', password: 'admin123', name: 'Admin', role: 'owner' },
@@ -71,7 +71,7 @@ async function seed() {
       console.log(`  - ${user.displayName}`);
     }
 
-    // 创建团队成员
+    // Create team members
     for (const user of createdUsers) {
       await prisma.teamMember.create({
         data: {
@@ -81,7 +81,7 @@ async function seed() {
       });
     }
 
-    // 创建频道
+    // Create channels
     console.log('\nCreating channels...');
     const channels = [
       { name: 'general', description: 'General discussion', isPrivate: false },
@@ -103,7 +103,7 @@ async function seed() {
       createdChannels.push(channel);
       console.log(`  - #${channel.name}`);
 
-      // 添加用户到频道
+      // Add users to channels
       for (const user of createdUsers) {
         await prisma.channelMember.create({
           data: {
@@ -115,10 +115,10 @@ async function seed() {
       }
     }
 
-    // 创建消息
+    // Create messages
     console.log('\nCreating sample messages...');
     const messages = [
-      { content: 'Welcome to the chat! 🎉', channel: 'general' },
+      { content: 'Welcome to the chat!', channel: 'general' },
       { content: 'Hey everyone!', channel: 'general' },
       { content: 'Let\'s build something amazing!', channel: 'general' },
       { content: 'Working on the new feature', channel: 'development' },
@@ -142,7 +142,7 @@ async function seed() {
       }
     }
 
-    // 创建通知设置
+    // Create notification settings
     for (const user of createdUsers) {
       await prisma.notificationSettings.create({
         data: { userId: user.id },

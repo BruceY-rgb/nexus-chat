@@ -40,13 +40,13 @@ interface DMMessageInputProps {
   disabled?: boolean;
   channelId?: string;
   dmConversationId?: string;
-  members?: TeamMember[]; // 成员列表，默认为空数组
+  members?: TeamMember[]; // Member list, defaults to empty array
   currentUserId?: string;
   onMessageSent?: (message?: Message) => void;
-  compact?: boolean; // 简化模式：只显示Emoji、Mention、More Options按钮
-  parentMessageId?: string; // 线程回复的父消息ID
-  quotedMessage?: Message | null; // 当前引用的消息
-  onClearQuote?: () => void; // 清除引用回调
+  compact?: boolean; // Simplified mode: only shows Emoji, Mention, More Options buttons
+  parentMessageId?: string; // Parent message ID for thread reply
+  quotedMessage?: Message | null; // Currently quoted message
+  onClearQuote?: () => void; // Clear quote callback
 }
 
 interface UploadedFile {
@@ -84,7 +84,7 @@ export default function DMMessageInput({
   // Markdown formatting hook
   const { insertFormatting, handleShortcut } = useMarkdownFormatting();
 
-  // 光标位置管理
+  // Cursor position management
   const [pendingCursorPosition, setPendingCursorPosition] = useState<number | null>(null);
   const pendingCursorPositionRef = useRef<number | null>(null);
 
@@ -106,7 +106,7 @@ export default function DMMessageInput({
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [moreOptionsPosition, setMoreOptionsPosition] = useState({ x: 0, y: 0 });
 
-  // 点击外部关闭 Emoji picker
+  // Click outside to close Emoji picker
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showEmojiPicker) {
@@ -114,7 +114,7 @@ export default function DMMessageInput({
         const emojiPicker = document.querySelector('[data-emoji-picker="true"]');
         const emojiButton = document.querySelector('[data-emoji-button="true"]');
 
-        // 如果点击的不是 emoji picker 本身，也不是 emoji 按钮，则关闭
+        // Close if clicking outside the emoji picker and emoji button
         if (emojiPicker && !emojiPicker.contains(target) && emojiButton !== target) {
           setShowEmojiPicker(false);
         }
@@ -125,7 +125,7 @@ export default function DMMessageInput({
         const moreOptionsMenu = document.querySelector('[data-more-options="true"]');
         const moreOptionsButton = document.querySelector('[data-more-options-button="true"]');
 
-        // 确保菜单存在并且确实点击了外部才关闭
+        // Ensure menu exists and click is outside before closing
         if (moreOptionsMenu) {
           const isClickingMenu = moreOptionsMenu.contains(target);
           const isClickingButton = moreOptionsButton && moreOptionsButton.contains(target);
@@ -145,21 +145,21 @@ export default function DMMessageInput({
     }
   }, [showEmojiPicker, showMoreOptions]);
 
-  // 同步预览层和textarea的滚动位置
+  // Sync scroll position between preview layer and textarea
   useEffect(() => {
     const textarea = textareaRef.current;
     const preview = previewRef.current;
 
     if (textarea && preview) {
-      // 标记是否正在同步滚动，防止无限递归
+      // Mark whether syncing is in progress to prevent infinite recursion
       let isSyncing = false;
 
-      // 初始化时同步滚动位置
+      // Sync scroll position on initial render
       preview.scrollTop = textarea.scrollTop;
 
-      // 监听预览层滚动事件，实现双向同步
+      // Listen to preview layer scroll events for bidirectional sync
       const handlePreviewScroll = (e: Event) => {
-        // 防止无限递归
+        // Prevent infinite recursion
         if (isSyncing) return;
 
         const target = e.target as HTMLDivElement;
@@ -169,7 +169,7 @@ export default function DMMessageInput({
           const textareaScrollTop = scrollPercentage * (textarea.scrollHeight - textarea.clientHeight);
           textarea.scrollTop = textareaScrollTop;
 
-          // 使用 setTimeout 确保在下一轮事件循环中重置标记
+          // Use setTimeout to ensure flag is reset in the next event loop
           setTimeout(() => {
             isSyncing = false;
           }, 0);
@@ -182,13 +182,13 @@ export default function DMMessageInput({
         preview.removeEventListener('scroll', handlePreviewScroll);
       };
     }
-  }, [message]); // 依赖message，确保内容变化时重新设置
+  }, [message]); // Depends on message to re-setup when content changes
 
-  // 过滤掉当前用户的成员（使用可选链安全处理）
+  // Filter out current user from members (safe handling with optional chaining)
   const availableMembers = (members || []).filter(member => member.id !== currentUserId);
 
   /**
-   * 处理Markdown格式化
+   * Handle Markdown formatting
    */
   const handleFormat = useCallback((syntax: string, placeholder?: string) => {
     const textarea = textareaRef.current;
@@ -204,19 +204,19 @@ export default function DMMessageInput({
       placeholder
     );
 
-    // 先更新消息内容
+    // First update message content
     setMessage(newValue);
-    // 然后设置待应用的光标位置（使用ref管理）
+    // Then set pending cursor position (managed with ref)
     pendingCursorPositionRef.current = cursorPosition;
   }, [message, insertFormatting]);
 
   /**
-   * 处理文件上传（图片）
+   * Handle file upload (images)
    */
   const handleFileUpload = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
 
-    // 过滤出图片文件
+    // Filter image files
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
 
     if (imageFiles.length === 0) {
@@ -224,7 +224,7 @@ export default function DMMessageInput({
       return;
     }
 
-    // 检查文件大小 (10MB 限制)
+    // Check file size (10MB limit)
     const maxSize = 10 * 1024 * 1024;
     const oversizedFiles = imageFiles.filter(file => file.size > maxSize);
     if (oversizedFiles.length > 0) {
@@ -232,7 +232,7 @@ export default function DMMessageInput({
       return;
     }
 
-    // 为每个文件创建预览
+    // Create preview for each file
     const newFiles: UploadedFile[] = imageFiles.map(file => ({
       id: Math.random().toString(36).substring(7),
       file,
@@ -241,7 +241,7 @@ export default function DMMessageInput({
 
     setUploadedFiles(prev => [...prev, ...newFiles]);
 
-    // 实际执行上传
+    // Actually perform the upload
     try {
       setIsUploading(true);
 
@@ -263,7 +263,7 @@ export default function DMMessageInput({
 
       const result = await response.json();
 
-      // 将上传结果存储到文件对象中
+      // Store upload result in file object
       setUploadedFiles(prev => prev.map(f => {
         const uploadedFile = result.files.find((uf: any) => uf.originalName === f.file.name);
         if (uploadedFile) {
@@ -278,7 +278,7 @@ export default function DMMessageInput({
     } catch (error) {
       console.error('File upload failed:', error);
       alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      // 移除失败的文件
+      // Remove failed files
       setUploadedFiles(prev => prev.filter(f => !newFiles.some(nf => nf.id === f.id)));
     } finally {
       setIsUploading(false);
@@ -286,12 +286,12 @@ export default function DMMessageInput({
   }, []);
 
   /**
-   * 处理文件传输（任意类型文件）
+   * Handle file transfer (any file type)
    */
   const handleFileTransfer = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
 
-    // 检查文件大小 (50MB 限制)
+    // Check file size (50MB limit)
     const maxSize = 50 * 1024 * 1024;
     const oversizedFiles = files.filter(file => file.size > maxSize);
     if (oversizedFiles.length > 0) {
@@ -299,16 +299,16 @@ export default function DMMessageInput({
       return;
     }
 
-    // 为每个文件创建预览（仅用于显示文件信息）
+    // Create preview for each file (only for displaying file info)
     const newFiles: UploadedFile[] = files.map(file => ({
       id: Math.random().toString(36).substring(7),
       file,
-      preview: '' // 非图片文件没有预览
+      preview: '' // No preview for non-image files
     }));
 
     setUploadedFiles(prev => [...prev, ...newFiles]);
 
-    // 实际执行上传
+    // Actually perform the upload
     try {
       setIsUploading(true);
 
@@ -330,7 +330,7 @@ export default function DMMessageInput({
 
       const result = await response.json();
 
-      // 将上传结果存储到文件对象中
+      // Store upload result in file object
       setUploadedFiles(prev => prev.map(f => {
         const uploadedFile = result.files.find((uf: any) => uf.originalName === f.file.name);
         if (uploadedFile) {
@@ -345,7 +345,7 @@ export default function DMMessageInput({
     } catch (error) {
       console.error('File transfer failed:', error);
       alert(`Transfer failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      // 移除失败的文件
+      // Remove failed files
       setUploadedFiles(prev => prev.filter(f => !newFiles.some(nf => nf.id === f.id)));
     } finally {
       setIsUploading(false);
@@ -353,7 +353,7 @@ export default function DMMessageInput({
   }, []);
 
   /**
-   * 移除已上传的文件
+   * Remove uploaded files
    */
   const removeFile = useCallback((fileId: string) => {
     setUploadedFiles(prev => {
@@ -366,7 +366,7 @@ export default function DMMessageInput({
   }, []);
 
   /**
-   * 配置拖拽上传
+   * Configure drag and drop upload
    */
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFileUpload,
@@ -388,18 +388,18 @@ export default function DMMessageInput({
   });
 
   /**
-   * 计算光标位置 - 优化版（完整复制所有影响渲染的样式）
+   * Calculate cursor position - Optimized version (fully copies all styles affecting rendering)
    */
   const getCaretCoordinates = (textarea: HTMLTextAreaElement, position: number) => {
     const div = document.createElement('div');
     const style = getComputedStyle(textarea);
 
-    // 复制textarea的样式
+    // Copy textarea styles
     for (const prop of style) {
       div.style[prop as any] = style[prop as any];
     }
 
-    // 设置测量div的样式
+    // Set measurement div styles
     div.style.position = 'absolute';
     div.style.visibility = 'hidden';
     div.style.whiteSpace = 'pre-wrap';
@@ -407,7 +407,7 @@ export default function DMMessageInput({
     div.style.overflow = 'hidden';
     div.style.width = textarea.clientWidth + 'px';
 
-    // 复制所有影响文本渲染的关键属性
+    // Copy all key attributes affecting text rendering
     div.style.fontSize = style.fontSize;
     div.style.fontFamily = style.fontFamily;
     div.style.lineHeight = style.lineHeight;
@@ -422,19 +422,19 @@ export default function DMMessageInput({
     div.style.borderLeftWidth = style.borderLeftWidth;
     div.style.borderRightWidth = style.borderRightWidth;
 
-    // 添加关键渲染属性，消除浏览器差异
+    // Add key rendering attributes to eliminate browser differences
     div.style.textRendering = 'optimizeLegibility';
     div.style.fontVariantLigatures = 'none';
     (div.style as any).WebkitFontSmoothing = 'antialiased';
     (div.style as any).MozOsxFontSmoothing = 'grayscale';
 
-    // 获取光标前的文本
+    // Get text before cursor
     const textBeforeCaret = textarea.value.substring(0, position);
 
-    // 设置div内容
+    // Set div content
     div.textContent = textBeforeCaret;
 
-    // 创建span标记光标位置
+    // Create span to mark cursor position
     const span = document.createElement('span');
     span.textContent = ' ';
     span.style.display = 'inline-block';
@@ -442,17 +442,17 @@ export default function DMMessageInput({
     span.style.height = style.lineHeight;
     div.appendChild(span);
 
-    // 将测量div放到和textarea相同的位置
+    // Position measurement div at the same location as textarea
     div.style.left = textarea.offsetLeft + 'px';
     div.style.top = textarea.offsetTop + 'px';
 
     document.body.appendChild(div);
 
-    // 计算相对于输入框的坐标
+    // Calculate coordinates relative to input box
     const rect = span.getBoundingClientRect();
     const textareaRect = textarea.getBoundingClientRect();
 
-    // 返回相对于输入框的坐标
+    // Return coordinates relative to input box
     const x = rect.left - textareaRect.left;
     const y = rect.top - textareaRect.top;
 
@@ -462,13 +462,13 @@ export default function DMMessageInput({
   };
 
   /**
-   * 处理 @ 提及自动完成 - 智能空格检测版
+   * Handle @ mention autocomplete - Smart space detection version
    */
   const handleMentionAutocomplete = (textarea: HTMLTextAreaElement) => {
     const cursorPos = textarea.selectionStart;
     const textBeforeCursor = message.substring(0, cursorPos);
 
-    // 使用正则表达式匹配 @ 符号以及之后最多30个字符（支持空格）
+    // Use regex to match @ symbol and up to 30 characters after it (supports spaces)
     const mentionMatch = textBeforeCursor.match(/@([^@\n]{0,30})$/);
 
     if (!mentionMatch) {
@@ -476,8 +476,8 @@ export default function DMMessageInput({
       return;
     }
 
-    const query = mentionMatch[1]; // @ 后面的内容
-    const startIndex = mentionMatch.index!; // @ 符号的位置
+    const query = mentionMatch[1]; // Content after @
+    const startIndex = mentionMatch.index!; // Position of @ symbol
 
     // Smart termination: check if the query starts with a known member name
     // followed by a space and additional text (meaning the mention is done)
@@ -500,31 +500,31 @@ export default function DMMessageInput({
       // No prefix matched a member exactly → space is part of name, keep searching
     }
 
-    // 如果查询为空，显示所有成员
+    // If query is empty, show all members
     const displayQuery = query.trim() === '' ? '' : query;
 
-    // 计算位置 - 简化相对定位版
+    // Calculate position - Simplified relative positioning version
     const caretPos = getCaretCoordinates(textarea, cursorPos);
 
-    // 弹窗尺寸
+    // Popup dimensions
     const popupWidth = 280;
 
-    // 简化的 X 坐标计算（相对于输入框）
+    // Simplified X coordinate calculation (relative to input box)
     let popupX = caretPos.x;
     const textareaWidth = textarea.clientWidth;
 
-    // X 坐标边界检测
+    // X coordinate boundary check
     if (popupX + popupWidth > textareaWidth - 10) {
-      popupX = textareaWidth - popupWidth - 10; // 右侧边界
+      popupX = textareaWidth - popupWidth - 10; // Right boundary
     }
     if (popupX < 10) {
-      popupX = 10; // 左侧边界
+      popupX = 10; // Left boundary
     }
 
-    // 强制向上弹出模式
+    // Force pop-up mode upwards
     const finalPosition = {
-      x: Math.max(10, popupX), // 最小距离左侧10px
-      y: 0 // 占位符，CSS 中将使用 bottom 属性
+      x: Math.max(10, popupX), // Minimum distance from left: 10px
+      y: 0 // Placeholder, CSS will use bottom property
     };
 
     setShowAutocomplete(true);
@@ -534,20 +534,20 @@ export default function DMMessageInput({
   };
 
   /**
-   * 处理选择提及用户
+   * Handle selecting mentioned user
    */
   const handleMentionSelect = (selectedMember: TeamMember) => {
     const beforeMention = message.substring(0, mentionStartIndex);
     const afterMention = message.substring(textareaRef.current?.selectionStart || 0);
 
-    // 只插入友好的显示名称，后跟空格
+    // Only insert friendly display name, followed by a space
     const mentionText = `@${selectedMember.displayName} `;
 
     const newMessage = `${beforeMention}${mentionText}${afterMention}`;
     setMessage(newMessage);
     setShowAutocomplete(false);
 
-    // 重新聚焦并设置光标位置
+    // Re-focus and set cursor position
     setTimeout(() => {
       if (textareaRef.current) {
         const newCursorPos = beforeMention.length + mentionText.length;
@@ -558,8 +558,8 @@ export default function DMMessageInput({
   };
 
   const handleSend = async () => {
-    // 检查是否有文本内容或已上传的图片
-    // 允许：只有文字 或 只有图片 或 文字+图片
+    // Check if there is text content or uploaded images
+    // Allowed: text only OR images only OR text + images
     const hasContent = message.trim().length > 0;
     const hasUploadedImages = uploadedFiles.some(f => f.uploadData && f.uploadData.fileUrl);
 
@@ -567,17 +567,17 @@ export default function DMMessageInput({
       return;
     }
 
-    // 在发送前，将 @displayName 转换为 @{userId:displayName} 格式
+    // Before sending, convert @displayName to @{userId:displayName} format
     const messageContent = convertDisplayNamesToTokens(message.trim());
     setIsSending(true);
 
     try {
-      // 获取已上传的文件数据
+      // Get uploaded file data
       const attachments = uploadedFiles
         .filter(f => f.uploadData)
         .map(f => {
           const file = f.file;
-          // 根据 mimeType 确定文件类型
+          // Determine file type based on mimeType
           let fileType = 'file';
           if (file.type.startsWith('image/')) {
             fileType = 'image';
@@ -592,7 +592,7 @@ export default function DMMessageInput({
           };
         });
 
-      // 根据是否有parentMessageId决定API端点
+      // Determine API endpoint based on whether parentMessageId exists
       const endpoint = parentMessageId
         ? `/api/messages/${parentMessageId}/reply`
         : '/api/messages';
@@ -636,16 +636,16 @@ export default function DMMessageInput({
       onClearQuote?.();
       onMessageSent?.(responseData);
 
-      // 重新聚焦到输入框 - 等待 textarea 启用后聚焦
+      // Re-focus to input box - wait for textarea to be enabled before focusing
       const attemptFocus = (attempts = 0) => {
         setTimeout(() => {
           if (textareaRef.current && !textareaRef.current.disabled) {
             textareaRef.current.focus();
           } else if (attempts < 10) {
-            // 最多重试10次，每次延迟50ms
+            // Retry up to 10 times, with 50ms delay each time
             attemptFocus(attempts + 1);
           }
-        }, 50); // 每次重试间隔 50ms
+        }, 50); // 50ms retry interval
       };
 
       attemptFocus();
@@ -658,7 +658,7 @@ export default function DMMessageInput({
   };
 
   /**
-   * 将 @displayName 转换为 @{userId:displayName} 格式
+   * Converts @displayName to @{userId:displayName} format
    * Uses longest-match-first to correctly delimit mentions from subsequent text.
    */
   const convertDisplayNamesToTokens = (content: string): string => {
@@ -682,8 +682,8 @@ export default function DMMessageInput({
   };
 
   /**
-   * 渲染格式化后的消息（用于输入框预览层）
-   * 支持 @提及高亮和 Emoji 优化
+   * Render formatted message (for input box preview layer)
+   * Supports @mention highlighting and Emoji optimization
    */
   const renderFormattedMessage = () => {
     if (!message) {
@@ -737,26 +737,26 @@ export default function DMMessageInput({
         }
       }
 
-      // 普通文本：处理 Emoji
+      // Normal text: process Emoji
       return renderEmojiInText(part);
     });
   };
 
   /**
-   * 在文本中渲染 Emoji
-   * 为 Emoji 字符添加样式，使其更大且对齐更好
+   * Render Emoji in text
+   * Add styles to Emoji characters to make them larger and better aligned
    */
   const renderEmojiInText = (text: string) => {
-    // 匹配各种 Unicode 范围的 Emoji 字符
+    // Match Emoji characters from various Unicode ranges
     const emojiRegex = /(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji})/gu;
     const parts = [...text];
 
     return parts.map((char, index) => {
       const isEmoji = emojiRegex.test(char);
       if (isEmoji) {
-        // 重置正则状态
+        // Reset regex state
         emojiRegex.lastIndex = 0;
-        // Emoji 字符：统一14px字体大小
+        // Emoji character: unified 14px font size
         return (
           <span
             key={index}
@@ -773,7 +773,7 @@ export default function DMMessageInput({
           </span>
         );
       }
-      // 普通文本字符：统一14px字体大小
+      // Normal text character: unified 14px font size
       return (
         <span
           key={index}
@@ -798,14 +798,14 @@ export default function DMMessageInput({
       }
     }
 
-    // 处理Markdown格式化快捷键
+    // Handle Markdown formatting shortcuts
     const textarea = textareaRef.current;
     if (textarea) {
       const selectionStart = textarea.selectionStart;
       const selectionEnd = textarea.selectionEnd;
       const value = message;
 
-      // 根据快捷键确定语法类型
+      // Determine syntax type based on shortcut
       const syntax =
         e.ctrlKey && e.shiftKey && e.key?.toLowerCase() === 'c' ? 'codeblock' :
         e.ctrlKey && e.shiftKey && e.key?.toLowerCase() === 'q' ? 'quote' :
@@ -815,9 +815,9 @@ export default function DMMessageInput({
         e.ctrlKey && e.key?.toLowerCase() === 'i' ? 'italic' :
         e.ctrlKey && e.key?.toLowerCase() === 'k' ? 'link' :
         e.ctrlKey && e.key?.toLowerCase() === 'e' ? 'code' :
-        null; // 无格式化
+        null; // No formatting
 
-      // 只在检测到有效语法时调用insertFormatting
+      // Only call insertFormatting when valid syntax is detected
       if (syntax) {
         const formattingResult = insertFormatting(
           { selectionStart, selectionEnd, value },
@@ -826,9 +826,9 @@ export default function DMMessageInput({
 
         if (formattingResult && formattingResult.value !== value) {
           e.preventDefault();
-          // 更新消息内容和光标位置
+          // Update message content and cursor position
           setMessage(formattingResult.value);
-          // 使用pendingCursorPositionRef而不是setPendingCursorPosition
+          // Use pendingCursorPositionRef instead of setPendingCursorPosition
           pendingCursorPositionRef.current = formattingResult.cursorPosition;
           return;
         }
@@ -841,21 +841,21 @@ export default function DMMessageInput({
     }
   };
 
-  // 处理输入变化
+  // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const cursorPos = e.target.selectionStart;
 
     setMessage(value);
 
-    // 保存光标位置到ref，等待DOM更新后恢复
+    // Save cursor position to ref, restore after DOM updates
     pendingCursorPositionRef.current = cursorPos;
 
-    // 检查是否需要显示自动完成
+    // Check if autocomplete needs to be displayed
     handleMentionAutocomplete(e.target);
   };
 
-  // 处理 @ 按钮点击
+  // Handle @ button click
   const handleAtButtonClick = () => {
     if (textareaRef.current) {
       const cursorPos = textareaRef.current.selectionStart;
@@ -863,53 +863,53 @@ export default function DMMessageInput({
       const newMessage = `${textBeforeCursor}@`;
       setMessage(newMessage);
 
-      // 保存光标位置到ref
+      // Save cursor position to ref
       pendingCursorPositionRef.current = cursorPos + 1;
 
-      // 延迟聚焦以确保光标位置正确
+      // Delay focus to ensure cursor position is correct
       setTimeout(() => {
         if (textareaRef.current) {
           textareaRef.current.focus();
-          // 光标位置将在onInput事件中恢复
+          // Cursor position will be restored in onInput event
           handleMentionAutocomplete(textareaRef.current);
         }
-      }, 0); // 减少延迟时间，使用0ms
+      }, 0); // Reduce delay time, use 0ms
     }
   };
 
-  // 处理 emoji 按钮点击
+  // Handle emoji button click
   const handleEmojiButtonClick = () => {
     if (textareaRef.current) {
-      // 计算emoji选择器的位置
+      // Calculate emoji picker position
       const textarea = textareaRef.current;
       const rect = textarea.getBoundingClientRect();
       const cursorPos = textarea.selectionStart;
       const caretCoords = getCaretCoordinates(textarea, cursorPos);
 
-      // Emoji选择器尺寸 - 调整为适应6列布局
+      // Emoji picker dimensions - Adjusted to fit 6-column layout
       const emojiPickerWidth = 320;
       const emojiPickerHeight = 280;
 
-      // 计算相对于视口的绝对位置
+      // Calculate absolute position relative to viewport
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
 
-      // 基础位置（相对于输入框）
+      // Base position (relative to input box)
       let x = rect.left + Math.max(10, Math.min(caretCoords.x, rect.width - emojiPickerWidth));
       let y;
 
-      // 智能位置检测：检查上方和下方空间
+      // Smart position detection: Check space above and below
       const spaceAbove = rect.top;
       const spaceBelow = viewportHeight - rect.bottom;
 
-      // 如果上方空间不足280px且下方空间充足，则向下弹出
+      // If space above is less than 280px and space below is sufficient, pop up downwards
       if (spaceAbove < emojiPickerHeight && spaceBelow > spaceAbove) {
-        y = rect.bottom + 8; // 向下弹出，距离输入框底部8px
+        y = rect.bottom + 8; // Pop up downwards, 8px from input box bottom
       } else {
-        y = rect.top - emojiPickerHeight - 8; // 向上弹出，距离输入框顶部8px
+        y = rect.top - emojiPickerHeight - 8; // Pop up upwards, 8px from input box top
       }
 
-      // 边界检测：确保X坐标不超出视口
+      // Boundary check: Ensure X coordinate does not exceed viewport
       if (x + emojiPickerWidth > viewportWidth - 10) {
         x = viewportWidth - emojiPickerWidth - 10;
       }
@@ -917,7 +917,7 @@ export default function DMMessageInput({
         x = 10;
       }
 
-      // 边界检测：确保Y坐标不超出视口
+      // Boundary check: Ensure Y coordinate does not exceed viewport
       if (y + emojiPickerHeight > viewportHeight - 10) {
         y = viewportHeight - emojiPickerHeight - 10;
       }
@@ -928,14 +928,14 @@ export default function DMMessageInput({
       setEmojiPickerPosition({
         x,
         y,
-        isAbove: y < rect.top // 记录是否向上弹出，用于样式调整
+        isAbove: y < rect.top // Record if popup is above, used for style adjustment
       });
 
       setShowEmojiPicker(!showEmojiPicker);
     }
   };
 
-  // 处理选择emoji
+  // Handle emoji selection
   const handleEmojiSelect = (emoji: string) => {
     if (textareaRef.current) {
       const cursorPos = textareaRef.current.selectionStart;
@@ -944,17 +944,17 @@ export default function DMMessageInput({
       const newMessage = `${textBeforeCursor}${emoji}${textAfterCursor}`;
       setMessage(newMessage);
 
-      // 使用Array.from正确计算Emoji字符数（处理多字节Emoji）
+      // Use Array.from to correctly count Emoji characters (handle multi-byte Emoji)
       const emojiCharCount = Array.from(emoji).length;
 
-      // 保存光标位置到ref
+      // Save cursor position to ref
       pendingCursorPositionRef.current = cursorPos + emojiCharCount;
 
-      // 重新聚焦并设置光标位置
+      // Re-focus and set cursor position
       setTimeout(() => {
         if (textareaRef.current) {
           textareaRef.current.focus();
-          // 光标位置将在onInput事件中恢复
+          // Cursor position will be restored in onInput event
         }
       }, 0);
     }
@@ -962,7 +962,7 @@ export default function DMMessageInput({
     setShowEmojiPicker(false);
   };
 
-  // 处理 More Options 按钮点击
+  // Handle More Options button click
   const handleMoreOptionsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -970,28 +970,28 @@ export default function DMMessageInput({
     const button = e.currentTarget as HTMLButtonElement;
     const buttonRect = button.getBoundingClientRect();
 
-    // 计算下拉菜单位置 - 在按钮下方显示
+    // Calculate dropdown menu position - display below button
     let x = buttonRect.left;
     let y = buttonRect.bottom + 8;
 
-    // 确保位置在可见区域内
+    // Ensure position is within visible area
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const menuWidth = 320; // 256px + padding
-    const menuHeight = 400; // 估算高度
+    const menuHeight = 400; // Estimated height
 
     if (x + menuWidth > viewportWidth - 20) {
       x = viewportWidth - menuWidth - 20;
     }
     if (y + menuHeight > viewportHeight - 20) {
-      y = buttonRect.top - menuHeight - 8; // 在按钮上方显示
+      y = buttonRect.top - menuHeight - 8; // Display above button
     }
 
     setMoreOptionsPosition({ x, y });
     setShowMoreOptions(true);
   };
 
-  // 常用emoji列表
+  // Common emoji list
   const commonEmojis = [
     '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
     '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚',
@@ -1005,28 +1005,28 @@ export default function DMMessageInput({
     '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒'
   ];
 
-  // 处理图片点击预览
+  // Handle image click preview
   const handleImagePreview = (index: number) => {
     setPreviewFileIndex(index);
     setShowFilePreview(true);
   };
 
-  // 关闭预览
+  // Close preview
   const closePreview = () => {
     setShowFilePreview(false);
   };
 
-  // 上一张图片
+  // Previous image
   const goToPrevious = () => {
     setPreviewFileIndex(prev => (prev > 0 ? prev - 1 : imageFiles.length - 1));
   };
 
-  // 下一张图片
+  // Next image
   const goToNext = () => {
     setPreviewFileIndex(prev => (prev < imageFiles.length - 1 ? prev + 1 : 0));
   };
 
-  // 键盘事件处理
+  // Keyboard event handling
   useEffect(() => {
     if (showFilePreview) {
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -1050,7 +1050,7 @@ export default function DMMessageInput({
     }
   }, [showFilePreview]);
 
-  // 获取所有图片文件
+  // Get all image files
   const imageFiles = uploadedFiles.filter(f => f.file.type.startsWith('image/'));
 
   return (
@@ -1068,10 +1068,10 @@ export default function DMMessageInput({
           willChange: 'auto'
         }}
       >
-        {/* 完整模式：顶部格式化工具栏 */}
+        {/* Full mode: Top formatting toolbar */}
         {!compact && (
           <div className="flex items-center gap-1 px-3 py-2.5 border-b border-[#3A3A3D] bg-[#313235]">
-            {/* 格式化按钮组 */}
+            {/* Formatting button group */}
             <button
               className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
               title="Bold (Ctrl+B)"
@@ -1105,7 +1105,7 @@ export default function DMMessageInput({
               <Strikethrough size={18} className="text-white/60" />
             </button>
 
-            {/* 分隔线 */}
+            {/* Divider */}
             <div className="w-px h-5 bg-[#3A3A3D] mx-0.5" />
 
             <button
@@ -1133,7 +1133,7 @@ export default function DMMessageInput({
               <Quote size={18} className="text-white/60" />
             </button>
 
-            {/* 分隔线 */}
+            {/* Divider */}
             <div className="w-px h-5 bg-[#3A3A3D] mx-0.5" />
 
             <button
@@ -1153,10 +1153,10 @@ export default function DMMessageInput({
               <Square size={18} className="text-white/60" />
             </button>
 
-            {/* 分隔线 */}
+            {/* Divider */}
             <div className="w-px h-5 bg-[#3A3A3D] mx-0.5" />
 
-            {/* 预览按钮 */}
+            {/* Preview button */}
             <button
               className="p-1.5 hover:bg-[#3A3A3D] rounded transition-colors"
               title={showPreview ? 'Hide Preview' : 'Show Preview'}
@@ -1168,7 +1168,7 @@ export default function DMMessageInput({
           </div>
         )}
 
-        {/* 预览层 */}
+        {/* Preview layer */}
         {showPreview && !compact && (
           <div className="max-h-64 overflow-y-auto bg-gray-900 border-t border-[#3A3A3D] p-4">
             <div className="text-sm text-gray-300 mb-2 font-medium">Preview</div>
@@ -1198,10 +1198,10 @@ export default function DMMessageInput({
 
         {/* Input Area */}
         <div className="flex items-end gap-2 p-4">
-          {/* 完整模式：左侧功能区（完整版） */}
+          {/* Full mode: Left function area (full version) */}
           {!compact && (
             <div className="flex items-center gap-1 flex-shrink-0">
-              {/* 图片上传 */}
+              {/* Image upload */}
               <button
                 className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
                 title="Upload images"
@@ -1215,7 +1215,7 @@ export default function DMMessageInput({
                 )}
               </button>
 
-              {/* 文件传输 */}
+              {/* File transfer */}
               <button
                 className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
                 title="File transfer"
@@ -1225,7 +1225,7 @@ export default function DMMessageInput({
                 <Folder size={18} className="text-white/60" />
               </button>
 
-              {/* 格式化选项 */}
+              {/* Formatting options */}
               <button
                 className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
                 title="Formatting"
@@ -1255,7 +1255,7 @@ export default function DMMessageInput({
                 <AtSign size={18} className="text-white/60" />
               </button>
 
-              {/* 麦克风 */}
+              {/* Microphone */}
               <button
                 className="p-2 hover:bg-[#3A3A3D] rounded transition-colors"
                 title="Voice message"
@@ -1266,7 +1266,7 @@ export default function DMMessageInput({
             </div>
           )}
 
-          {/* 简化模式：左侧功能区（简化版） */}
+          {/* Simplified mode: left function area (simplified version) */}
           {compact && (
             <div className="flex items-center gap-1 flex-shrink-0">
               {/* Emoji */}
@@ -1304,7 +1304,7 @@ export default function DMMessageInput({
             </div>
           )}
 
-          {/* 主输入框 */}
+          {/* Main input box */}
           <div
             className="flex-1 relative min-w-0"
             style={{
@@ -1313,7 +1313,7 @@ export default function DMMessageInput({
               willChange: 'auto'
             }}
           >
-            {/* Placeholder 显示层 */}
+            {/* Placeholder display layer */}
             {!message && (
               <div className="absolute inset-0 px-4 py-4 text-white/40 pointer-events-none">
                 <div style={{ fontSize: '14px', lineHeight: '1.5', letterSpacing: '0' }}>
@@ -1322,7 +1322,7 @@ export default function DMMessageInput({
               </div>
             )}
 
-            {/* 格式化预览层 */}
+            {/* Formatted preview layer */}
             <div
               ref={previewRef}
               className="absolute inset-0 px-4 py-4 text-white pointer-events-none overflow-y-auto"
@@ -1335,8 +1335,8 @@ export default function DMMessageInput({
                 letterSpacing: '0',
                 textRendering: 'optimizeLegibility',
                 fontVariantLigatures: 'none',
-                fontVariantNumeric: 'normal', // 禁用tabular-nums，确保数字宽度一致
-                fontFeatureSettings: 'normal', // 禁用字体特性
+                fontVariantNumeric: 'normal', // Disable tabular-nums to ensure consistent number width
+                fontFeatureSettings: 'normal', // Disable font features
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word'
               }}
@@ -1359,7 +1359,7 @@ export default function DMMessageInput({
               </div>
             </div>
 
-            {/* 实际输入框（透明覆盖） */}
+            {/* Actual input box (transparent overlay) */}
             <textarea
               ref={textareaRef}
               value={message}
@@ -1378,8 +1378,8 @@ export default function DMMessageInput({
                 fontSize: '14px',
                 textRendering: 'optimizeLegibility',
                 fontVariantLigatures: 'none',
-                fontVariantNumeric: 'normal', // 禁用tabular-nums，确保数字宽度一致
-                fontFeatureSettings: 'normal', // 禁用字体特性
+                fontVariantNumeric: 'normal', // Disable tabular-nums to ensure consistent number width
+                fontFeatureSettings: 'normal', // Disable font features
                 letterSpacing: '0'
               }}
               onInput={(e) => {
@@ -1387,7 +1387,7 @@ export default function DMMessageInput({
                 target.style.height = 'auto';
                 target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
 
-                // 恢复光标位置
+                // Restore cursor position
                 if (pendingCursorPositionRef.current !== null && target === document.activeElement) {
                   requestAnimationFrame(() => {
                     target.setSelectionRange(
@@ -1399,7 +1399,7 @@ export default function DMMessageInput({
                 }
               }}
               onScroll={(e) => {
-                // 标记是否正在同步滚动，防止无限递归
+                // Mark if syncing scroll to prevent infinite recursion
                 const textarea = e.target as HTMLTextAreaElement;
                 const previewLayer = previewRef.current;
                 if (previewLayer && textarea.scrollHeight > textarea.clientHeight) {
@@ -1426,7 +1426,7 @@ export default function DMMessageInput({
               </>
             ) : null}
 
-            {/* Emoji Picker - 使用 Portal 渲染到 document.body */}
+            {/* Emoji Picker - render via Portal to document.body */}
             {showEmojiPicker ? createPortal(
               <div
                 data-emoji-picker="true"
@@ -1439,7 +1439,7 @@ export default function DMMessageInput({
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)'
                 }}
               >
-                {/* 箭头指示器 - 根据弹出方向显示 */}
+                {/* Arrow indicator - display based on popup direction */}
                 <div
                   className={`absolute w-3 h-3 bg-[#2A2A2D] border-[#3A3A3D] ${
                     emojiPickerPosition.isAbove ? 'top-full' : 'bottom-full'
@@ -1486,7 +1486,7 @@ export default function DMMessageInput({
             ) : null}
           </div>
 
-          {/* 文件预览区域 */}
+          {/* File preview area */}
           {uploadedFiles.length > 0 && (
             <div className="flex-1 px-4 pb-2">
               <div className="flex flex-wrap gap-2">
@@ -1496,7 +1496,7 @@ export default function DMMessageInput({
                     className="relative group"
                   >
                     {uploadedFile.file.type.startsWith('image/') ? (
-                      // 图片文件预览 - 可点击全屏查看
+                      // Image file preview - clickable for fullscreen view
                       <div
                         className="w-20 h-20 rounded-lg overflow-hidden border border-[#3A3A3D] cursor-pointer hover:border-[#4A4A4D] transition-colors"
                         onClick={() => handleImagePreview(imageFiles.findIndex(img => img.id === uploadedFile.id))}
@@ -1513,7 +1513,7 @@ export default function DMMessageInput({
                         )}
                       </div>
                     ) : (
-                      // 非图片文件显示
+                      // Non-image file display
                       <div className="w-48 h-20 rounded-lg border border-[#3A3A3D] bg-[#2A2A2D] flex items-center px-3">
                         <div className="flex items-center gap-3">
                           <Upload size={20} className="text-white/60 flex-shrink-0" />
@@ -1546,7 +1546,7 @@ export default function DMMessageInput({
             </div>
           )}
 
-          {/* 右侧发送按钮 */}
+          {/* Right side send button */}
           <button
             onClick={handleSend}
             disabled={(!message.trim() && !uploadedFiles.some(f => f.uploadData && f.uploadData.fileUrl)) || disabled || isSending || isUploading}
@@ -1566,13 +1566,13 @@ export default function DMMessageInput({
         </div>
       </div>
 
-      {/* 全屏图片预览模态框 */}
+      {/* Full screen image preview modal */}
       {showFilePreview && imageFiles.length > 0 ? createPortal(
         <div
           className="fixed inset-0 z-[999999] bg-black/90 flex items-center justify-center"
           onClick={closePreview}
         >
-          {/* 关闭按钮 */}
+          {/* Close button */}
           <button
             onClick={closePreview}
             className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 rounded-full transition-colors"
@@ -1580,7 +1580,7 @@ export default function DMMessageInput({
             <X size={24} className="text-white" />
           </button>
 
-          {/* 上一张按钮 */}
+          {/* Previous image button */}
           {imageFiles.length > 1 && (
             <button
               onClick={(e) => {
@@ -1595,7 +1595,7 @@ export default function DMMessageInput({
             </button>
           )}
 
-          {/* 下一张按钮 */}
+          {/* Next image button */}
           {imageFiles.length > 1 && (
             <button
               onClick={(e) => {
@@ -1610,7 +1610,7 @@ export default function DMMessageInput({
             </button>
           )}
 
-          {/* 图片容器 */}
+          {/* Image container */}
           <div
             className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
@@ -1622,7 +1622,7 @@ export default function DMMessageInput({
             />
           </div>
 
-          {/* 图片信息 */}
+          {/* Image info */}
           {imageFiles.length > 1 && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/50 rounded-full">
               <span className="text-white text-sm">
@@ -1631,7 +1631,7 @@ export default function DMMessageInput({
             </div>
           )}
 
-          {/* 图片名称 */}
+          {/* Image name */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 max-w-[80vw] px-4 py-2 bg-black/50 rounded-lg">
             <span className="text-white text-sm text-center block">
               {imageFiles[previewFileIndex]?.file.name}

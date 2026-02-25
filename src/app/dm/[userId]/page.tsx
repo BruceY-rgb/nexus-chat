@@ -9,7 +9,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui';
 import DirectMessageView from '@/components/DirectMessageView';
 
-// 类型定义 - 匹配API返回数据格式
+// Type definition - matching API response data format
 interface ApiChannel {
   id: string;
   name: string;
@@ -47,7 +47,7 @@ export default function DirectMessagePage() {
     }
   }, [userId, user, loading, router]);
 
-  // 获取频道数据
+  // Fetch channel data
   useEffect(() => {
     const fetchChannels = async () => {
       try {
@@ -59,7 +59,7 @@ export default function DirectMessagePage() {
           const data = await response.json();
           setChannels(data.channels || []);
 
-          // 获取已加入的频道ID
+          // Get joined channel IDs
           const joined = data.channels
             .filter((channel: ApiChannel) => channel.isJoined)
             .map((channel: ApiChannel) => channel.id);
@@ -124,7 +124,7 @@ export default function DirectMessagePage() {
   };
 
   const handleSelectChannel = (channelId: string) => {
-    // 切换到频道视图
+    // Switch to channel view
     router.push(`/dashboard?channel=${channelId}`);
   };
 
@@ -132,7 +132,7 @@ export default function DirectMessagePage() {
     router.push('/dashboard?view=browse');
   };
 
-  // 转换ApiChannel为Channel类型
+  // Convert ApiChannel to Channel type
   const convertedChannels: Channel[] = channels.map(channel => ({
     id: channel.id,
     name: channel.name,
@@ -145,7 +145,7 @@ export default function DirectMessagePage() {
 
   const content = member ? (
     <>
-      {/* 私聊内容 - 直接渲染 DirectMessageView */}
+      {/* Private message content - render DirectMessageView directly */}
       <DirectMessageView member={member} currentUserId={user.id} />
     </>
   ) : null;

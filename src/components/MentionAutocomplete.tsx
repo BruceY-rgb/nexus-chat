@@ -9,9 +9,9 @@ interface MentionAutocompleteProps {
   onSelect: (user: TeamMember) => void;
   onClose: () => void;
   query: string;
-  members?: TeamMember[]; // 改为可选属性
+  members?: TeamMember[]; // Changed to optional property
   position: { x: number; y: number };
-  targetRef: React.RefObject<HTMLTextAreaElement>; // 目标输入框引用
+  targetRef: React.RefObject<HTMLTextAreaElement>; // Target input reference
 }
 
 export default function MentionAutocomplete({
@@ -27,16 +27,16 @@ export default function MentionAutocomplete({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [portalElement, setPortalElement] = useState<HTMLElement | null>(null);
 
-  // 创建Portal元素
+  // Create Portal element
   useEffect(() => {
     const element = document.getElementById('mention-portal') || document.body;
     setPortalElement(element);
   }, []);
 
-  // 动态计算弹窗位置
+  // Dynamically calculate popup position
   const getPopupPosition = (): { x: number; bottom: number } => {
     if (!targetRef.current || !portalElement) {
-      // 回退到原始位置计算
+      // Fallback to original position calculation
       const targetRect = targetRef.current?.getBoundingClientRect();
       const offset = 10;
       return {
@@ -48,10 +48,10 @@ export default function MentionAutocomplete({
     const targetRect = targetRef.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
 
-    // 计算相对于视口的绝对位置
+    // Calculate absolute position relative to viewport
     const popupWidth = 280;
 
-    // X坐标计算（左右边界检测）
+    // X coordinate calculation (left/right boundary detection)
     let x = targetRect.left + position.x;
     if (x + popupWidth > viewportWidth - 20) {
       x = viewportWidth - popupWidth - 20;
@@ -60,17 +60,17 @@ export default function MentionAutocomplete({
       x = 20;
     }
 
-    // Y坐标计算（向上弹出模式）
-    const offset = 10; // 安全边距
+    // Y coordinate calculation (pop-up mode)
+    const offset = 10; // Safe margin
     const bottom = window.innerHeight - targetRect.top + offset;
 
     return { x, bottom };
   };
 
-  // 使用传入的 members 或 API 获取的 members
+  // Use passed members or API-fetched members
   const allMembers = members.length > 0 ? members : apiMembers;
 
-  // 从 API 搜索用户
+  // Search users from API
   const searchUsers = async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setApiMembers([]);
@@ -88,11 +88,11 @@ export default function MentionAutocomplete({
         setApiMembers(data.users || []);
       }
     } catch (error) {
-      // 静默处理错误
+      // Silently handle error
     }
   };
 
-  // 当查询变化时搜索用户
+  // Search users when query changes
   useEffect(() => {
     if (members.length === 0) {
       const timeoutId = setTimeout(() => {
@@ -102,33 +102,33 @@ export default function MentionAutocomplete({
     }
   }, [query, members.length]);
 
-  // 当查询变化时重置选择索引
+  // Reset selection index when query changes
   useEffect(() => {
     setSelectedIndex(0);
   }, [query]);
 
-  // 过滤成员列表 - 增强版，支持特殊字符
+  // Filter members list - enhanced version, supports special characters
   const filteredMembers = allMembers.filter(member => {
     if (!query) return true;
 
     const searchQuery = query.toLowerCase().trim();
-    // 移除查询中的特殊字符，只保留字母数字
+    // Remove special characters from query, keep only alphanumeric
     const cleanSearchQuery = searchQuery.replace(/[^a-z0-9]/gi, '');
 
     const displayName = member.displayName.toLowerCase();
     const realName = member.realName?.toLowerCase() || '';
     const email = member.email.toLowerCase();
 
-    // 多种匹配方式
+    // Multiple matching methods
     const matches = (
-      // 精确匹配（包含特殊字符）
+      // Exact match (including special characters)
       displayName.includes(searchQuery) ||
       realName.includes(searchQuery) ||
       email.includes(searchQuery) ||
-      // 清理后的匹配（移除特殊字符）
+      // Cleaned match (remove special characters)
       displayName.replace(/[^a-z0-9]/gi, '').includes(cleanSearchQuery) ||
       realName.replace(/[^a-z0-9]/gi, '').includes(cleanSearchQuery) ||
-      // 前缀匹配
+      // Prefix match
       displayName.startsWith(searchQuery) ||
       realName.startsWith(searchQuery)
     );
@@ -136,10 +136,10 @@ export default function MentionAutocomplete({
     return matches;
   });
 
-  // 获取弹窗位置
+  // Get popup position
   const popupPosition = getPopupPosition();
 
-  // 处理键盘事件
+  // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (filteredMembers.length === 0) return;
@@ -176,7 +176,7 @@ export default function MentionAutocomplete({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [filteredMembers, selectedIndex, onSelect, onClose]);
 
-  // 点击外部关闭
+  // Click outside to close
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -188,7 +188,7 @@ export default function MentionAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClose]);
 
-  // 如果没有过滤成员且有查询，显示"未找到匹配成员"提示
+  // If no filtered members and there is a query, show "No matching members found" message
   if (filteredMembers.length === 0 && query) {
     const popup = (
       <div
@@ -210,14 +210,14 @@ export default function MentionAutocomplete({
       </div>
     );
 
-    // 使用 Portal 渲染到 body 下
+    // Use Portal to render under body
     if (portalElement) {
       return ReactDOM.createPortal(popup, portalElement);
     }
     return null;
   }
 
-  // 如果没有成员且没有查询，不显示弹窗
+  // If no members and no query, don't show popup
   if (filteredMembers.length === 0 && !query) {
     return null;
   }
@@ -277,7 +277,7 @@ export default function MentionAutocomplete({
         </div>
       ))}
 
-      {/* 底部提示 */}
+      {/* Bottom hint */}
       <div className="border-t border-[#3A3A3D] px-3 py-2">
         <div className="text-xs text-white/50 flex items-center justify-between">
           <span>↑↓ Navigate • Enter Select • Esc Close</span>
@@ -286,7 +286,7 @@ export default function MentionAutocomplete({
     </div>
   );
 
-  // 使用 Portal 渲染到 body 下
+  // Use Portal to render under body
   if (portalElement) {
     return ReactDOM.createPortal(popup, portalElement);
   }

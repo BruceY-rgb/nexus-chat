@@ -18,14 +18,14 @@ export default function CreateChannelModal({
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
 
-  // 检查频道名称是否有效（不为空且不以空格开头）
+  // Check if channel name is valid (not empty and doesn't start with space)
   const isChannelNameValid = channelName.trim().length > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isChannelNameValid) {
       onCreate(channelName.trim(), description.trim() || undefined, isPrivate);
-      // 重置表单
+      // Reset form
       setChannelName('');
       setDescription('');
       setIsPrivate(false);
@@ -43,13 +43,13 @@ export default function CreateChannelModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* 背景遮罩 */}
+      {/* Background overlay */}
       <div
         className="absolute inset-0 bg-black/50"
         onClick={handleClose}
       />
 
-      {/* 模态框 */}
+      {/* Modal */}
       <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
         <form onSubmit={handleSubmit}>
           {/* Header */}
@@ -61,13 +61,13 @@ export default function CreateChannelModal({
 
           {/* Body */}
           <div className="px-6 py-4">
-            {/* 说明文字 */}
+            {/* Description text */}
             <p className="text-sm text-gray-600 mb-4">
               Channels are where your team communicates. They're best when organized around a topic — like{' '}
               <span className="font-medium text-gray-900">#marketing</span>.
             </p>
 
-            {/* 频道名称输入框 */}
+            {/* Channel name input */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Name
@@ -85,7 +85,7 @@ export default function CreateChannelModal({
                   autoFocus
                 />
               </div>
-              {/* 错误提示 */}
+              {/* Error message */}
               {!isChannelNameValid && channelName.length > 0 && (
                 <p className="mt-1 text-xs text-red-500">
                   Channel name cannot be empty or start with a space
@@ -93,7 +93,7 @@ export default function CreateChannelModal({
               )}
             </div>
 
-            {/* 描述输入框 */}
+            {/* Description input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Description <span className="text-gray-400">(optional)</span>
@@ -107,7 +107,7 @@ export default function CreateChannelModal({
               />
             </div>
 
-            {/* 私有频道复选框 */}
+            {/* Private channel checkbox */}
             <div className="mt-4">
               <label className="flex items-center gap-3 cursor-pointer group">
                 <div className="relative">

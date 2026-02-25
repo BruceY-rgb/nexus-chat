@@ -1,5 +1,5 @@
 /**
- * Auth Tools - 注册和登录工具
+ * Auth Tools - Registration and Login Tools
  */
 
 import { z } from "zod";
@@ -51,7 +51,7 @@ const sendVerificationSchema = z.object({
 export const authTools: ToolDefinition[] = [
   {
     name: "register",
-    description: "注册新用户。AI可以使用此工具自主注册新用户。",
+    description: "Register a new user. AI can use this tool to autonomously register new users.",
     parameters: registerSchema,
     execute: async (args): Promise<ToolResult> => {
       try {
@@ -94,7 +94,7 @@ export const authTools: ToolDefinition[] = [
   {
     name: "login",
     description:
-      "用户登录，获取认证Token。AI可以使用此工具登录并获取userToken。",
+      "User login, obtain authentication token. AI can use this tool to login and get userToken.",
     parameters: loginSchema,
     execute: async (args): Promise<ToolResult> => {
       try {
@@ -136,7 +136,7 @@ export const authTools: ToolDefinition[] = [
   },
   {
     name: "logout",
-    description: "用户登出，使当前Token失效",
+    description: "User logout, invalidate current token",
     parameters: logoutSchema,
     execute: async (args): Promise<ToolResult> => {
       try {
@@ -168,7 +168,7 @@ export const authTools: ToolDefinition[] = [
   },
   {
     name: "get_me",
-    description: "获取当前登录用户的基本信息",
+    description: "Get current logged-in user's basic information",
     parameters: getMeSchema,
     execute: async (args): Promise<ToolResult> => {
       try {
@@ -198,7 +198,7 @@ export const authTools: ToolDefinition[] = [
   },
   {
     name: "get_profile",
-    description: "获取当前用户的详细个人资料",
+    description: "Get current user's detailed profile",
     parameters: getProfileSchema,
     execute: async (args): Promise<ToolResult> => {
       try {
@@ -229,7 +229,7 @@ export const authTools: ToolDefinition[] = [
   {
     name: "update_profile",
     description:
-      "更新当前用户的个人资料，可更新显示名、真实姓名、头像URL、时区",
+      "Update current user's profile, can update display name, real name, avatar URL, timezone",
     parameters: updateProfileSchema,
     execute: async (args): Promise<ToolResult> => {
       try {
@@ -261,7 +261,7 @@ export const authTools: ToolDefinition[] = [
   },
   {
     name: "send_verification",
-    description: "发送邮箱验证邮件，无需登录认证",
+    description: "Send email verification email, no login authentication required",
     parameters: sendVerificationSchema,
     execute: async (args): Promise<ToolResult> => {
       try {

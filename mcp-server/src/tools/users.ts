@@ -1,5 +1,5 @@
 /**
- * User Tools - 用户管理工具
+ * User Tools - User Management Tools
  */
 
 import { z } from "zod";
@@ -46,7 +46,7 @@ const toggleStarredUserSchema = z.object({
 export const userTools: ToolDefinition[] = [
   {
     name: "list_users",
-    description: "获取用户列表，支持搜索和分页",
+    description: "Get user list with search and pagination support",
     parameters: listUsersSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -79,7 +79,7 @@ export const userTools: ToolDefinition[] = [
   },
   {
     name: "search_users",
-    description: "搜索用户",
+    description: "Search users",
     parameters: searchUsersSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -107,7 +107,7 @@ export const userTools: ToolDefinition[] = [
   },
   {
     name: "get_user",
-    description: "获取指定用户的信息",
+    description: "Get specified user information",
     parameters: getUserSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -131,7 +131,7 @@ export const userTools: ToolDefinition[] = [
   },
   {
     name: "get_unread_counts",
-    description: "获取所有频道和私聊的未读消息计数",
+    description: "Get unread message count for all channels and DMs",
     parameters: getUnreadCountsSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -158,7 +158,7 @@ export const userTools: ToolDefinition[] = [
   },
   {
     name: "get_starred_users",
-    description: "获取星标用户列表",
+    description: "Get starred users list",
     parameters: getStarredUsersSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -185,7 +185,7 @@ export const userTools: ToolDefinition[] = [
   },
   {
     name: "toggle_starred_user",
-    description: "切换用户的星标状态",
+    description: "Toggle user's starred status",
     parameters: toggleStarredUserSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {

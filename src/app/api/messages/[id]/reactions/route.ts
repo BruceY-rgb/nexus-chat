@@ -4,7 +4,7 @@ import { Server as SocketIOServer } from 'socket.io';
 
 const prisma = new PrismaClient();
 
-// GET /api/messages/[id]/reactions - 获取消息的所有 reactions
+// GET /api/messages/[id]/reactions - Get all reactions for a message
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -12,7 +12,7 @@ export async function GET(
   try {
     const messageId = params.id;
 
-    // 获取消息的所有 reactions，包含用户信息
+    // Get all reactions for message, including user info
     const reactions = await prisma.messageReaction.findMany({
       where: {
         messageId,
@@ -30,7 +30,7 @@ export async function GET(
       },
     });
 
-    // 按 emoji 分组统计
+    // Group by emoji and count
     const groupedReactions = reactions.reduce((acc, reaction) => {
       const existing = acc.find(r => r.emoji === reaction.emoji);
       if (existing) {
@@ -68,7 +68,7 @@ export async function GET(
   }
 }
 
-// POST /api/messages/[id]/reactions - 添加或移除 reaction
+// POST /api/messages/[id]/reactions - Add or remove reaction
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -85,7 +85,7 @@ export async function POST(
       );
     }
 
-    // 检查用户是否已经对该消息添加了这个 emoji 的 reaction
+    // Check if user has already added this emoji reaction to the message
     const existingReaction = await prisma.messageReaction.findUnique({
       where: {
         messageId_userId_emoji: {
@@ -100,7 +100,7 @@ export async function POST(
     let action: 'added' | 'removed';
 
     if (existingReaction) {
-      // 如果已存在，则移除 reaction
+      // If exists, remove reaction
       await prisma.messageReaction.delete({
         where: {
           id: existingReaction.id,
@@ -109,7 +109,7 @@ export async function POST(
       action = 'removed';
       reactionData = null;
     } else {
-      // 如果不存在，则添加 reaction
+      // If not exists, add reaction
       reactionData = await prisma.messageReaction.create({
         data: {
           messageId,
@@ -128,7 +128,7 @@ export async function POST(
       action = 'added';
     }
 
-    // 获取更新后的所有 reactions
+    // Get all updated reactions
     const allReactions = await prisma.messageReaction.findMany({
       where: { messageId },
       include: {
@@ -144,7 +144,7 @@ export async function POST(
       },
     });
 
-    // 按 emoji 分组统计
+    // Group by emoji and count
     const groupedReactions = allReactions.reduce((acc, reaction) => {
       const existing = acc.find(r => r.emoji === reaction.emoji);
       if (existing) {
@@ -172,14 +172,14 @@ export async function POST(
       users: Array<{ id: string; displayName: string }>;
     }>);
 
-    // 通过 WebSocket 广播反应更新
+    // Broadcast reaction update via WebSocket
     try {
-      // 获取全局 WebSocket 实例
+      // Get global WebSocket instance
       const globalIo = (global as any).io;
       if (typeof globalIo !== 'undefined') {
         const ioInstance = globalIo as SocketIOServer;
 
-        // 查询消息以确定房间信息
+        // Query message to determine room info
         const message = await prisma.message.findUnique({
           where: { id: messageId },
           select: {
@@ -193,12 +193,12 @@ export async function POST(
             ? `channel:${message.channelId}`
             : `dm:${message.dmConversationId}`;
 
-          // 广播 reaction 更新事件 - 添加 userId 以便前端区分是自己还是其他用户触发
+          // Broadcast reaction update event - include userId so frontend can distinguish between self or other user triggers
           ioInstance.to(roomName).emit('reaction-updated', {
             messageId,
             action,
             reactions: groupedReactions,
-            userId // 关键修复：包含触发更新的用户ID
+            userId // Key fix: include userId that triggered the update
           });
 
           console.log(`📡 [API] Broadcasted reaction update to room: ${roomName}`);
@@ -206,7 +206,7 @@ export async function POST(
       }
     } catch (wsError) {
       console.error('❌ [API] WebSocket broadcast error:', wsError);
-      // 即使 WebSocket 广播失败，也不影响 HTTP 响应
+      // Even if WebSocket broadcast fails, it does not affect HTTP response
     }
 
     return NextResponse.json({

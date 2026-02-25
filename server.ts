@@ -7,19 +7,19 @@ import path from "path";
 import fs from "fs";
 import type { Server as SocketIOServer } from "socket.io";
 
-// 声明全局变量类型
+// Declare global variable types
 declare global {
   var io: SocketIOServer | undefined;
   var mcpProcess: ReturnType<typeof spawn> | undefined;
 }
 
 const dev = process.env.NODE_ENV !== "production";
-// 修复：在容器化环境中必须监听 0.0.0.0 才能接受外部连接
+// Fix: Must listen on 0.0.0.0 in containerized environments to accept external connections
 const hostname =
   process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
 const port = 3000;
 
-// 添加调试日志
+// Add debug log
 console.log("🔍 Debug - Environment Check:", {
   NODE_ENV: process.env.NODE_ENV,
   isProduction: process.env.NODE_ENV === "production",
@@ -30,15 +30,15 @@ console.log("🔍 Debug - Environment Check:", {
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-// 全局关闭标志
+// Global shutdown flag
 let isShuttingDown = false;
 
-// 启动MCP服务器
+// Start MCP server
 function startMCPServer() {
   const isProduction = process.env.NODE_ENV === "production";
   const mcpDir = path.join(process.cwd(), "mcp-server");
 
-  // 生产环境检查构建产物是否存在
+  // Production environment: check if build artifacts exist
   const mcpEntryPoint = isProduction
     ? path.join(mcpDir, "dist/index.js")
     : path.join(mcpDir, "src/index.ts");
@@ -66,7 +66,7 @@ function startMCPServer() {
           ...process.env,
           PORT: process.env.MCP_PORT || "3002",
           HOST: "0.0.0.0",
-          // 显式传递 Internal API 地址，确保 MCP 能正确连接到 Next.js
+          // Explicitly pass Internal API address to ensure MCP can correctly connect to Next.js
           INTERNAL_API_URL: "http://localhost:3000",
         },
       },
@@ -102,10 +102,10 @@ function startMCPServer() {
 app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
     try {
-      // 解析 URL
+      // Parse URL
       const parsedUrl = parse(req.url || "/", true);
 
-      // 处理请求
+      // Handle request
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error("Error occurred handling", req.url, err);
@@ -114,14 +114,14 @@ app.prepare().then(() => {
     }
   });
 
-  // 设置 WebSocket 服务器
+  // Set up WebSocket server
   const io = setupWebSocket(httpServer);
 
-  // 将 io 实例存储到全局变量，以便 API 路由可以访问
+  // Store io instance in global variable so API routes can access it
   (global as any).io = io;
   (process as any).global = (global as any).io;
 
-  // 添加调试日志
+  // Add debug log
   console.log("🔧 [Setup] Global io instance set:", {
     globalExists: typeof (global as any).io !== "undefined",
     processExists: typeof (process as any).global !== "undefined",
@@ -130,10 +130,10 @@ app.prepare().then(() => {
     socketCount: (global as any).io?.engine?.clientsCount,
   });
 
-  // 启动MCP服务器
+  // Start MCP server
   startMCPServer();
 
-  // 错误处理
+  // Error handling
   httpServer
     .once("error", (err) => {
       console.error("Server error:", err);
@@ -151,7 +151,7 @@ app.prepare().then(() => {
     });
 });
 
-// 处理进程退出
+// Handle process exit
 process.on("SIGINT", () => {
   console.log("\n🛑 Shutting down...");
   isShuttingDown = true;

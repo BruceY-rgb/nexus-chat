@@ -45,10 +45,10 @@ export default function ChannelSettingsModal({
   const [notificationLevel, setNotificationLevel] = useState<NotificationLevel>('all');
   const [isLoadingNotification, setIsLoadingNotification] = useState(false);
 
-  // 判断当前用户是否是owner或admin
+  // Check if current user is owner or admin
   const isOwnerOrAdmin = currentUserRole === 'owner' || currentUserRole === 'admin';
 
-  // 当channel变化时更新本地状态
+  // Update local state when channel changes
   useEffect(() => {
     if (channel) {
       setName(channel.name);
@@ -57,7 +57,7 @@ export default function ChannelSettingsModal({
     }
   }, [channel]);
 
-  // 加载通知偏好设置
+  // Load notification preferences
   useEffect(() => {
     if (isOpen && activeTab === 'notifications') {
       const fetchNotificationPreferences = async () => {
@@ -77,7 +77,7 @@ export default function ChannelSettingsModal({
     }
   }, [isOpen, activeTab, channel.id]);
 
-  // 保存通知偏好
+  // Save notification preferences
   const handleSaveNotificationPreferences = async (level: NotificationLevel) => {
     setIsLoadingNotification(true);
     try {
@@ -106,7 +106,7 @@ export default function ChannelSettingsModal({
     }
   };
 
-  // 保存频道设置
+  // Save channel settings
   const handleSave = async () => {
     if (!name.trim()) {
       setError('Channel name cannot be empty');
@@ -145,7 +145,7 @@ export default function ChannelSettingsModal({
     }
   };
 
-  // 移除成员
+  // Remove member
   const handleRemoveMember = async (userId: string) => {
     if (!window.confirm('Are you sure you want to remove this member from the channel?')) {
       return;
@@ -176,9 +176,9 @@ export default function ChannelSettingsModal({
     }
   };
 
-  // 邀请成功回调
+  // Invite success callback
   const handleInviteSuccess = () => {
-    // 刷新成员列表
+    // Refresh members list
     onRefreshMembers?.();
   };
 
@@ -187,13 +187,13 @@ export default function ChannelSettingsModal({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center">
-        {/* 背景遮罩 */}
+        {/* Background overlay */}
         <div
           className="absolute inset-0 bg-black/50"
           onClick={onClose}
         />
 
-        {/* 模态框 */}
+        {/* Modal */}
         <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[80vh]">
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
@@ -220,7 +220,7 @@ export default function ChannelSettingsModal({
             </button>
           </div>
 
-          {/* Tab 导航 */}
+          {/* Tab navigation */}
           <div className="px-6 border-b border-gray-200 flex-shrink-0">
             <nav className="flex gap-6">
               <button
@@ -260,7 +260,7 @@ export default function ChannelSettingsModal({
           <div className="flex-1 overflow-y-auto p-6">
             {activeTab === 'settings' ? (
               <div className="space-y-6">
-                {/* 频道名称 */}
+                {/* Channel name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Name
@@ -284,7 +284,7 @@ export default function ChannelSettingsModal({
                   )}
                 </div>
 
-                {/* 频道描述 */}
+                {/* Channel description */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description
@@ -304,7 +304,7 @@ export default function ChannelSettingsModal({
                   )}
                 </div>
 
-                {/* 私有频道设置 */}
+                {/* Private channel settings */}
                 {isOwnerOrAdmin && (
                   <div>
                     <label className="flex items-center gap-3 cursor-pointer">
@@ -326,7 +326,7 @@ export default function ChannelSettingsModal({
                   </div>
                 )}
 
-                {/* 错误提示 */}
+                {/* Error message */}
                 {error && (
                   <div className="p-3 bg-red-50 text-red-600 text-sm rounded">
                     {error}
@@ -335,7 +335,7 @@ export default function ChannelSettingsModal({
               </div>
             ) : activeTab === 'members' ? (
               <div className="space-y-4">
-                {/* 邀请成员按钮 */}
+                {/* Invite members button */}
                 {isOwnerOrAdmin && (
                   <div className="flex justify-end">
                     <Button
@@ -348,7 +348,7 @@ export default function ChannelSettingsModal({
                   </div>
                 )}
 
-                {/* 成员列表 */}
+                {/* Members list */}
                 <div className="divide-y divide-gray-100">
                   {members.map((member) => (
                     <div
@@ -395,7 +395,7 @@ export default function ChannelSettingsModal({
                         </div>
                       </div>
 
-                      {/* 移除成员按钮 */}
+                      {/* Remove member button */}
                       {isOwnerOrAdmin && member.id !== currentUserId && member.role !== 'owner' && (
                         <button
                           onClick={() => handleRemoveMember(member.id)}
@@ -440,7 +440,7 @@ export default function ChannelSettingsModal({
                   </p>
 
                   <div className="space-y-3">
-                    {/* 全部通知 */}
+                    {/* All notifications */}
                     <label
                       className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
                         notificationLevel === 'all'
@@ -468,7 +468,7 @@ export default function ChannelSettingsModal({
                       </div>
                     </label>
 
-                    {/* 仅提及 */}
+                    {/* Mentions only */}
                     <label
                       className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
                         notificationLevel === 'mentions'
@@ -496,7 +496,7 @@ export default function ChannelSettingsModal({
                       </div>
                     </label>
 
-                    {/* 静音 */}
+                    {/* Mute */}
                     <label
                       className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
                         notificationLevel === 'nothing'
@@ -565,7 +565,7 @@ export default function ChannelSettingsModal({
         </div>
       </div>
 
-      {/* 邀请成员弹窗 */}
+      {/* Invite members modal */}
       <InviteMembersModal
         isOpen={showInviteModal}
         onClose={() => setShowInviteModal(false)}

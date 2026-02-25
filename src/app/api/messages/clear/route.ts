@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { channelId, dmConversationId } = body;
 
-    // 验证：必须指定 channelId 或 dmConversationId 中的一个，但不能同时指定
+    // Validate: must specify either channelId or dmConversationId, but not both
     if (!channelId && !dmConversationId) {
       return NextResponse.json(
         { error: 'Must specify either channelId or dmConversationId' },
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 验证用户权限
+    // Validate user permissions
     if (channelId) {
       const channelMember = await prisma.channelMember.findFirst({
         where: {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 获取要删除的消息ID（用于后续清理相关数据）
+      // Get message IDs to delete (for subsequent cleanup)
       const messagesToDelete = await prisma.message.findMany({
         where: {
           channelId,
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       const messageIds = messagesToDelete.map(msg => msg.id);
 
       if (messageIds.length > 0) {
-        // 删除相关的提及记录
+        // Delete related mention records
         await prisma.messageMention.deleteMany({
           where: {
             messageId: {
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
           }
         });
 
-        // 删除相关的附件记录
+        // Delete related attachment records
         await prisma.attachment.deleteMany({
           where: {
             messageId: {
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
           }
         });
 
-        // 删除消息
+        // Delete messages
         await prisma.message.deleteMany({
           where: {
             channelId,
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
           }
         });
 
-        // 重置频道成员的未读计数
+        // Reset channel members' unread count
         await prisma.channelMember.updateMany({
           where: {
             channelId
@@ -109,19 +109,19 @@ export async function POST(request: NextRequest) {
           }
         });
 
-        // 通过 WebSocket 广播消息清空事件
+        // Broadcast message cleared event via WebSocket
         try {
           if (typeof (global as any).io !== 'undefined') {
             const ioInstance = (global as any).io as SocketIOServer;
 
-            // 广播给频道所有成员
+            // Broadcast to all channel members
             ioInstance.to(`channel:${channelId}`).emit('messages-cleared', {
               channelId,
               clearedBy: currentUserId,
               messageCount: messageIds.length
             });
 
-            // 广播未读计数更新
+            // Broadcast unread count update
             const channelMembers = await prisma.channelMember.findMany({
               where: { channelId },
               select: { userId: true, unreadCount: true }
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
           }
         } catch (wsError) {
           console.error('WebSocket broadcast error:', wsError);
-          // 即使 WebSocket 广播失败，也不影响 HTTP 响应
+          // Even if WebSocket broadcast fails, it does not affect the HTTP response
         }
       }
 
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (dmConversationId) {
-      // 处理自己的消息空间
+      // Handle own message space
       if (dmConversationId.startsWith('self-')) {
         const selfId = dmConversationId.replace('self-', '');
         if (selfId !== currentUserId) {
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // 获取要删除的消息ID
+        // Get message IDs to delete
         const messagesToDelete = await prisma.message.findMany({
           where: {
             dmConversationId
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
         const messageIds = messagesToDelete.map(msg => msg.id);
 
         if (messageIds.length > 0) {
-          // 删除相关的提及记录
+          // Delete related mention records
           await prisma.messageMention.deleteMany({
             where: {
               messageId: {
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
             }
           });
 
-          // 删除相关的附件记录
+          // Delete related attachment records
           await prisma.attachment.deleteMany({
             where: {
               messageId: {
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
             }
           });
 
-          // 删除消息
+          // Delete messages
           await prisma.message.deleteMany({
             where: {
               dmConversationId
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
           });
         }
       } else {
-        // 普通 DM 会话
+        // Regular DM conversation
         const conversationMember = await prisma.dMConversationMember.findFirst({
           where: {
             conversationId: dmConversationId,
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // 获取要删除的消息ID
+        // Get message IDs to delete
         const messagesToDelete = await prisma.message.findMany({
           where: {
             dmConversationId
@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
         const messageIds = messagesToDelete.map(msg => msg.id);
 
         if (messageIds.length > 0) {
-          // 删除相关的提及记录
+          // Delete related mention records
           await prisma.messageMention.deleteMany({
             where: {
               messageId: {
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
             }
           });
 
-          // 删除相关的附件记录
+          // Delete related attachment records
           await prisma.attachment.deleteMany({
             where: {
               messageId: {
@@ -251,14 +251,14 @@ export async function POST(request: NextRequest) {
             }
           });
 
-          // 删除消息
+          // Delete messages
           await prisma.message.deleteMany({
             where: {
               dmConversationId
             }
           });
 
-          // 重置会话成员的未读计数
+          // Reset conversation members' unread count
           await prisma.dMConversationMember.updateMany({
             where: {
               conversationId: dmConversationId
@@ -268,19 +268,19 @@ export async function POST(request: NextRequest) {
             }
           });
 
-          // 通过 WebSocket 广播消息清空事件
+          // Broadcast message cleared event via WebSocket
           try {
             if (typeof (global as any).io !== 'undefined') {
               const ioInstance = (global as any).io as SocketIOServer;
 
-              // 广播给会话所有成员
+              // Broadcast to all conversation members
               ioInstance.to(`dm:${dmConversationId}`).emit('messages-cleared', {
                 dmConversationId,
                 clearedBy: currentUserId,
                 messageCount: messageIds.length
               });
 
-              // 广播未读计数更新
+              // Broadcast unread count update
               const dmMembers = await prisma.dMConversationMember.findMany({
                 where: { conversationId: dmConversationId },
                 select: { userId: true, unreadCount: true }
@@ -297,7 +297,7 @@ export async function POST(request: NextRequest) {
             }
           } catch (wsError) {
             console.error('WebSocket broadcast error:', wsError);
-            // 即使 WebSocket 广播失败，也不影响 HTTP 响应
+            // Even if WebSocket broadcast fails, it does not affect the HTTP response
           }
         }
 

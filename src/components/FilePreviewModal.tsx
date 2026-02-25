@@ -9,7 +9,7 @@ interface FilePreviewModalProps {
   onClose: () => void;
 }
 
-// 外部组件 - 处理客户端检测
+// External component - handles client-side detection
 export default function FilePreviewModal({ attachment, onClose }: FilePreviewModalProps) {
   const [mounted, setMounted] = useState(false);
 

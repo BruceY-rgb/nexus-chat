@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 
-// 强制动态渲染，避免静态生成错误
+// Force dynamic rendering to avoid static generation errors
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     const currentUserId = decoded.userId;
 
-    // 获取所有有回复的线程根消息
+    // Get all thread root messages with replies
     const threadRoots = await prisma.message.findMany({
       where: {
         isThreadRoot: true,
@@ -71,12 +71,12 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // 计算每个线程的未读计数
+    // Calculate unread count for each thread
     let unreadThreadsCount = 0;
     let totalUnreadReplies = 0;
 
     for (const threadRoot of threadRoots) {
-      // 获取用户已读的最后时间
+      // Get user's last read time
       const messageRead = await prisma.messageRead.findUnique({
         where: {
           messageId_userId: {
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
 
       const lastReadAt = messageRead?.readAt || new Date(0);
 
-      // 计算该线程中用户在lastReadAt之后发送的消息数（排除自己发送的）
+      // Calculate number of messages sent after lastReadAt in this thread (excluding user's own messages)
       const unreadReplies = threadRoot.replies.filter(reply =>
         reply.createdAt > lastReadAt && reply.userId !== currentUserId
       );

@@ -1,5 +1,5 @@
 /**
- * Channel Tools - 频道管理工具
+ * Channel Tools - Channel Management Tools
  */
 
 import { z } from "zod";
@@ -86,7 +86,7 @@ export const channelTools: ToolDefinition[] = [
   {
     name: "list_channels",
     description:
-      "获取频道列表，支持过滤已加入的频道、公开频道、私有频道，支持搜索和分页",
+      "Get channel list with filtering for joined/public/private channels, search and pagination support",
     parameters: listChannelsSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -119,7 +119,7 @@ export const channelTools: ToolDefinition[] = [
   },
   {
     name: "get_channel",
-    description: "获取指定频道的详细信息",
+    description: "Get detailed information for specified channel",
     parameters: getChannelSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -146,7 +146,7 @@ export const channelTools: ToolDefinition[] = [
   },
   {
     name: "create_channel",
-    description: "创建一个新的频道",
+    description: "Create a new channel",
     parameters: createChannelSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -178,7 +178,7 @@ export const channelTools: ToolDefinition[] = [
   },
   {
     name: "update_channel",
-    description: "更新频道信息",
+    description: "Update channel information",
     parameters: updateChannelSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -209,7 +209,7 @@ export const channelTools: ToolDefinition[] = [
   },
   {
     name: "delete_channel",
-    description: "删除一个频道",
+    description: "Delete a channel",
     parameters: deleteChannelSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -244,7 +244,7 @@ export const channelTools: ToolDefinition[] = [
   },
   {
     name: "join_channel",
-    description: "加入一个频道",
+    description: "Join a channel",
     parameters: joinChannelSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -279,7 +279,7 @@ export const channelTools: ToolDefinition[] = [
   },
   {
     name: "leave_channel",
-    description: "离开一个频道",
+    description: "Leave a channel",
     parameters: leaveChannelSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -311,7 +311,7 @@ export const channelTools: ToolDefinition[] = [
   },
   {
     name: "list_channel_members",
-    description: "获取频道成员列表",
+    description: "Get channel members list",
     parameters: listChannelMembersSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -338,7 +338,7 @@ export const channelTools: ToolDefinition[] = [
   },
   {
     name: "invite_channel_member",
-    description: "邀请用户加入频道",
+    description: "Invite user to join channel",
     parameters: inviteChannelMemberSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -371,7 +371,7 @@ export const channelTools: ToolDefinition[] = [
   },
   {
     name: "join_all_channel_members",
-    description: "将所有用户加入指定频道",
+    description: "Add all users to specified channel",
     parameters: joinAllChannelMembersSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -398,7 +398,7 @@ export const channelTools: ToolDefinition[] = [
   },
   {
     name: "remove_channel_member",
-    description: "从频道中移除指定用户",
+    description: "Remove specified user from channel",
     parameters: removeChannelMemberSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -445,7 +445,7 @@ export const channelTools: ToolDefinition[] = [
   },
   {
     name: "get_channel_permissions",
-    description: "获取当前用户在频道中的角色和权限",
+    description: "Get current user's role and permissions in channel",
     parameters: getChannelPermissionsSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {

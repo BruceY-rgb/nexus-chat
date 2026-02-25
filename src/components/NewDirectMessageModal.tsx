@@ -24,7 +24,7 @@ export default function NewDirectMessageModal({
   const [searchResults, setSearchResults] = useState<TeamMember[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // 搜索用户
+  // Search users
   useEffect(() => {
     const searchUsers = async () => {
       if (!searchQuery.trim() || searchQuery.length < 2) {
@@ -40,7 +40,7 @@ export default function NewDirectMessageModal({
 
         if (response.ok) {
           const data = await response.json();
-          // 将API返回的User格式转换为TeamMember格式
+          // Convert API returned User format to TeamMember format
           const formattedUsers: TeamMember[] = data.users.map((user: any) => ({
             id: user.id,
             name: user.realName || user.displayName,
@@ -64,7 +64,7 @@ export default function NewDirectMessageModal({
     return () => clearTimeout(debounceTimer);
   }, [searchQuery]);
 
-  // 确定显示的成员列表
+  // Determine members list to display
   const displayMembers = useMemo(() => {
     if (searchQuery.trim() && searchQuery.length >= 2) {
       return searchResults.filter(member => member.id !== currentUserId);
@@ -72,7 +72,7 @@ export default function NewDirectMessageModal({
     return members.filter(member => member.id !== currentUserId);
   }, [members, searchResults, searchQuery, currentUserId]);
 
-  // 高亮匹配文本
+  // Highlight matching text
   const highlightMatch = (text: string, query: string) => {
     if (!query.trim()) return text;
 
@@ -104,13 +104,13 @@ export default function NewDirectMessageModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh]">
-      {/* 背景遮罩 */}
+      {/* Background overlay */}
       <div
         className="absolute inset-0 bg-black/20"
         onClick={handleClose}
       />
 
-      {/* 模态框 - 严格参考 Slack，纯白背景无阴影 */}
+      {/* Modal - Strictly reference Slack, pure white background without shadow */}
       <div className="relative bg-white w-full max-w-lg mx-4 rounded-lg border border-gray-200">
         {/* Header */}
         <div className="px-4 py-3 border-b border-gray-200">

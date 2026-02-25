@@ -1,5 +1,5 @@
 /**
- * Notification Tools - 通知偏好管理工具
+ * Notification Tools - Notification Preference Management Tools
  */
 
 import { z } from 'zod';
@@ -33,7 +33,7 @@ const updateDmNotifPrefsSchema = z.object({
 export const notificationTools: ToolDefinition[] = [
   {
     name: 'get_channel_notification_prefs',
-    description: '获取频道的通知偏好设置',
+    description: 'Get channel notification preference settings',
     parameters: getChannelNotifPrefsSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -57,7 +57,7 @@ export const notificationTools: ToolDefinition[] = [
   },
   {
     name: 'update_channel_notification_prefs',
-    description: '更新频道的通知偏好设置',
+    description: 'Update channel notification preference settings',
     parameters: updateChannelNotifPrefsSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -82,7 +82,7 @@ export const notificationTools: ToolDefinition[] = [
   },
   {
     name: 'get_dm_notification_prefs',
-    description: '获取私聊的通知偏好设置',
+    description: 'Get DM notification preference settings',
     parameters: getDmNotifPrefsSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -106,7 +106,7 @@ export const notificationTools: ToolDefinition[] = [
   },
   {
     name: 'update_dm_notification_prefs',
-    description: '更新私聊的通知偏好设置',
+    description: 'Update DM notification preference settings',
     parameters: updateDmNotifPrefsSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {

@@ -1,5 +1,5 @@
 /**
- * User Resources - 用户资源
+ * User Resources - User Resources
  */
 
 import { apiExecutor } from '../executor.js';
@@ -9,7 +9,7 @@ export const userResources: ResourceDefinition[] = [
   {
     uri: 'users://list',
     name: 'User List',
-    description: '获取所有用户列表',
+    description: 'Get all user list',
     mimeType: 'application/json',
   },
 ];

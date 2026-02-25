@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 
-// 强制动态渲染 - 因为这个API使用了 cookies
+// Force dynamic rendering - because this API uses cookies
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     const currentUserId = decoded.userId;
 
-    // 获取频道未读计数
+    // Get channel unread counts
     const channelUnreads = await prisma.channelMember.findMany({
       where: {
         userId: currentUserId
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // 获取 DM 未读计数
+    // Get DM unread counts
     const dmUnreads = await prisma.dMConversationMember.findMany({
       where: {
         userId: currentUserId
@@ -50,17 +50,17 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // 合并结果
+    // Merge results
     const unreadMap: Record<string, number> = {};
 
-    // 添加频道未读计数
+    // Add channel unread counts
     channelUnreads.forEach(({ channelId, unreadCount }) => {
       if (unreadCount > 0) {
         unreadMap[channelId] = unreadCount;
       }
     });
 
-    // 添加 DM 未读计数
+    // Add DM unread counts
     dmUnreads.forEach(({ conversationId, unreadCount }) => {
       if (unreadCount > 0) {
         unreadMap[conversationId] = unreadCount;

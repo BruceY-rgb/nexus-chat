@@ -1,5 +1,5 @@
 // =====================================================
-// 根布局
+// Root Layout
 // =====================================================
 
 import type { Metadata } from 'next';
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   description: 'A real-time chat application',
 };
 
-// 强制动态渲染以避免静态生成问题
+// Force dynamic rendering to avoid static generation issues
 export const dynamic = 'force-dynamic';
 
 export default function RootLayout({

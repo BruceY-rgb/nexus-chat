@@ -9,7 +9,7 @@ export default function TestNotificationsPage() {
   const [isSupported, setIsSupported] = useState(false);
 
   useEffect(() => {
-    // 检查通知支持
+    // Check notification support
     setIsSupported('Notification' in window);
     setPermission(Notification.permission);
   }, []);
@@ -17,19 +17,19 @@ export default function TestNotificationsPage() {
   const requestPermission = async () => {
     const result = await Notification.requestPermission();
     setPermission(result);
-    alert(`权限请求结果: ${result}`);
+    alert(`Permission request result: ${result}`);
   };
 
   const sendTestNotification = (type: 'mention' | 'dm') => {
     if (permission !== 'granted') {
-      alert('❌ 通知权限未授权，请先点击"请求通知权限"');
+      alert('Notification permission not granted, please click "Request Notification Permission" first');
       return;
     }
 
     const testNotification = {
       id: `test-${Date.now()}`,
       type,
-      title: type === 'mention' ? '有人提到了你' : '新消息',
+      title: type === 'mention' ? 'You were mentioned' : 'New message',
       content: type === 'mention' ? 'Hey, have you seen this message?' : 'Check out what just happened!',
       relatedMessageId: undefined,
       relatedChannelId: type === 'mention' ? 'test-channel-123' : undefined,
@@ -43,10 +43,10 @@ export default function TestNotificationsPage() {
       }
     };
 
-    // 模拟发送通知（这将触发 useNotifications 中的逻辑）
+    // Simulate sending notification (this will trigger logic in useNotifications)
     console.log('🔔 [TEST] Sending test notification:', testNotification);
 
-    // 直接创建浏览器通知（跳过页面可见性检查）
+    // Create browser notification directly (skip page visibility check)
     const notification = new Notification(testNotification.title, {
       body: testNotification.content,
       icon: testNotification.user.avatarUrl,
@@ -59,36 +59,36 @@ export default function TestNotificationsPage() {
       notification.close();
     };
 
-    alert('✅ 测试通知已发送！请检查是否能看到通知');
+    alert('Test notification sent! Please check if you can see the notification');
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">🔔 浏览器通知测试页面</h1>
+        <h1 className="text-3xl font-bold mb-6">Browser Notification Test Page</h1>
 
         <div className="mb-6 p-4 bg-blue-900 rounded-lg">
-          <h2 className="text-xl font-bold mb-2">📋 测试步骤</h2>
+          <h2 className="text-xl font-bold mb-2">Test Steps</h2>
           <ol className="list-decimal list-inside space-y-2">
-            <li>确保您已授权通知权限</li>
-            <li>打开开发者工具（F12）查看调试日志</li>
-            <li>切换到其他标签页或最小化浏览器窗口</li>
-            <li>点击下方的测试按钮发送通知</li>
-            <li>检查是否收到浏览器通知</li>
+            <li>Make sure you have granted notification permission</li>
+            <li>Open developer tools (F12) to view debug logs</li>
+            <li>Switch to another tab or minimize the browser window</li>
+            <li>Click the test button below to send notification</li>
+            <li>Check if you receive browser notification</li>
           </ol>
         </div>
 
         <div className="mb-6">
-          <h3 className="text-lg font-bold mb-3">⚙️ 当前状态</h3>
+          <h3 className="text-lg font-bold mb-3">Current Status</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="p-3 bg-gray-800 rounded">
-              <p className="text-sm text-gray-400">浏览器支持</p>
-              <p className="text-lg font-bold">{isSupported ? '✅ 支持' : '❌ 不支持'}</p>
+              <p className="text-sm text-gray-400">Browser Support</p>
+              <p className="text-lg font-bold">{isSupported ? 'Supported' : 'Not Supported'}</p>
             </div>
             <div className="p-3 bg-gray-800 rounded">
-              <p className="text-sm text-gray-400">通知权限</p>
+              <p className="text-sm text-gray-400">Notification Permission</p>
               <p className="text-lg font-bold">
-                {permission === 'granted' ? '✅ 已授权' : permission === 'denied' ? '❌ 已拒绝' : '⚠️ 未决定'}
+                {permission === 'granted' ? 'Granted' : permission === 'denied' ? 'Denied' : 'Not Decided'}
               </p>
             </div>
           </div>
@@ -99,44 +99,44 @@ export default function TestNotificationsPage() {
             onClick={requestPermission}
             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3"
           >
-            请求通知权限
+            Request Notification Permission
           </Button>
 
           <Button
             onClick={() => sendTestNotification('mention')}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3"
           >
-            测试 @提及 通知
+            Test @Mention Notification
           </Button>
 
           <Button
             onClick={() => sendTestNotification('dm')}
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3"
           >
-            测试 私信 通知
+            Test Direct Message Notification
           </Button>
         </div>
 
         <NotificationDiagnostics />
 
         <div className="mt-8 p-4 bg-yellow-900 rounded-lg">
-          <h3 className="text-lg font-bold mb-2">💡 重要提示</h3>
+          <h3 className="text-lg font-bold mb-2">Important Notes</h3>
           <ul className="list-disc list-inside space-y-2 text-sm">
-            <li>浏览器通知仅在页面<strong>隐藏</strong>时显示（切换标签页或最小化窗口）</li>
-            <li>确保在浏览器设置中允许此网站发送通知</li>
-            <li>某些浏览器可能在后台时限制通知显示</li>
-            <li>检查浏览器的通知中心是否被阻止</li>
-            <li>建议使用 Chrome、Firefox 或 Edge 等现代浏览器</li>
+            <li>Browser notifications only show when the page is <strong>hidden</strong> (switch tabs or minimize window)</li>
+            <li>Make sure to allow this website to send notifications in browser settings</li>
+            <li>Some browsers may restrict notifications when in background</li>
+            <li>Check if browser notification center is blocked</li>
+            <li>Recommend using modern browsers like Chrome, Firefox, or Edge</li>
           </ul>
         </div>
 
         <div className="mt-6 p-4 bg-gray-800 rounded-lg">
-          <h3 className="text-lg font-bold mb-2">🔍 调试信息</h3>
-          <p className="text-sm mb-2">请打开开发者工具（F12）查看控制台日志：</p>
+          <h3 className="text-lg font-bold mb-2">Debug Info</h3>
+          <p className="text-sm mb-2">Open developer tools (F12) to view console logs:</p>
           <ul className="list-disc list-inside space-y-1 text-sm font-mono">
-            <li>搜索 "[DEBUG]" 查看通知调试信息</li>
-            <li>搜索 "[SUCCESS]" 查看成功发送的通知</li>
-            <li>搜索 "[ERROR]" 查看可能的错误</li>
+            <li>Search "[DEBUG]" to view notification debug info</li>
+            <li>Search "[SUCCESS]" to view successfully sent notifications</li>
+            <li>Search "[ERROR]" to view possible errors</li>
           </ul>
         </div>
       </div>

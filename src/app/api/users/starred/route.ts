@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 
-// 获取星标用户列表 API
+// Get starred users list API
 export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('auth_token')?.value;
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -26,10 +26,10 @@ export async function GET(request: NextRequest) {
 
     const currentUserId = decoded.userId;
 
-    // 获取当前用户星标的用户列表
+    // Get current user's starred users list
     const starredMembers = await prisma.dMConversationMember.findMany({
       where: {
-        // 查找当前用户参与的对话中被星标的成员
+        // Find starred members in conversations the current user participates in
         conversation: {
           members: {
             some: {
@@ -37,9 +37,9 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        // 该成员被星标
+        // Member is starred
         isStarred: true,
-        // 排除当前用户自己
+        // Exclude current user themselves
         userId: {
           not: currentUserId
         }
@@ -65,11 +65,11 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: [
-        { updatedAt: 'desc' } // 按更新时间倒序
+        { updatedAt: 'desc' } // Order by update time descending
       ]
     });
 
-    // 格式化返回数据
+    // Format return data
     const starredUsers = starredMembers.map(member => ({
       id: member.user.id,
       email: member.user.email,
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// 切换用户星标状态 API
+// Toggle user star status API
 export async function POST(request: NextRequest) {
   try {
     const token = request.cookies.get('auth_token')?.value;
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -129,8 +129,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 查找当前的 DMConversationMember 记录
-    // 注意：要切换的是 starredUserId 的记录，而不是当前用户的记录
+    // Find current DMConversationMember record
+    // Note: Toggle the starredUserId's record, not the current user's record
     const dmMember = await prisma.dMConversationMember.findFirst({
       where: {
         userId: starredUserId,
@@ -145,8 +145,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (!dmMember) {
-      // 如果没有找到对话记录，先创建一个
-      // 创建新的 DMConversation
+      // If conversation record not found, create one first
+      // Create new DMConversation
       await prisma.dMConversation.create({
         data: {
           createdById: currentUserId,
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
               },
               {
                 userId: starredUserId,
-                isStarred: true  // 将被标星的用户标记为 true
+                isStarred: true  // Mark the user to be starred as true
               }
             ]
           }
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 切换星标状态
+    // Toggle star status
     const updatedMember = await prisma.dMConversationMember.update({
       where: {
         id: dmMember.id

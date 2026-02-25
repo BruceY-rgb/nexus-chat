@@ -1,21 +1,21 @@
 /**
- * Slack数据抓取脚本
- * 用于从Slack工作区抓取公开频道、用户和消息数据
+ * Slack Data Scraper Script
+ * Scrapes public channels, users, and message data from a Slack workspace
  *
- * 使用方法:
- * 1. 设置环境变量 SLACK_USER_TOKEN
- * 2. 运行: npx ts-node scripts/slack-scraper.ts
+ * Usage:
+ * 1. Set environment variable SLACK_USER_TOKEN
+ * 2. Run: npx ts-node scripts/slack-scraper.ts
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
-// ES模块兼容的__dirname
+// ES module compatible __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Slack API配置
+// Slack API configuration
 const SLACK_TOKEN = process.env.SLACK_USER_TOKEN;
 const OUTPUT_FILE = path.join(__dirname, 'slack-data.json');
 
@@ -135,11 +135,11 @@ interface SlackData {
   };
 }
 
-// Slack API调用封装
+// Slack API call wrapper
 async function slackApiCall<T>(method: string, params: Record<string, string | number | boolean> = {}): Promise<T> {
   const url = `https://slack.com/api/${method}`;
 
-  // xoxe token 需要使用 form-urlencoded 格式
+  // xoxe token needs to use form-urlencoded format
   const formData = new URLSearchParams();
   formData.append('token', SLACK_TOKEN!);
   for (const [key, value] of Object.entries(params)) {
@@ -163,7 +163,7 @@ async function slackApiCall<T>(method: string, params: Record<string, string | n
   return data;
 }
 
-// 获取用户列表
+// Fetch user list
 async function fetchUsers(): Promise<SlackUser[]> {
   console.log('Fetching user list...');
   const users: SlackUser[] = [];
@@ -189,7 +189,7 @@ async function fetchUsers(): Promise<SlackUser[]> {
   return users;
 }
 
-// 获取频道列表
+// Fetch channel list
 async function fetchChannels(): Promise<SlackChannel[]> {
   console.log('Fetching channel list...');
   const channels: SlackChannel[] = [];
@@ -215,14 +215,14 @@ async function fetchChannels(): Promise<SlackChannel[]> {
   return channels;
 }
 
-// 获取频道消息历史
+// Fetch channel message history
 async function fetchChannelHistory(channelId: string, channelName: string): Promise<SlackMessage[]> {
   const messages: SlackMessage[] = [];
   let cursor: string | undefined;
   let hasMore = true;
   let latestTimestamp = Math.floor(Date.now() / 1000);
 
-  // 限制获取的消息数量，避免耗时过长
+  // Limit number of messages to avoid long execution time
   const MAX_MESSAGES_PER_CHANNEL = 1000;
   const MAX_PAGES = 10;
 
@@ -252,7 +252,7 @@ async function fetchChannelHistory(channelId: string, channelName: string): Prom
       hasMore = response.has_more;
       cursor = response.response_metadata?.next_cursor;
 
-      // 更新latest为最后一条消息的时间戳
+      // Update latest to timestamp of last message
       const lastMsg = response.messages[response.messages.length - 1];
       if (lastMsg) {
         latestTimestamp = parseFloat(lastMsg.ts) - 1;
@@ -268,12 +268,12 @@ async function fetchChannelHistory(channelId: string, channelName: string): Prom
   return messages;
 }
 
-// 等待指定时间（处理速率限制）
+// Wait for specified time (handle rate limiting)
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// 主函数
+// Main function
 async function main() {
   console.log('Slack Data Scraper');
   console.log('='.repeat(50));
@@ -281,13 +281,13 @@ async function main() {
   console.log('');
 
   try {
-    // 1. 获取用户列表
+    // 1. Fetch user list
     const users = await fetchUsers();
 
-    // 2. 获取频道列表
+    // 2. Fetch channel list
     const channels = await fetchChannels();
 
-    // 3. 获取每个频道的消息
+    // 3. Fetch messages for each channel
     console.log('');
     console.log('Fetching channel messages...');
     const messages: Record<string, SlackMessage[]> = {};
@@ -300,7 +300,7 @@ async function main() {
         const channelMessages = await fetchChannelHistory(channel.id, channel.name);
         messages[channel.id] = channelMessages;
 
-        // 礼貌性等待，避免触发速率限制
+        // Polite wait to avoid triggering rate limit
         if (i < channels.length - 1) {
           await sleep(200);
         }
@@ -310,7 +310,7 @@ async function main() {
       }
     }
 
-    // 4. 汇总数据
+    // 4. Aggregate data
     const totalMessages = Object.values(messages).reduce((sum, msgs) => sum + msgs.length, 0);
 
     const slackData: SlackData = {
@@ -325,7 +325,7 @@ async function main() {
       },
     };
 
-    // 5. 保存到文件
+    // 5. Save to file
     fs.writeFileSync(OUTPUT_FILE, JSON.stringify(slackData, null, 2), 'utf-8');
 
     console.log('');

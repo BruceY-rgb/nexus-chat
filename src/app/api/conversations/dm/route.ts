@@ -4,10 +4,10 @@ import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 import { Server as SocketIOServer } from 'socket.io';
 
-// 全局变量存储 Socket.IO 实例
+// Global variable to store Socket.IO instance
 let io: SocketIOServer | null = null;
 
-// 创建或获取私聊会话 API
+// Create or get DM conversation API
 export async function POST(request: NextRequest) {
   try {
     const token = request.cookies.get('auth_token')?.value;
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId } = body;
 
-    // 验证输入
+    // Validate input
     if (!userId || typeof userId !== 'string') {
       return NextResponse.json(
         { error: 'User ID is required' },
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 不能和自己创建私聊
+    // Cannot create DM with yourself
     if (userId === currentUserId) {
       return NextResponse.json(
         { error: 'Cannot create DM with yourself' },
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 检查目标用户是否存在
+    // Check if target user exists
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 检查是否已经存在私聊会话（两个用户之间的唯一会话）
+    // Check if DM conversation already exists (unique conversation between two users)
     const existingConversation = await prisma.dMConversation.findFirst({
       where: {
         members: {
@@ -96,11 +96,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingConversation) {
-      // 如果会话存在，返回该会话
+      // If conversation exists, return it
       return NextResponse.json(existingConversation);
     }
 
-    // 创建新的私聊会话
+    // Create new DM conversation
     const conversation = await prisma.dMConversation.create({
       data: {
         createdById: currentUserId,
@@ -132,12 +132,12 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // 通知WebSocket客户端有新对话创建
+    // Notify WebSocket clients that new conversation is created
     try {
       if (typeof (global as any).io !== 'undefined') {
         const ioInstance = (global as any).io as SocketIOServer;
 
-        // 通知对话双方的用户
+        // Notify both users in the conversation
         conversation.members.forEach(member => {
           ioInstance.to(`user:${member.userId}`).emit('active-conversations-update', {
             dmConversationId: conversation.id,

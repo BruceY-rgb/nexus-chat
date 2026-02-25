@@ -1,37 +1,37 @@
 #!/usr/bin/env node
 
 /**
- * Socket 通信调试脚本
+ * Socket Communication Debug Script
  *
- * 使用方法：
- * 1. 确保服务器已启动：npm run dev
- * 2. 在浏览器中登录并获取 auth_token
- * 3. 运行：node scripts/debug-socket.js
- * 4. 按照提示输入 token 或使用其他选项
+ * Usage:
+ * 1. Make sure the server is running: npm run dev
+ * 2. Login in the browser and get the auth_token
+ * 3. Run: node scripts/debug-socket.js
+ * 4. Follow the prompts to enter token or use other options
  */
 
 const io = require('socket.io-client');
 const readline = require('readline');
 
-// 获取服务器 URL - 支持 HTTPS/WSS
+// Get server URL - supports HTTPS/WSS
 const getServerUrl = () => {
   const url = process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000';
   let serverUrl: string;
 
   if (url.startsWith('https://')) {
-    // HTTPS 页面必须使用 WSS
+    // HTTPS pages must use WSS
     serverUrl = url.replace(/^https:/, 'wss:');
   } else if (url.startsWith('http://')) {
-    // HTTP 页面使用 WS
+    // HTTP pages use WS
     serverUrl = url.replace(/^http:/, 'ws:');
   } else {
-    // 如果没有协议，根据环境判断
+    // If no protocol, determine based on environment
     const isProduction = process.env.NODE_ENV === 'production';
     const protocol = isProduction ? 'wss' : 'ws';
     serverUrl = `${protocol}://${url}`;
   }
 
-  // 添加 socket.io 路径
+  // Add socket.io path
   if (!serverUrl.endsWith('/socket.io')) {
     serverUrl = `${serverUrl}/socket.io`;
   }
@@ -60,7 +60,7 @@ console.log('2. Get from environment variable (DEBUG_TOKEN)');
 console.log('3. Get from localStorage');
 console.log('4. Skip auth test (connection only)\n');
 
-// 颜色输出
+// Color output
 const colors = {
   reset: '\x1b[0m',
   green: '\x1b[32m',
@@ -78,7 +78,7 @@ function logStep(step, message) {
   console.log(`\n${colors.cyan}[${step}]${colors.reset} ${message}`);
 }
 
-// 获取 token
+// Get token
 async function getToken() {
   return new Promise((resolve) => {
     rl.question('Select (1-4): ', (answer) => {
@@ -110,7 +110,7 @@ async function getToken() {
   });
 }
 
-// 测试 WebSocket 连接
+// Test WebSocket connection
 async function testConnection(token) {
   return new Promise((resolve, reject) => {
     logStep('1', 'Testing WebSocket connection...');
@@ -122,13 +122,13 @@ async function testConnection(token) {
       reconnectionDelayMax: 5000,
       reconnectionAttempts: 5,
       timeout: 20000,
-      // 强制安全连接（HTTPS 环境下自动使用 WSS）
+      // Force secure connection (auto use WSS in HTTPS environment)
       secure: true,
-      // 如果使用自签名证书，允许不验证证书
+      // Allow self-signed certificates if using them
       rejectUnauthorized: false,
-      // 启用自动连接
+      // Enable auto connect
       autoConnect: true,
-      // 增强的连接参数
+      // Enhanced connection parameters
       upgrade: true,
       rememberUpgrade: true
     };
@@ -175,7 +175,7 @@ async function testConnection(token) {
   });
 }
 
-// 测试频道加入
+// Test channel join
 async function testJoinChannel(socket) {
   return new Promise((resolve) => {
     logStep('2', 'Testing channel operations...');
@@ -201,7 +201,7 @@ async function testJoinChannel(socket) {
   });
 }
 
-// 测试私聊加入
+// Test DM join
 async function testJoinDM(socket) {
   return new Promise((resolve) => {
     logStep('3', 'Testing DM operations...');
@@ -222,7 +222,7 @@ async function testJoinDM(socket) {
   });
 }
 
-// 交互式测试
+// Interactive test
 function interactiveMode(socket) {
   logStep('4', 'Entering interactive mode');
 
@@ -302,19 +302,19 @@ function interactiveMode(socket) {
         return;
 
       case '':
-        // 忽略空输入
+        // Ignore empty input
         break;
 
       default:
         console.log(`X Unknown command: ${cmd}`);
     }
 
-    // 继续等待下一个命令
+    // Continue waiting for next command
     interactiveMode(socket);
   });
 }
 
-// 发送测试消息
+// Send test message
 async function testSendMessage(token) {
   return new Promise((resolve) => {
     logStep('5', 'Testing message sending');
@@ -355,7 +355,7 @@ async function testSendMessage(token) {
                 'Content-Length': Buffer.byteLength(postData)
               };
 
-              // 添加认证 Cookie
+              // Add auth cookie
               if (authToken) {
                 headers['Cookie'] = `auth_token=${authToken}`;
               }
@@ -406,7 +406,7 @@ async function testSendMessage(token) {
   });
 }
 
-// 主函数
+// Main function
 async function main() {
   try {
     console.log('='.repeat(50));
@@ -451,11 +451,11 @@ async function main() {
   }
 }
 
-// 优雅退出
+// Graceful exit
 process.on('SIGINT', () => {
   console.log('\n\nExiting...');
   process.exit(0);
 });
 
-// 运行主函数
+// Run main function
 main();

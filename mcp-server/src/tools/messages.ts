@@ -1,5 +1,5 @@
 /**
- * Message Tools - 消息管理工具
+ * Message Tools - Message Management Tools
  */
 
 import { z } from "zod";
@@ -121,7 +121,7 @@ const clearMessagesSchema = z.object({
 export const messageTools: ToolDefinition[] = [
   {
     name: "list_messages",
-    description: "获取频道或私聊的消息列表",
+    description: "Get message list for channel or DM",
     parameters: listMessagesSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -157,7 +157,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "send_message",
-    description: "发送消息到频道或私聊",
+    description: "Send message to channel or DM",
     parameters: sendMessageSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -191,7 +191,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "get_message",
-    description: "获取单条消息详情",
+    description: "Get single message details",
     parameters: getMessageSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -218,7 +218,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "update_message",
-    description: "更新消息内容",
+    description: "Update message content",
     parameters: updateMessageSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -246,7 +246,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "delete_message",
-    description: "删除消息",
+    description: "Delete message",
     parameters: deleteMessageSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -281,7 +281,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "reply_to_message",
-    description: "回复消息（创建线程）",
+    description: "Reply to message (create thread)",
     parameters: replyToMessageSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -312,7 +312,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "get_thread_replies",
-    description: "获取消息的线程回复",
+    description: "Get thread replies for message",
     parameters: getThreadRepliesSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -339,7 +339,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "add_reaction",
-    description: "为消息添加反应",
+    description: "Add reaction to message",
     parameters: addReactionSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -377,7 +377,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "remove_reaction",
-    description: "移除消息的反应",
+    description: "Remove reaction from message",
     parameters: removeReactionSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -416,7 +416,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "search_messages",
-    description: "搜索消息，支持关键词、频道、用户、时间范围过滤",
+    description: "Search messages with keyword, channel, user and time range filtering",
     parameters: searchMessagesSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -454,7 +454,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "get_reactions",
-    description: "获取消息的反应列表",
+    description: "Get reaction list for message",
     parameters: getReactionsSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -481,7 +481,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "context_search_messages",
-    description: "在指定频道或私聊中搜索消息",
+    description: "Search messages in specified channel or DM",
     parameters: contextSearchMessagesSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -516,7 +516,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "mark_messages_read",
-    description: "标记频道或私聊消息为已读",
+    description: "Mark messages as read in channel or DM",
     parameters: markMessagesReadSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -548,7 +548,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "mark_all_messages_read",
-    description: "标记所有消息为已读",
+    description: "Mark all messages as read",
     parameters: markAllMessagesReadSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -575,7 +575,7 @@ export const messageTools: ToolDefinition[] = [
   },
   {
     name: "clear_messages",
-    description: "清空频道或私聊的所有消息",
+    description: "Clear all messages in channel or DM",
     parameters: clearMessagesSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {

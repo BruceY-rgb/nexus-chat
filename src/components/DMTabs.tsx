@@ -13,7 +13,7 @@ type TabType = 'messages' | 'canvas' | 'files' | 'shared';
 export default function DMTabs({ isOwnSpace = false, activeTab: controlledActiveTab, onTabChange }: DMTabsProps) {
   const [internalActiveTab, setInternalActiveTab] = useState<TabType>('messages');
 
-  // 受控模式优先，否则使用内部状态
+  // Controlled mode takes priority, otherwise use internal state
   const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalActiveTab;
 
   const handleTabChange = (tab: TabType) => {

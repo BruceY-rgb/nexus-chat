@@ -1,6 +1,6 @@
 /**
  * MCP Server Entry Point
- * 支持 stdio 和 http 两种运行模式
+ * Supports both stdio and http running modes
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -237,11 +237,11 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 // Run the server based on mode
 async function main() {
   if (MCP_MODE === 'http') {
-    // HTTP 模式
+    // HTTP mode
     await startHttpServer();
     console.log(`Slack MCP Server running in HTTP mode`);
   } else {
-    // Stdio 模式（默认）
+    // Stdio mode (default)
     const transport = new StdioServerTransport();
     await server.connect(transport);
     console.error('Slack MCP Server running on stdio');

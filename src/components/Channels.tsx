@@ -62,26 +62,26 @@ export default function Channels({
       const data = await response.json();
       const newChannel = data.channel;
 
-      // 通知父组件
+      // Notify parent component
       onCreateChannel?.(newChannel);
 
-      // 关闭模态框
+      // Close modal
       setIsModalOpen(false);
 
-      // 自动选中新建的频道（使用真实ID）
+      // Auto-select newly created channel (using real ID)
       onSelectChannel?.(newChannel.id);
 
       console.log("Created new channel successfully:", newChannel);
     } catch (error) {
       console.error("Create channel error:", error);
-      // 可以添加用户友好的错误提示
+      // Can add user-friendly error message
       alert(
         `Failed to create channel: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   };
 
-  // 只显示已加入的频道
+  // Only show joined channels
   const joinedChannelsList = channels.filter((channel) =>
     joinedChannels.includes(channel.id),
   );
@@ -203,7 +203,7 @@ export default function Channels({
         </div>
       )}
 
-      {/* 创建频道模态框 */}
+      {/* Create channel modal */}
       <CreateChannelModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}

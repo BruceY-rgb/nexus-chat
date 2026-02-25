@@ -1,5 +1,5 @@
 /**
- * Health Tools - 健康检查工具
+ * Health Tools - Health Check Tools
  */
 
 import { z } from "zod";
@@ -13,7 +13,7 @@ const healthCheckSchema = z.object({
 export const healthTools: ToolDefinition[] = [
   {
     name: "health_check",
-    description: "健康检查，返回数据库和WebSocket状态",
+    description: "Health check, returns database and WebSocket status",
     parameters: healthCheckSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {

@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
-    // 验证认证
+    // Verify authentication
     const token = request.cookies.get('auth_token')?.value;
 
     if (!token) {
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     const userId = decoded.userId;
 
-    // 检查功能开关
+    // Check feature flag
     if (process.env.ENABLE_FILE_UPLOAD !== 'true') {
       return NextResponse.json(
         { error: 'File upload is disabled' },
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 解析表单数据
+    // Parse form data
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
 
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 检查文件数量限制
+    // Check file count limit
     if (files.length > 10) {
       return NextResponse.json(
         { error: 'Maximum 10 files allowed per upload' },
@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
 
     const uploadResults = [];
 
-    // 处理每个文件
+    // Process each file
     for (const file of files) {
-      // 验证文件类型
+      // Validate file type
       if (!validateFileType(file.type)) {
         const allowedTypes = getAllowedFileTypes();
         return NextResponse.json(
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 验证文件大小
+      // Validate file size
       if (!validateFileSize(file.size)) {
         return NextResponse.json(
           { error: `File too large. Maximum size: ${Math.round((parseInt(process.env.MAX_FILE_SIZE || '10485760') / 1024 / 1024))}MB` },
@@ -77,12 +77,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 转换文件为 Buffer
+      // Convert file to Buffer
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
       try {
-        // 上传到 S3
+        // Upload to S3
         const result = await uploadFile({
           file: buffer,
           fileName: file.name,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 处理 OPTIONS 请求（CORS 预检）
+// Handle OPTIONS request (CORS preflight)
 export async function OPTIONS() {
   return NextResponse.json({}, { status: 200 });
 }

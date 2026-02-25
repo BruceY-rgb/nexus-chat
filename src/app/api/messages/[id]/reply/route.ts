@@ -7,7 +7,7 @@ import { parseMentions, extractUsernames } from '@/lib/mention-parser';
 import { notificationService } from '@/lib/notification-service';
 
 /**
- * 递归遍历对象，将所有 BigInt 和 Date 字段转换为 String
+ * Recursively traverse object, convert all BigInt and Date fields to String
  */
 function convertBigIntToString(obj: any): any {
   if (obj === null || obj === undefined) {
@@ -51,7 +51,7 @@ export async function POST(
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -66,7 +66,7 @@ export async function POST(
     const body = await request.json();
     const { content, attachments } = body;
 
-    // 验证：必须有文字内容或附件之一
+    // Validate: must have text content or attachments
     const hasContent = content && typeof content === 'string' && content.trim() !== '';
     const hasAttachments = attachments && Array.isArray(attachments) && attachments.length > 0;
 
@@ -77,7 +77,7 @@ export async function POST(
       );
     }
 
-    // 验证父消息是否存在
+    // Validate parent message exists
     const parentMessage = await prisma.message.findUnique({
       where: { id: parentMessageId },
       include: {
@@ -102,7 +102,7 @@ export async function POST(
       );
     }
 
-    // 验证用户权限
+    // Validate user permissions
     if (parentMessage.channelId) {
       const channelMember = await prisma.channelMember.findFirst({
         where: {
@@ -133,18 +133,18 @@ export async function POST(
       }
     }
 
-    // 解析回复中的 @提及（只有当有内容时才解析）
+    // Parse @mentions in reply (only when there is content)
     const mentions = hasContent ? parseMentions(content) : [];
 
-    // 设置 WebSocket 实例到 NotificationService
+    // Set WebSocket instance to NotificationService
     if (typeof (global as any).io !== 'undefined') {
       const ioInstance = (global as any).io as SocketIOServer;
       notificationService.setSocketIO(ioInstance);
     }
 
-    // 使用事务创建回复
+    // Create reply using transaction
     const reply = await prisma.$transaction(async (tx) => {
-      // 创建回复消息
+      // Create reply message
       const newReply = await tx.message.create({
         data: {
           content: hasContent ? content.trim() : '',
@@ -177,7 +177,7 @@ export async function POST(
         }
       });
 
-      // 如果有附件，创建附件记录
+      // If there are attachments, create attachment records
       if (attachments && attachments.length > 0) {
         const attachmentData = attachments.map((attachment: any) => ({
           messageId: newReply.id,
@@ -195,7 +195,7 @@ export async function POST(
         });
       }
 
-      // 更新父消息的回复计数和最后回复时间
+      // Update parent message's reply count and last reply time
       await tx.message.update({
         where: { id: parentMessageId },
         data: {
@@ -207,7 +207,7 @@ export async function POST(
         }
       });
 
-      // 重新查询包含附件的完整回复
+      // Re-query complete reply with attachments
       const fullReply = await tx.message.findUnique({
         where: {
           id: newReply.id
@@ -249,7 +249,7 @@ export async function POST(
       return fullReply;
     });
 
-    // 检查回复是否创建成功
+    // Check if reply was created successfully
     if (!reply) {
       console.error('❌ [API] Reply creation failed or returned null');
       return NextResponse.json(
@@ -258,11 +258,11 @@ export async function POST(
       );
     }
 
-    // 如果有提及，创建提及记录和通知
+    // If there are mentions, create mention records and notifications
     if (mentions.length > 0) {
       const usernames = extractUsernames(mentions);
 
-      // 根据 displayName 查找用户
+      // Find user by displayName
       const mentionedUsers = await prisma.user.findMany({
         where: {
           displayName: { in: usernames }
@@ -273,7 +273,7 @@ export async function POST(
         }
       });
 
-      // 创建提及记录
+      // Create mention record
       if (mentionedUsers.length > 0) {
         await prisma.messageMention.createMany({
           data: mentionedUsers.map(user => ({
@@ -285,7 +285,7 @@ export async function POST(
 
         console.log(`📌 Created ${mentionedUsers.length} mentions for reply ${reply.id}`);
 
-        // 为提及创建通知
+        // Create notification for mention
         try {
           await notificationService.createMentionNotifications(
             reply.id,
@@ -300,9 +300,9 @@ export async function POST(
       }
     }
 
-    // 为其他用户增加未读计数（除了回复者）
+    // Increase unread count for other users (except the replier)
     if (parentMessage.channelId) {
-      // 为频道成员增加线程未读计数
+      // Increase thread unread count for channel members
       await prisma.channelMember.updateMany({
         where: {
           channelId: parentMessage.channelId,
@@ -317,7 +317,7 @@ export async function POST(
         }
       });
     } else if (parentMessage.dmConversationId) {
-      // 为DM成员增加未读计数
+      // Increase unread count for DM members
       await prisma.dMConversationMember.updateMany({
         where: {
           conversationId: parentMessage.dmConversationId,
@@ -332,7 +332,7 @@ export async function POST(
         }
       });
 
-      // 更新会话的最后消息时间
+      // Update conversation's last message time
       await prisma.dMConversation.update({
         where: {
           id: parentMessage.dmConversationId
@@ -343,7 +343,7 @@ export async function POST(
       });
     }
 
-    // 创建线程回复通知
+    // Create thread reply notification
     try {
       await notificationService.createThreadReplyNotification(
         reply.id,
@@ -357,7 +357,7 @@ export async function POST(
       console.error('Error creating thread reply notification:', error);
     }
 
-    // 通过 WebSocket 广播新回复
+    // Broadcast new reply via WebSocket
     try {
       const globalIo = (global as any).io;
       if (typeof globalIo !== 'undefined') {
@@ -388,7 +388,7 @@ export async function POST(
 
         console.log(`🚀 [API] Broadcasting new thread reply via WebSocket:`, messageInfo);
 
-        // 广播到频道或DM房间
+        // Broadcast to channel or DM room
         if (parentMessage.channelId) {
           const channelRoom = `channel:${parentMessage.channelId}`;
           ioInstance.to(channelRoom).emit('thread-reply-created', {
@@ -411,7 +411,7 @@ export async function POST(
       }
     } catch (wsError) {
       console.error('❌ [API] WebSocket broadcast error:', wsError);
-      // 即使 WebSocket 广播失败，也不影响 HTTP 响应
+      // Even if WebSocket broadcast fails, it does not affect HTTP response
     }
 
     return NextResponse.json(convertBigIntToString(reply));

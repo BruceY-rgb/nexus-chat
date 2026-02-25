@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 
-// 强制动态渲染 - 因为这个API使用了 cookies
+// Force dynamic rendering - because this API uses cookies
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 检查是否同时提供了channelId和dmConversationId
+    // Check if both channelId and dmConversationId are provided
     if (channelId && dmConversationId) {
       return NextResponse.json(
         { error: 'Cannot specify both channel ID and DM conversation ID' },
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     let results: any[] = [];
 
     if (channelId) {
-      // 验证用户是否加入了该频道
+      // Verify user has joined the channel
       const membership = await prisma.channelMember.findFirst({
         where: {
           userId: currentUserId,
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // 只在指定频道中搜索
+      // Search only in specified channel
       const messages = await prisma.message.findMany({
         where: {
           content: {
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
       }).filter(Boolean);
 
     } else if (dmConversationId) {
-      // 验证用户是否参与该私聊
+      // Verify user is participating in the DM
       const membership = await prisma.dMConversationMember.findFirst({
         where: {
           userId: currentUserId,
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // 只在指定私聊中搜索
+      // Search only in specified DM
       const messages = await prisma.message.findMany({
         where: {
           content: {
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
           return null;
         }
 
-        // 获取对话中的其他成员
+        // Get other members in the conversation
         const otherMembers = message.dmConversation.members
           .filter((m: any) => m.user.id !== currentUserId)
           .map((m: any) => m.user);
@@ -195,7 +195,7 @@ export async function GET(request: NextRequest) {
       }).filter(Boolean);
 
     } else {
-      // 如果没有指定channelId或dmConversationId，返回错误
+      // If neither channelId nor dmConversationId is specified, return error
       return NextResponse.json(
         { error: 'Must specify either channel ID or DM conversation ID' },
         { status: 400 }

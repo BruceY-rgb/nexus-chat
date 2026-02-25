@@ -3,9 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 
-// 获取用户列表 API
+// Get user list API
 
-// 强制动态渲染 - 因为这个API使用了 cookies
+// Force dynamic rendering - because this API uses cookies
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -34,22 +34,22 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = (page - 1) * limit;
-    const activeOnly = searchParams.get('activeOnly') === 'true'; // 新增：只获取有消息的用户
-    const targetUserId = searchParams.get('userId'); // 新增：获取特定用户ID
+    const activeOnly = searchParams.get('activeOnly') === 'true'; // New: only get users with messages
+    const targetUserId = searchParams.get('userId'); // New: get specific user ID
 
-    // 构建查询条件
+    // Build query conditions
     const where: any = {
       id: {
-        not: currentUserId // 排除当前用户
+        not: currentUserId // Exclude current user
       }
     };
 
-    // 如果指定了 targetUserId，则只查询该用户
+    // If targetUserId is specified, only query that user
     if (targetUserId) {
       where.id = targetUserId;
     }
 
-    // 如果有搜索词，支持邮箱和显示名搜索
+    // If search term exists, support email and display name search
     if (search) {
       where.OR = [
         {
@@ -73,16 +73,16 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // 根据 activeOnly 参数决定查询方式
+    // Determine query method based on activeOnly parameter
     let users;
     let total;
 
-    // 如果指定了 targetUserId，不使用分页
+    // If targetUserId is specified, don't use pagination
     const finalOffset = targetUserId ? 0 : offset;
     const finalLimit = targetUserId ? 1 : limit;
 
     if (activeOnly) {
-      // 只获取有消息的用户（通过 DMConversationMember 关系）
+      // Only get users with messages (via DMConversationMember relationship)
       const dmMembers = await prisma.dMConversationMember.findMany({
         where: {
           userId: {
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
           },
           conversation: {
             messages: {
-              some: {} // 确保该会话有消息
+              some: {} // Ensure conversation has messages
             }
           }
         },
@@ -113,8 +113,8 @@ export async function GET(request: NextRequest) {
           }
         },
         orderBy: [
-          { conversation: { lastMessageAt: 'desc' } }, // 按最后消息时间倒序
-          { user: { displayName: 'asc' } } // 然后按显示名排序
+          { conversation: { lastMessageAt: 'desc' } }, // Sort by last message time descending
+          { user: { displayName: 'asc' } } // Then sort by display name
         ],
         skip: finalOffset,
         take: finalLimit
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
         isStarred: member.isStarred || false
       }));
 
-      // 获取总数（用于搜索时）
+      // Get total count (for search)
       if (search) {
         total = await prisma.dMConversationMember.count({
           where: {
@@ -190,7 +190,7 @@ export async function GET(request: NextRequest) {
         });
       }
     } else {
-      // 获取所有用户（原有逻辑）
+      // Get all users (original logic)
       const result = await prisma.user.findMany({
         where,
         select: {
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
           avatarUrl: true,
           isOnline: true,
           lastSeenAt: true,
-          // 获取与当前用户的 DMConversationMember 信息
+          // Get DMConversationMember info with current user
           dmMembers: {
             where: {
               conversation: {
@@ -221,14 +221,14 @@ export async function GET(request: NextRequest) {
           }
         },
         orderBy: [
-          { isOnline: 'desc' }, // 在线用户排在前面
-          { displayName: 'asc' } // 然后按显示名排序
+          { isOnline: 'desc' }, // Online users first
+          { displayName: 'asc' } // Then sort by display name
         ],
         skip: finalOffset,
         take: finalLimit
       });
 
-      // 处理用户数据，将 DMConversationMember 信息展平
+      // Process user data, flatten DMConversationMember info
       users = result.map((user: any) => {
         const dmMember = user.dmMembers?.[0];
         return {
@@ -249,7 +249,7 @@ export async function GET(request: NextRequest) {
       total = await prisma.user.count({ where });
     }
 
-    // 获取当前用户信息
+    // Get current user info
     const currentUser = await prisma.user.findUnique({
       where: { id: currentUserId },
       select: {

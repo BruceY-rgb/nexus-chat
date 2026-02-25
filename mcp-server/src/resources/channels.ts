@@ -1,5 +1,5 @@
 /**
- * Channel Resources - 频道资源
+ * Channel Resources - Channel Resources
  */
 
 import { apiExecutor } from '../executor.js';
@@ -9,13 +9,13 @@ export const channelResources: ResourceDefinition[] = [
   {
     uri: 'channels://list',
     name: 'Channel List',
-    description: '获取所有频道列表',
+    description: 'Get all channel list',
     mimeType: 'application/json',
   },
   {
     uri: 'channels://joined',
     name: 'Joined Channels',
-    description: '获取当前用户已加入的频道列表',
+    description: 'Get list of channels the current user has joined',
     mimeType: 'application/json',
   },
 ];

@@ -1,5 +1,5 @@
 /**
- * Attachment Tools - 附件管理工具
+ * Attachment Tools - Attachment Management Tools
  */
 
 import { z } from 'zod';
@@ -27,7 +27,7 @@ const createAttachmentUploadUrlSchema = z.object({
 export const attachmentTools: ToolDefinition[] = [
   {
     name: 'get_attachments',
-    description: '获取会话的附件列表',
+    description: 'Get attachments list for conversation',
     parameters: getAttachmentsSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -55,7 +55,7 @@ export const attachmentTools: ToolDefinition[] = [
   },
   {
     name: 'delete_attachment',
-    description: '删除附件',
+    description: 'Delete attachment',
     parameters: deleteAttachmentSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {
@@ -79,7 +79,7 @@ export const attachmentTools: ToolDefinition[] = [
   },
   {
     name: 'create_attachment_upload_url',
-    description: '获取文件上传的预签名URL。Agent流程: 1) 调用此工具获取uploadUrl和attachment元数据 2) 用PUT请求将文件上传到uploadUrl 3) 调用send_message时在attachments中传入元数据(fileName, mimeType, fileSize, s3Key, s3Bucket, fileUrl, thumbnailUrl)',
+    description: 'Get presigned URL for file upload. Agent flow: 1) Call this tool to get uploadUrl and attachment metadata 2) Use PUT request to upload file to uploadUrl 3) Pass metadata (fileName, mimeType, fileSize, s3Key, s3Bucket, fileUrl, thumbnailUrl) in attachments when calling send_message',
     parameters: createAttachmentUploadUrlSchema,
     execute: async (args, _context): Promise<ToolResult> => {
       try {

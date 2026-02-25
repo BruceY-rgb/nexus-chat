@@ -27,15 +27,15 @@ export default function UserSelect({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 获取选中的用户
+  // Get selected user
   const selectedUser = users.find(u => u.id === selectedUserId);
 
-  // 过滤用户列表
+  // Filter users list
   const filteredUsers = users.filter(user =>
     user.displayName.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  // 点击外部关闭下拉框
+  // Click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -53,7 +53,7 @@ export default function UserSelect({
     };
   }, [isOpen]);
 
-  // 打开时聚焦输入框
+  // Focus input when opening
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
@@ -75,7 +75,7 @@ export default function UserSelect({
 
   return (
     <div ref={containerRef} className="relative">
-      {/* 选择按钮 */}
+      {/* Select button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -110,10 +110,10 @@ export default function UserSelect({
         )}
       </button>
 
-      {/* 下拉框 */}
+      {/* Dropdown */}
       {isOpen && (
         <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-hidden">
-          {/* 搜索输入框 */}
+          {/* Search input */}
           <div className="p-2 border-b border-gray-100">
             <div className="relative">
               <Search
@@ -131,7 +131,7 @@ export default function UserSelect({
             </div>
           </div>
 
-          {/* 用户列表 */}
+          {/* User list */}
           <div className="max-h-44 overflow-y-auto">
             {filteredUsers.length > 0 ? (
               filteredUsers.map(user => (

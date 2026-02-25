@@ -26,19 +26,19 @@ export default function BrowseChannels({
 }: BrowseChannelsProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 筛选频道
+  // Filter channels
   const filteredChannels = channels.filter(channel =>
     channel.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (channel.description && channel.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  // 分离已加入和未加入的频道
+  // Separate joined and unjoined channels
   const joinedChannels = filteredChannels.filter(channel => isUserJoined(channel, userId));
   const availableChannels = filteredChannels.filter(channel => !isUserJoined(channel, userId));
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {/* Sticky 头部 */}
+      {/* Sticky header */}
       <div className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="max-w-4xl mx-auto p-6">
           <div className="flex items-center gap-4">
@@ -72,9 +72,9 @@ export default function BrowseChannels({
         </div>
       </div>
 
-      {/* 可滚动内容 */}
+      {/* Scrollable content */}
       <div className="max-w-4xl mx-auto p-6">
-        {/* 搜索框 */}
+        {/* Search box */}
         <div className="mb-6">
           <div className="relative">
             <input
@@ -101,7 +101,7 @@ export default function BrowseChannels({
           </div>
         </div>
 
-        {/* 已加入的频道 */}
+        {/* Joined channels */}
         {joinedChannels.length > 0 && (
           <div className="mb-8">
             <h3 className="text-sm font-semibold text-text-primary mb-3 uppercase tracking-wide">
@@ -148,7 +148,7 @@ export default function BrowseChannels({
           </div>
         )}
 
-        {/* 可加入的频道 */}
+        {/* Available channels */}
         {availableChannels.length > 0 && (
           <div>
             <h3 className="text-sm font-semibold text-text-primary mb-3 uppercase tracking-wide">
@@ -195,7 +195,7 @@ export default function BrowseChannels({
           </div>
         )}
 
-        {/* 空状态 */}
+        {/* Empty state */}
         {filteredChannels.length === 0 && (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-background-elevated rounded-full flex items-center justify-center mx-auto mb-4">

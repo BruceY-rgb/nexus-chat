@@ -4,7 +4,7 @@ import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 
 /**
- * 递归遍历对象，将所有 BigInt 和 Date 字段转换为 String
+ * Recursively traverse object, convert all BigInt and Date fields to String
  */
 function convertBigIntToString(obj: any): any {
   if (obj === null || obj === undefined) {
@@ -48,7 +48,7 @@ export async function GET(
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -60,7 +60,7 @@ export async function GET(
     const currentUserId = decoded.userId;
     const messageId = params.id;
 
-    // 验证消息是否存在
+    // Validate message exists
     const parentMessage = await prisma.message.findUnique({
       where: { id: messageId },
       include: {
@@ -85,7 +85,7 @@ export async function GET(
       );
     }
 
-    // 验证用户权限
+    // Validate user permissions
     if (parentMessage.channelId) {
       const channelMember = await prisma.channelMember.findFirst({
         where: {
@@ -120,7 +120,7 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // 获取线程回复列表
+    // Get thread replies list
     const replies = await prisma.message.findMany({
       where: {
         parentMessageId: messageId,
@@ -164,7 +164,7 @@ export async function GET(
       skip: offset
     });
 
-    // 获取回复总数
+    // Get total reply count
     const totalCount = await prisma.message.count({
       where: {
         parentMessageId: messageId,
@@ -172,9 +172,9 @@ export async function GET(
       }
     });
 
-    // 标记已读
+    // Mark as read
     if (parentMessage.channelId) {
-      // 标记频道线程为已读
+      // Mark channel thread as read
       await prisma.messageRead.upsert({
         where: {
           messageId_userId: {
@@ -192,7 +192,7 @@ export async function GET(
         }
       });
     } else if (parentMessage.dmConversationId) {
-      // 标记DM线程为已读
+      // Mark DM thread as read
       await prisma.messageRead.upsert({
         where: {
           messageId_userId: {

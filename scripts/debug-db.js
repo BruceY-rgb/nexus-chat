@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * 数据库调试脚本
+ * Database Debug Script
  *
- * 检查数据库连接、表结构、测试数据等
+ * Checks database connection, table structure, test data, etc.
  */
 
 const { PrismaClient } = require('@prisma/client');
@@ -49,27 +49,27 @@ async function checkTables(prisma) {
   logStep('2', 'Checking data tables...');
 
   try {
-    // 检查用户表
+    // Check users table
     const users = await prisma.user.findMany({ take: 1 });
     log('green', `users table exists, record count: ${await prisma.user.count()}`);
 
-    // 检查频道表
+    // Check channels table
     const channels = await prisma.channel.findMany({ take: 1 });
     log('green', `channels table exists, record count: ${await prisma.channel.count()}`);
 
-    // 检查频道成员表
+    // Check channel members table
     const channelMembers = await prisma.channelMember.findMany({ take: 1 });
     log('green', `channel_members table exists, record count: ${await prisma.channelMember.count()}`);
 
-    // 检查私聊表
+    // Check DM conversations table
     const dmConversations = await prisma.dMConversation.findMany({ take: 1 });
     log('green', `dm_conversations table exists, record count: ${await prisma.dMConversation.count()}`);
 
-    // 检查私聊成员表
+    // Check DM members table
     const dmMembers = await prisma.dMConversationMember.findMany({ take: 1 });
     log('green', `dm_conversation_members table exists, record count: ${await prisma.dMConversationMember.count()}`);
 
-    // 检查消息表
+    // Check messages table
     const messages = await prisma.message.findMany({ take: 1 });
     log('green', `messages table exists, record count: ${await prisma.message.count()}`);
 
@@ -125,7 +125,7 @@ async function checkRelationships(prisma) {
   logStep('4', 'Checking data relationships...');
 
   try {
-    // 检查频道成员关系
+    // Check channel member relationships
     const channelMemberCount = await prisma.channelMember.count();
     const channelCount = await prisma.channel.count();
     const userCount = await prisma.user.count();
@@ -140,7 +140,7 @@ async function checkRelationships(prisma) {
       console.log(`   Role: ${member.role}`);
     }
 
-    // 检查私聊成员关系
+    // Check DM member relationships
     const dmMemberCount = await prisma.dMConversationMember.count();
 
     if (dmMemberCount > 0) {
@@ -176,7 +176,7 @@ async function checkMessages(prisma) {
       console.log(`   DM ID: ${message.dmConversationId || 'N/A'}`);
       console.log(`   Created at: ${message.createdAt}`);
 
-      // 检查消息关联
+      // Check message associations
       if (message.channelId) {
         const channel = await prisma.channel.findUnique({
           where: { id: message.channelId }
@@ -279,7 +279,7 @@ async function main() {
   process.exit(0);
 }
 
-// 错误处理
+// Error handling
 process.on('unhandledRejection', (error) => {
   log('red', `\nUnhandled error: ${error.message}`);
   console.error(error);

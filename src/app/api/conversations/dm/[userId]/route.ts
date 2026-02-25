@@ -20,7 +20,7 @@ export async function GET(
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -32,7 +32,7 @@ export async function GET(
     const currentUserId = decoded.userId;
     const targetUserId = params.userId;
 
-    // 验证用户ID格式（必须是UUID格式）
+    // Validate user ID format (must be UUID format)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(targetUserId)) {
       return NextResponse.json(
@@ -41,7 +41,7 @@ export async function GET(
       );
     }
 
-    // 验证目标用户是否存在
+    // Verify target user exists
     const targetUser = await prisma.user.findUnique({
       where: { id: targetUserId },
       select: { id: true, displayName: true }
@@ -54,7 +54,7 @@ export async function GET(
       );
     }
 
-    // 验证当前用户是否存在
+    // Verify current user exists
     const currentUser = await prisma.user.findUnique({
       where: { id: currentUserId },
       select: { id: true, displayName: true }
@@ -68,7 +68,7 @@ export async function GET(
     }
 
     if (currentUserId === targetUserId) {
-      // 如果是与自己的对话，返回一个特殊的对话对象
+      // If it's a conversation with yourself, return a special conversation object
       return NextResponse.json({
         id: `self-${currentUserId}`,
         createdById: currentUserId,
@@ -89,7 +89,7 @@ export async function GET(
       });
     }
 
-    // 查找现有的私聊会话（两个用户之间的会话）
+    // Find existing DM conversation (conversation between two users)
     const existingConversation = await prisma.dMConversation.findFirst({
       where: {
         AND: [
@@ -151,9 +151,9 @@ export async function GET(
       return NextResponse.json(existingConversation);
     }
 
-    // 如果不存在，创建新的私聊会话
+    // If not exists, create new DM conversation
     const newConversation = await prisma.$transaction(async (tx: PrismaTransaction) => {
-      // 再次验证用户存在（事务内）
+      // Verify users exist again (inside transaction)
       const [currentUserExists, targetUserExists] = await Promise.all([
         tx.user.findUnique({
           where: { id: currentUserId },
@@ -173,7 +173,7 @@ export async function GET(
         throw new Error('Target user not found');
       }
 
-      // 创建新对话
+      // Create new conversation
       const conversation = await tx.dMConversation.create({
         data: {
           createdById: currentUserId,
@@ -224,7 +224,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Error getting DM conversation:', error);
 
-    // 提供更具体的错误信息
+    // Provide more specific error information
     if (error.code === 'P2003') {
       return NextResponse.json(
         { error: 'Foreign key constraint error: user not found' },

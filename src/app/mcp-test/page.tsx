@@ -69,17 +69,17 @@ export default function MCPTestPage() {
 
   return (
     <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto' }}>
-      <h1>MCP 工具测试页面</h1>
+      <h1>MCP Tool Test Page</h1>
       <p style={{ color: '#666', marginBottom: '20px' }}>
-        使用此页面测试 MCP 服务器提供的工具。
+        Use this page to test tools provided by the MCP server.
         <a href="/mcp-test.md" target="_blank" style={{ marginLeft: '10px', color: '#0070f3' }}>
-          查看详细使用说明 →
+          View detailed instructions
         </a>
       </p>
 
       <div style={{ marginBottom: '20px' }}>
         <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-          选择工具:
+          Select Tool:
         </label>
         <select
           value={selectedTool}
@@ -107,7 +107,7 @@ export default function MCPTestPage() {
           <h3 style={{ marginTop: 0, color: '#333' }}>{selectedToolInfo.name}</h3>
           <p style={{ color: '#333' }}>{selectedToolInfo.description}</p>
           <details>
-            <summary style={{ color: '#333' }}>参数说明</summary>
+            <summary style={{ color: '#333' }}>Parameters</summary>
             <pre style={{ fontSize: '12px', color: '#333' }}>
               {JSON.stringify(selectedToolInfo.parameters, null, 2)}
             </pre>
@@ -117,7 +117,7 @@ export default function MCPTestPage() {
 
       <div style={{ marginBottom: '20px' }}>
         <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-          工具参数 (JSON):
+          Tool Parameters (JSON):
         </label>
         <textarea
           value={arguments_}
@@ -138,13 +138,13 @@ export default function MCPTestPage() {
 
       <div style={{ marginBottom: '20px' }}>
         <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-          User Token (可选):
+          User Token (Optional):
         </label>
         <input
           type="text"
           value={userToken}
           onChange={(e) => setUserToken(e.target.value)}
-          placeholder="登录后获取的token"
+          placeholder="Token obtained after login"
           style={{
             width: '100%',
             padding: '8px',
@@ -170,13 +170,13 @@ export default function MCPTestPage() {
           cursor: loading ? 'not-allowed' : 'pointer',
         }}
       >
-        {loading ? '执行中...' : '执行工具'}
+        {loading ? 'Executing...' : 'Execute Tool'}
       </button>
 
       {result && (
         <div style={{ marginTop: '20px' }}>
           <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-            执行结果:
+            Execution Result:
           </label>
           <pre
             style={{
@@ -195,7 +195,7 @@ export default function MCPTestPage() {
       )}
 
       <div style={{ marginTop: '40px', padding: '15px', background: '#e8f4fd', borderRadius: '4px' }}>
-        <h3 style={{ marginTop: 0 }}>快速操作</h3>
+        <h3 style={{ marginTop: 0 }}>Quick Actions</h3>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
             onClick={() => {
@@ -222,7 +222,7 @@ export default function MCPTestPage() {
               cursor: 'pointer',
             }}
           >
-            填充注册参数
+            Fill Register Params
           </button>
           <button
             onClick={() => {
@@ -248,7 +248,7 @@ export default function MCPTestPage() {
               cursor: 'pointer',
             }}
           >
-            填充登录参数
+            Fill Login Params
           </button>
           <button
             onClick={() => {
@@ -265,7 +265,7 @@ export default function MCPTestPage() {
               cursor: 'pointer',
             }}
           >
-            填充获取频道列表
+            Fill Get Channels
           </button>
         </div>
       </div>

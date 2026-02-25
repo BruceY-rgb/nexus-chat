@@ -43,7 +43,7 @@ export default function MessageMonitor({
     });
   };
 
-  // 监听 WebSocket 事件
+  // Listen to WebSocket events
   useEffect(() => {
     if (!socket) return;
 
@@ -82,10 +82,10 @@ export default function MessageMonitor({
     };
   }, [socket]);
 
-  // 自动滚动到底部
+  // Auto scroll to top
   useEffect(() => {
     if (logsRef.current) {
-      logsRef.current.scrollTop = 0; // 新日志在顶部，所以滚动到顶部
+      logsRef.current.scrollTop = 0; // New logs are at top, so scroll to top
     }
   }, [logs]);
 

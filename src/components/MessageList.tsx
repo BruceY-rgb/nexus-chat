@@ -101,7 +101,7 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       messageRefs,
     });
 
-    // 未读胶囊状态
+    // Unread capsule status
     const [showUnreadBadge, setShowUnreadBadge] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const isAtBottomRef = useRef(false);
@@ -153,7 +153,7 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
       setUnreadDividerMessageId(initialUnreadMessageIdRef.current);
     }, [readPosition, messages]);
 
-    // 点击未读胶囊滚动到未读位置
+    // Click unread capsule to scroll to unread position
     const scrollToFirstUnread = useCallback(() => {
       isProgrammaticScrollRef.current = true;
       if (unreadDividerRef.current) {
@@ -610,7 +610,7 @@ const MessageList = forwardRef<MessageListRef, MessageListProps>(
 
     return (
       <div className="relative h-full">
-        {/* 未读胶囊按钮 */}
+        {/* Unread capsule button */}
         {showUnreadBadge && unreadCount > 0 && (
           <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
             <button

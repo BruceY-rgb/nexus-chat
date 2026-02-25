@@ -36,7 +36,7 @@ export default function InviteMembersModal({
   const [isInviting, setIsInviting] = useState(false);
   const [error, setError] = useState('');
 
-  // 搜索用户
+  // Search users
   const searchUsers = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -50,7 +50,7 @@ export default function InviteMembersModal({
       const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
       if (response.ok) {
         const data = await response.json();
-        // 过滤掉已经是频道成员的用户
+        // Filter out users who are already channel members
         const availableUsers = (data.users || []).filter(
           (user: User) => !existingMemberIds.includes(user.id)
         );
@@ -64,7 +64,7 @@ export default function InviteMembersModal({
     }
   }, [existingMemberIds]);
 
-  // 防抖搜索
+  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       searchUsers(searchQuery);
@@ -73,7 +73,7 @@ export default function InviteMembersModal({
     return () => clearTimeout(timer);
   }, [searchQuery, searchUsers]);
 
-  // 选择/取消选择用户
+  // Select/deselect user
   const toggleUserSelection = (user: User) => {
     setSelectedUsers(prev => {
       const isSelected = prev.some(u => u.id === user.id);
@@ -85,7 +85,7 @@ export default function InviteMembersModal({
     });
   };
 
-  // 邀请用户
+  // Invite users
   const handleInvite = async () => {
     if (selectedUsers.length === 0) return;
 
@@ -119,7 +119,7 @@ export default function InviteMembersModal({
     }
   };
 
-  // 关闭并重置
+  // Close and reset
   const handleClose = () => {
     setSearchQuery('');
     setSearchResults([]);
@@ -132,13 +132,13 @@ export default function InviteMembersModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* 背景遮罩 */}
+      {/* Background overlay */}
       <div
         className="absolute inset-0 bg-black/50"
         onClick={handleClose}
       />
 
-      {/* 模态框 */}
+      {/* Modal */}
       <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
@@ -149,7 +149,7 @@ export default function InviteMembersModal({
 
         {/* Body */}
         <div className="px-6 py-4 flex-1 overflow-hidden flex flex-col">
-          {/* 搜索框 */}
+          {/* Search box */}
           <div className="mb-4">
             <div className="relative">
               <svg
@@ -177,9 +177,9 @@ export default function InviteMembersModal({
             </div>
           </div>
 
-          {/* 搜索结果或已选用户列表 */}
+          {/* Search results or selected users list */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            {/* 已选用户 */}
+            {/* Selected users */}
             {selectedUsers.length > 0 && (
               <div className="mb-4">
                 <p className="text-xs text-gray-500 mb-2">Selected:</p>
@@ -208,7 +208,7 @@ export default function InviteMembersModal({
               </div>
             )}
 
-            {/* 搜索结果 */}
+            {/* Search results */}
             {isSearching ? (
               <div className="text-center py-4 text-gray-500 text-sm">
                 Searching...
@@ -277,7 +277,7 @@ export default function InviteMembersModal({
             )}
           </div>
 
-          {/* 错误提示 */}
+          {/* Error message */}
           {error && (
             <div className="mt-3 p-2 bg-red-50 text-red-600 text-sm rounded">
               {error}

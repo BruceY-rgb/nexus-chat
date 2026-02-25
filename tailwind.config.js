@@ -8,53 +8,53 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Slack Design System - 核心色彩
+        // Slack Design System - Core Colors
         slack: {
-          purple: '#3F0E40',      // 侧边栏经典紫色
-          dark: '#19171D',        // 深色备用
-          blue: '#1164A3',        // 选中态深蓝色
-          green: '#2BAC76',       // 活跃状态绿点
-          red: '#E01E5A',         // 未读消息红点
+          purple: '#3F0E40',      // Sidebar classic purple
+          dark: '#19171D',        // Dark backup
+          blue: '#1164A3',        // Selected state deep blue
+          green: '#2BAC76',       // Active status green dot
+          red: '#E01E5A',         // Unread message red dot
         },
 
-        // 语义化状态颜色
+        // Semantic status colors
         status: {
-          success: '#2BAC76',     // 成功/在线状态
-          warning: '#F59E0B',     // 警告状态
-          error: '#E01E5A',       // 错误/未读标记
-          info: '#1164A3',        // 信息/选中状态
+          success: '#2BAC76',     // Success/Online status
+          warning: '#F59E0B',     // Warning status
+          error: '#E01E5A',      // Error/Unread marker
+          info: '#1164A3',       // Info/Selected state
         },
 
-        // 文本颜色系统 - Aubergine 深色主题
+        // Text color system - Aubergine dark theme
         text: {
-          primary: '#FFFFFF',     // 主文本（白色）
-          secondary: '#D1D2D3',  // 次要文本/标题
-          muted: '#ABABAD',      // 弱化文本/副标题
-          bold: '#FFFFFF',        // 加粗文本
-          tertiary: '#6B7280',    // 第三级文本/占位符
-          white: '#FFFFFF',       // 白色文本（侧边栏）
-          'white-secondary': '#ABABAD',  // 侧边栏次要文本
+          primary: '#FFFFFF',     // Primary text (white)
+          secondary: '#D1D2D3',  // Secondary text/Title
+          muted: '#ABABAD',      // Muted text/Subtitle
+          bold: '#FFFFFF',        // Bold text
+          tertiary: '#6B7280',    // Tertiary text/Placeholder
+          white: '#FFFFFF',       // White text (sidebar)
+          'white-secondary': '#ABABAD',  // Sidebar secondary text
         },
 
-        // 背景颜色系统 - Aubergine 深色主题
+        // Background color system - Aubergine dark theme
         background: {
-          DEFAULT: '#1A1D21',     // 默认背景（Slack 深色）
-          component: '#222529',  // 组件背景（深炭灰）
-          elevated: '#2D2D30',   // 浮层背景（稍浅灰黑）
+          DEFAULT: '#1A1D21',     // Default background (Slack dark)
+          component: '#222529',  // Component background (dark charcoal)
+          elevated: '#2D2D30',   // Elevated background (slightly lighter gray-black)
         },
 
-        // 边框颜色系统 - Aubergine 深色主题
+        // Border color system - Aubergine dark theme
         border: {
-          DEFAULT: '#3E4144',     // 默认边框
-          light: '#4A4A4A',      // 浅色边框
-          input: '#3E4144',      // 输入框边框
+          DEFAULT: '#3E4144',     // Default border
+          light: '#4A4A4A',      // Light border
+          input: '#3E4144',      // Input border
         },
 
-        // 主要交互色（统一使用 Slack 蓝色）
+        // Primary interaction color (unified Slack blue)
         primary: {
-          DEFAULT: '#1164A3',     // Slack 标准蓝色
-          foreground: '#FFFFFF', // 前景色
-          50: '#E6F2FA',         // 色阶变体
+          DEFAULT: '#1164A3',     // Slack standard blue
+          foreground: '#FFFFFF', // Foreground color
+          50: '#E6F2FA',         // Color shade variants
           100: '#CCE5F5',
           200: '#99CBEB',
           300: '#66B0E0',
@@ -66,28 +66,28 @@ module.exports = {
           900: '#031F2F',
         },
 
-        // 聚焦环颜色
+        // Focus ring color
         ring: {
           DEFAULT: '#1164A3',
           primary: '#1164A3',
           focus: '#1164A3',
         },
 
-        // 输入框颜色
+        // Input colors
         input: {
           DEFAULT: '#ABABAD',
           focus: '#1164A3',
           border: '#ABABAD',
         },
 
-        // 侧边栏专用颜色（使用 CSS 变量）
+        // Sidebar-specific colors (using CSS variables)
         sidebar: {
           bg: 'var(--sidebar-bg-primary)',
           selected: 'var(--sidebar-selected)',
           active: 'var(--active-status)',
         },
 
-        // 消息区域颜色（使用 CSS 变量）
+        // Message area colors (using CSS variables)
         message: {
           bg: 'var(--message-bg)',
           hover: 'var(--message-hover)',

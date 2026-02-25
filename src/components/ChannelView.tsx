@@ -546,16 +546,16 @@ export default function ChannelView({
                 </svg>
               </button>
 
-              {/* 下拉菜单 */}
+              {/* Dropdown menu */}
               {isDropdownOpen && (
                 <>
-                  {/* 背景遮罩 */}
+                  {/* Background overlay */}
                   <div
                     className="fixed inset-0 z-10"
                     onClick={() => setIsDropdownOpen(false)}
                   />
 
-                  {/* 菜单内容 */}
+                  {/* Menu content */}
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20">
                     <div className="px-4 py-2 border-b border-gray-100">
                       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -670,14 +670,14 @@ export default function ChannelView({
         </div>
       </div>
 
-      {/* 2. 核心内容区：确保它占据所有剩余高度 */}
+      {/* 2. Main content area: ensure it takes all remaining height */}
       <div className="flex-1 flex flex-col min-h-0">
         {isJoined ? (
           showMembersList ? (
-            /* 成员列表视图 */
+            /* Members list view */
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-4xl mx-auto">
-                {/* 返回按钮 */}
+                {/* Back button */}
                 <div className="flex items-center gap-2 mb-6">
                   <button
                     onClick={() => setShowMembersList(false)}
@@ -703,7 +703,7 @@ export default function ChannelView({
                   </h2>
                 </div>
 
-                {/* 成员列表 */}
+                {/* Members list */}
                 <div className="bg-background-elevated rounded-lg p-6">
                   <div className="space-y-3">
                     {members.map((member) => (
@@ -743,7 +743,7 @@ export default function ChannelView({
             </div>
           ) : (
             <>
-              {/* Tab 导航 */}
+              {/* Tab navigation */}
               <div className="flex-shrink-0 border-b border-border bg-background-secondary">
                 <div className="flex">
                   <button
@@ -769,7 +769,7 @@ export default function ChannelView({
                 </div>
               </div>
 
-              {/* 根据activeTab渲染不同内容 */}
+              {/* Render different content based on activeTab */}
               {activeTab === "files" ? (
                 <div className="flex-1 overflow-hidden">
                   <FileList
@@ -779,9 +779,9 @@ export default function ChannelView({
                 </div>
               ) : (
                 <>
-                  {/* 消息列表和线程面板使用 flex 布局，避免重叠导致事件穿透 */}
+                  {/* Message list and thread panel use flex layout to avoid overlapping and event bubbling */}
                   <div className="flex flex-1 min-h-0">
-                    {/* 消息列表：必须设置 flex-1 和 min-h-0 以强制占满空间并支持内部滚动 */}
+                    {/* Message list: must set flex-1 and min-h-0 to force fill space and support internal scrolling */}
                     <div className="flex-1 min-w-0 min-h-0 relative">
                       <MessageList
                         ref={messageListRef}
@@ -802,7 +802,7 @@ export default function ChannelView({
                       />
                     </div>
 
-                    {/* 线程面板：右侧滑出面板，宽度360px */}
+                    {/* Thread panel: slide-out panel on the right, 360px width */}
                     {threadPanelOpen && (
                       <ThreadPanel
                         isOpen={threadPanelOpen}
@@ -813,13 +813,13 @@ export default function ChannelView({
                     )}
                   </div>
 
-                  {/* 关闭activeTab条件分支 */}
+                  {/* Close activeTab conditional branch */}
                 </>
               )}
 
-              {/* 3. 输入框：使用 flex-shrink-0 确保它被推到最底部，永不上移 */}
+              {/* 3. Input box: use flex-shrink-0 to ensure it's pushed to bottom, never moves up */}
               <div className="flex-shrink-0 bg-background border-t relative">
-                {/* 顶部拖拽区域 */}
+                {/* Top drag area */}
                 <div
                   className="absolute left-0 top-0 right-0 h-1 cursor-row-resize hover:bg-primary/50 transition-colors"
                   onMouseDown={handleInputDragStart}
@@ -849,10 +849,10 @@ export default function ChannelView({
             </>
           )
         ) : (
-          /* 未加入频道时的提示 - 独立滚动 */
+          /* Prompt when not joined to channel - independent scroll */
           <div className="flex-1 overflow-y-auto min-h-0 p-6">
             <div className="max-w-4xl mx-auto">
-              {/* 频道介绍卡片 */}
+              {/* Channel introduction card */}
               <div className="bg-background-elevated rounded-lg p-6 mb-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
@@ -910,7 +910,7 @@ export default function ChannelView({
                 </div>
               </div>
 
-              {/* 加入提示 */}
+              {/* Join prompt */}
               <div className="bg-background-elevated rounded-lg p-8 text-center">
                 <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg
@@ -941,7 +941,7 @@ export default function ChannelView({
                 </Button>
               </div>
 
-              {/* 成员列表 */}
+              {/* Members list */}
               <div className="mt-6 bg-background-elevated rounded-lg p-6">
                 <h3 className="text-sm font-semibold text-text-primary mb-4 uppercase tracking-wide">
                   Members ({members.length})
@@ -985,7 +985,7 @@ export default function ChannelView({
         )}
       </div>
 
-      {/* 搜索消息弹窗 */}
+      {/* Search messages modal */}
       <SearchMessagesModal
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
@@ -993,7 +993,7 @@ export default function ChannelView({
         contextName={`#${channel?.name || ""}`}
       />
 
-      {/* 频道设置弹窗 */}
+      {/* Channel settings modal */}
       <ChannelSettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -1004,9 +1004,9 @@ export default function ChannelView({
         }
         members={members}
         onUpdateChannel={(updatedChannel) => {
-          // 更新本地频道数据
+          // Update local channel data
           if (updatedChannel.name !== undefined) {
-            // 通知父组件更新频道名称
+            // Notify parent component to update channel name
           }
         }}
         onRemoveMember={(userId) => {

@@ -21,7 +21,7 @@ export default function MessageEditor({
   const [isSaving, setIsSaving] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // 自动聚焦并选中所有文本
+  // Auto focus and select all text
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.focus();
@@ -29,14 +29,14 @@ export default function MessageEditor({
     }
   }, []);
 
-  // 处理键盘事件
+  // Handle keyboard events
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      // Enter 保存（不使用 Shift+Enter 换行）
+      // Enter to save (not Shift+Enter for newline)
       e.preventDefault();
       handleSave();
     } else if (e.key === 'Escape') {
-      // Esc 取消
+      // Esc to cancel
       e.preventDefault();
       handleCancel();
     }
@@ -46,12 +46,12 @@ export default function MessageEditor({
     const trimmedContent = content.trim();
 
     if (!trimmedContent) {
-      // 内容为空，不允许保存
+      // Content is empty, not allowed to save
       return;
     }
 
     if (trimmedContent === message.content?.trim()) {
-      // 内容没有变化，取消编辑
+      // Content has not changed, cancel editing
       handleCancel();
       return;
     }
@@ -61,7 +61,7 @@ export default function MessageEditor({
       await onSave(message.id, trimmedContent);
     } catch (error) {
       console.error('Failed to save message:', error);
-      // 这里可以添加错误提示
+      // Can add error notification here
     } finally {
       setIsSaving(false);
     }
@@ -87,7 +87,7 @@ export default function MessageEditor({
         />
       </div>
 
-      {/* 操作按钮 */}
+      {/* Action buttons */}
       <div className="flex justify-end gap-2 mt-2">
         <button
           onClick={handleCancel}
@@ -107,7 +107,7 @@ export default function MessageEditor({
         </button>
       </div>
 
-      {/* 提示信息 */}
+      {/* Hint information */}
       <div className="mt-1 text-xs text-gray-400">
         <span>Enter to save • Shift+Enter for newline • Esc to cancel</span>
       </div>

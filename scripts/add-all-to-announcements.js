@@ -6,7 +6,7 @@ async function addAllMembersToAnnouncements() {
   try {
     console.log('Starting to add all members to announcements channel...\n');
 
-    // 1. 查找或创建 announcements 频道
+    // 1. Find or create announcements channel
     let announcementsChannel = await prisma.channel.findUnique({
       where: { name: 'announcements' }
     });
@@ -14,7 +14,7 @@ async function addAllMembersToAnnouncements() {
     if (!announcementsChannel) {
       console.log('announcements channel does not exist, creating...\n');
 
-      // 获取第一个用户作为创建者
+      // Get first user as creator
       const firstUser = await prisma.user.findFirst();
       if (!firstUser) {
         throw new Error('No user data found, please create users first');
@@ -29,7 +29,7 @@ async function addAllMembersToAnnouncements() {
         }
       });
 
-      // 将创建者加入频道
+      // Add creator to channel
       await prisma.channelMember.create({
         data: {
           channelId: announcementsChannel.id,
@@ -43,7 +43,7 @@ async function addAllMembersToAnnouncements() {
       console.log('announcements channel already exists\n');
     }
 
-    // 2. 获取所有 team members
+    // 2. Get all team members
     const teamMembers = await prisma.teamMember.findMany({
       where: {
         status: 'active'
@@ -64,7 +64,7 @@ async function addAllMembersToAnnouncements() {
 
     console.log(`Found ${teamMembers.length} active team members\n`);
 
-    // 3. 获取已加入的频道成员
+    // 3. Get existing channel members
     const existingMembers = await prisma.channelMember.findMany({
       where: {
         channelId: announcementsChannel.id
@@ -76,7 +76,7 @@ async function addAllMembersToAnnouncements() {
 
     const existingMemberIds = new Set(existingMembers.map(m => m.userId));
 
-    // 4. 筛选出未加入的成员
+    // 4. Filter out members not yet joined
     const newMembers = teamMembers.filter(
       tm => !existingMemberIds.has(tm.userId)
     );
@@ -88,7 +88,7 @@ async function addAllMembersToAnnouncements() {
 
     console.log(`Need to add ${newMembers.length} new members\n`);
 
-    // 5. 批量创建频道成员记录
+    // 5. Batch create channel member records
     const createdMembers = [];
     for (const member of newMembers) {
       try {
@@ -118,7 +118,7 @@ async function addAllMembersToAnnouncements() {
       }
     }
 
-    // 6. 统计结果
+    // 6. Statistics
     const totalMembers = await prisma.channelMember.count({
       where: {
         channelId: announcementsChannel.id
@@ -138,7 +138,7 @@ async function addAllMembersToAnnouncements() {
   }
 }
 
-// 运行脚本
+// Run script
 addAllMembersToAnnouncements()
   .then(() => {
     console.log('\nScript execution completed');

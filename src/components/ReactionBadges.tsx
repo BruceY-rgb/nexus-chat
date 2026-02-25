@@ -43,12 +43,12 @@ export default function ReactionBadges({
     y: number;
   }>({ x: 0, y: 0 });
 
-  // 检查 emoji 是否在待处理队列中
+  // Check if emoji is in pending queue
   const isEmojiPending = (emoji: string) => {
     return pendingReactions.some(p => p.emoji === emoji);
   };
 
-  // 如果没有 reactions，不显示任何内容
+  // If no reactions, don't show anything
   if (!reactions || reactions.length === 0) {
     return null;
   }
@@ -65,11 +65,11 @@ export default function ReactionBadges({
     return shortcodeToEmoji(emoji);
   };
 
-  // 处理鼠标悬停
+  // Handle mouse hover
   const handleMouseEnter = (emoji: string, event: React.MouseEvent) => {
     setHoveredEmoji(emoji);
 
-    // 计算 Tooltip 位置
+    // Calculate Tooltip position
     const rect = event.currentTarget.getBoundingClientRect();
     const tooltipX = rect.left + rect.width / 2;
     const tooltipY = rect.top - 10;
@@ -81,12 +81,12 @@ export default function ReactionBadges({
     setHoveredEmoji(null);
   };
 
-  // 检查当前用户是否已对该 emoji 做出反应
+  // Check if current user has reacted to this emoji
   const hasUserReacted = (emoji: string) => {
     return reactions.some(r => r.emoji === emoji && r.users.some(u => u.id === currentUserId));
   };
 
-  // 获取悬停的 emoji 信息
+  // Get hovered emoji info
   const hoveredReaction = reactions.find(r => r.emoji === hoveredEmoji);
 
   return (
@@ -137,7 +137,7 @@ export default function ReactionBadges({
                 <span className="text-sm">{displayEmoji(reaction.emoji)}</span>
                 <span className="font-semibold">{reaction.count}</span>
 
-                {/* 加载动画 */}
+                {/* Loading animation */}
                 {isPending && (
                   <motion.span
                     className="absolute inset-0 rounded-full border-2 border-blue-400"
@@ -184,7 +184,7 @@ export default function ReactionBadges({
               <div className="text-gray-400 text-xs mt-0.5">
                 {hoveredReaction.count} {hoveredReaction.count === 1 ? 'person' : 'people'}
               </div>
-              {/* Tooltip 箭头 */}
+              {/* Tooltip arrow */}
               <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
                 <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
               </div>

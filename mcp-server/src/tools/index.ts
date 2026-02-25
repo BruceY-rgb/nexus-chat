@@ -1,5 +1,5 @@
 /**
- * Tools Index - 工具注册表
+ * Tools Index - Tool Registry
  */
 
 import { authTools } from "./auth.js";
@@ -13,7 +13,7 @@ import { healthTools } from "./health.js";
 import { threadTools } from "./threads.js";
 import type { ToolDefinition } from "../types.js";
 
-// 合并所有工具
+// Merge all tools
 export const tools: ToolDefinition[] = [
   ...authTools,
   ...channelTools,
@@ -26,7 +26,7 @@ export const tools: ToolDefinition[] = [
   ...threadTools,
 ];
 
-// 工具注册表 (用于快速查找)
+// Tool registry (for quick lookup)
 export const toolRegistry: Map<string, ToolDefinition> = new Map(
   tools.map((tool) => [tool.name, tool]),
 );
