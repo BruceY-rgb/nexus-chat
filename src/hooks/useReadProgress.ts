@@ -113,7 +113,7 @@ export function useReadProgress({
 
   // Report read progress
   const reportReadProgress = useCallback(
-    async (messageId: string) => {
+    (messageId: string) => {
       if (!channelId && !dmConversationId) return;
 
       // Clear previous debounce timer
