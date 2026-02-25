@@ -20,7 +20,7 @@ function getFileUrl(attachment: { thumbnailUrl?: string | null; filePath: string
   return attachment.filePath;
 }
 
-// 动态导入 FilePreviewModal，禁用 SSR
+// Dynamically import FilePreviewModal, disable SSR
 const FilePreviewModal = dynamic(
   () => import('./FilePreviewModal'),
   { ssr: false }
@@ -102,7 +102,7 @@ export default function AttachmentCard({ attachment }: AttachmentCardProps) {
     if (isImage || isPDF || isText || isExcel || isWord || isPowerPoint) {
       setShowPreview(true);
     } else {
-      // 不支持预览的文件直接下载
+      // Files that don't support preview are downloaded directly
       handleDownload(e);
     }
   };
@@ -111,7 +111,7 @@ export default function AttachmentCard({ attachment }: AttachmentCardProps) {
     <>
       <div className="w-full max-w-md rounded-lg border border-[#3A3A3D] bg-[#2A2A2D] p-3 hover:bg-[#323235] transition-colors cursor-pointer group">
         <div className="flex items-start gap-3">
-          {/* 文件图标 */}
+          {/* File icon */}
           <div className={`flex-shrink-0 w-12 h-12 rounded flex items-center justify-center ${getFileIconBg()}`}>
             {isImage ? (
               <img
@@ -138,7 +138,7 @@ export default function AttachmentCard({ attachment }: AttachmentCardProps) {
             )}
           </div>
 
-          {/* 文件信息 */}
+          {/* File info */}
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-white/90 truncate mb-1">
               {attachment.fileName}
@@ -147,7 +147,7 @@ export default function AttachmentCard({ attachment }: AttachmentCardProps) {
               {formatFileSize(attachment.fileSize)}
             </div>
 
-            {/* 操作按钮 */}
+            {/* Action buttons */}
             <div className="flex items-center gap-2">
               {(isImage || isPDF || isText || isExcel || isWord || isPowerPoint) && (
                 <button
@@ -170,7 +170,7 @@ export default function AttachmentCard({ attachment }: AttachmentCardProps) {
         </div>
       </div>
 
-      {/* 预览模态窗口 - 使用动态导入，禁用 SSR */}
+      {/* Preview modal - use dynamic import, disable SSR */}
       {showPreview && (
         <FilePreviewModal
           attachment={attachment}

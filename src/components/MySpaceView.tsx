@@ -9,7 +9,7 @@ import { getAvatarUrl } from '@/lib/avatar';
 
 interface MySpaceViewProps {
   member: TeamMember;
-  currentUserId?: string; // 可选，如果未传递则使用 member.id
+  currentUserId?: string; // Optional, uses member.id if not provided
 }
 
 export default function MySpaceView({ member, currentUserId }: MySpaceViewProps) {
@@ -17,14 +17,14 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
   const [isLoading, setIsLoading] = useState(true);
   const currentUserIdValue = currentUserId || member.id;
 
-  // 获取自己的消息列表
+  // Fetch own messages list
   const fetchMessages = async () => {
     try {
       setIsLoading(true);
       const response = await fetch(`/api/messages?dmConversationId=self-${member.id}`);
 
       if (!response.ok) {
-        // 如果没有消息，返回空数组
+        // If no messages, return empty array
         setMessages([]);
         setIsLoading(false);
         return;
@@ -50,10 +50,10 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-background">
-      {/* 滚动内容区域 */}
+      {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto p-6">
-          {/* 大头像和欢迎信息 */}
+          {/* Large avatar and welcome message */}
           <div className="text-center py-8 mb-8">
             <div className="relative inline-block mb-6">
               <img
@@ -95,9 +95,9 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
             </div>
           </div>
 
-          {/* 功能卡片区域 */}
+          {/* Feature cards area */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* 快速笔记 */}
+            {/* Quick Notes */}
             <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -123,7 +123,7 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
               </p>
             </div>
 
-            {/* 待办事项 */}
+            {/* To-Do List */}
             <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -149,7 +149,7 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
               </p>
             </div>
 
-            {/* 文件和链接 */}
+            {/* Files and Links */}
             <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -176,7 +176,7 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
             </div>
           </div>
 
-          {/* 最近活动 */}
+          {/* Recent Activity */}
           <div className="mt-12">
             <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-4">
               Recent Activity
@@ -224,7 +224,7 @@ export default function MySpaceView({ member, currentUserId }: MySpaceViewProps)
         </div>
       </div>
 
-      {/* 消息输入框 */}
+      {/* Message input */}
       <div className="flex-shrink-0">
         <DMMessageInput
           placeholder="Message yourself"

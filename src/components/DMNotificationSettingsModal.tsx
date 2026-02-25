@@ -20,11 +20,11 @@ export default function DMNotificationSettingsModal({
   const [notificationLevel, setNotificationLevelState] = useState<NotificationLevel>('all');
   const [isSaving, setIsSaving] = useState(false);
 
-  // 加载当前通知级别
+  // Load current notification level
   useEffect(() => {
     if (isOpen && dmConversationId) {
       const currentLevel = getNotificationLevel(dmConversationId);
-      // 同时也从 API 获取最新值
+      // Also fetch latest value from API
       fetchNotificationLevel();
     }
   }, [isOpen, dmConversationId]);
@@ -93,16 +93,16 @@ export default function DMNotificationSettingsModal({
 
   return (
     <>
-      {/* 背景遮罩 */}
+      {/* Background overlay */}
       <div
         className="fixed inset-0 bg-black bg-opacity-50 z-40"
         onClick={onClose}
       />
 
-      {/* 弹窗内容 */}
+      {/* Modal content */}
       <div className="fixed inset-0 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
-          {/* 头部 */}
+          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
@@ -133,7 +133,7 @@ export default function DMNotificationSettingsModal({
             </button>
           </div>
 
-          {/* 内容 */}
+          {/* Content */}
           <div className="px-6 py-4 space-y-4">
             <div>
               <h3 className="text-sm font-medium text-gray-900 mb-2">
@@ -144,7 +144,7 @@ export default function DMNotificationSettingsModal({
               </p>
 
               <div className="space-y-3">
-                {/* 全部通知 */}
+                {/* All notifications */}
                 <label
                   className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
                     notificationLevel === 'all'
@@ -174,7 +174,7 @@ export default function DMNotificationSettingsModal({
                   </div>
                 </label>
 
-                {/* 仅提及 */}
+                {/* Mentions only */}
                 <label
                   className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
                     notificationLevel === 'mentions'
@@ -204,7 +204,7 @@ export default function DMNotificationSettingsModal({
                   </div>
                 </label>
 
-                {/* 静音 */}
+                {/* Mute */}
                 <label
                   className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
                     notificationLevel === 'nothing'
@@ -263,7 +263,7 @@ export default function DMNotificationSettingsModal({
             )}
           </div>
 
-          {/* 底部按钮 */}
+          {/* Bottom buttons */}
           <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
             <button
               onClick={onClose}

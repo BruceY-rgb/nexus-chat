@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { unauthorizedResponse } from '@/lib/api-response';
 
-// 邀请成员到频道 API
+// Invite member to channel API
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -18,7 +18,7 @@ export async function POST(
       );
     }
 
-    // 验证 token
+    // Verify token
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -30,7 +30,7 @@ export async function POST(
     const currentUserId = decoded.userId;
     const channelId = params.id;
 
-    // 获取请求体
+    // Get request body
     const body = await request.json();
     const { userIds } = body;
 
@@ -41,7 +41,7 @@ export async function POST(
       );
     }
 
-    // 检查频道是否存在
+    // Check if channel exists
     const channel = await prisma.channel.findUnique({
       where: { id: channelId },
       include: {
@@ -58,7 +58,7 @@ export async function POST(
       );
     }
 
-    // 检查当前用户是否是频道成员
+    // Check if current user is a channel member
     const isMember = channel.members.length > 0;
     if (!isMember) {
       return NextResponse.json(
@@ -67,12 +67,12 @@ export async function POST(
       );
     }
 
-    // 检查当前用户权限（Owner 或 Admin 可以邀请成员）
+    // Check current user permissions (Owner or Admin can invite members)
     const currentMember = channel.members[0];
     const isOwner = currentMember?.role === 'owner';
     const isAdmin = currentMember?.role === 'admin';
 
-    // 如果既不是 owner 也不是 admin，不允许邀请
+    // If neither owner nor admin, not allowed to invite
     if (!isOwner && !isAdmin) {
       return NextResponse.json(
         { error: 'Only channel owner and admin can invite members' },
@@ -80,7 +80,7 @@ export async function POST(
       );
     }
 
-    // 检查被邀请的用户是否存在
+    // Check if the users to invite exist
     const usersToInvite = await prisma.user.findMany({
       where: {
         id: { in: userIds }
@@ -100,7 +100,7 @@ export async function POST(
       );
     }
 
-    // 获取频道现有成员
+    // Get existing channel members
     const existingMembers = await prisma.channelMember.findMany({
       where: {
         channelId,
@@ -113,7 +113,7 @@ export async function POST(
 
     const existingMemberIds = new Set(existingMembers.map(m => m.userId));
 
-    // 过滤掉已经是频道成员的用户
+    // Filter out users who are already channel members
     const newUserIds = usersToInvite
       .filter(user => !existingMemberIds.has(user.id))
       .map(user => user.id);
@@ -125,7 +125,7 @@ export async function POST(
       );
     }
 
-    // 批量创建成员关系
+    // Batch create member relationships
     const invitedMembers = await prisma.channelMember.createManyAndReturn({
       data: newUserIds.map(userId => ({
         channelId,

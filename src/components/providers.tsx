@@ -1,8 +1,8 @@
 'use client';
 
 // =====================================================
-// Providers 包装组件
-// 将所有客户端Provider放在这里
+// Providers wrapper component
+// Place all client-side Providers here
 // =====================================================
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

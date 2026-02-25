@@ -35,11 +35,11 @@ export function useReadProgress({
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const keyRef = useRef(key);
 
-  // 当 key 变化时，重新获取阅读位置
+  // When key changes, re-fetch read position
   useEffect(() => {
     if (key !== keyRef.current) {
       keyRef.current = key;
-      // 重置状态
+      // Reset state
       setReadPosition(null);
       setIsLoading(true);
     }

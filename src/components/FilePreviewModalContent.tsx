@@ -28,9 +28,9 @@ interface FilePreviewContentProps {
   onClose: () => void;
 }
 
-// 内部组件 - 处理实际的预览逻辑
+// Internal component - handles actual preview logic
 export default function FilePreviewModalContent({ attachment, onClose }: FilePreviewContentProps) {
-  // 所有 Hook
+  // All Hooks
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -46,14 +46,14 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
   // Refs
   const iframeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 文件类型检测
+  // File type detection
   const isImage = attachment.mimeType.startsWith('image/');
   const isPDF = attachment.mimeType === 'application/pdf';
   const isText = attachment.mimeType.startsWith('text/');
   const isOfficeDoc = /\.(docx|doc|xlsx|xls|pptx|ppt)$/i.test(attachment.fileName);
   const isVideo = attachment.mimeType.startsWith('video/');
 
-  // 检查文件URL可达性
+  // Check file URL accessibility
   useEffect(() => {
     const checkFileUrl = async () => {
       try {
@@ -80,7 +80,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
     checkFileUrl();
   }, [attachment]);
 
-  // 处理键盘事件
+  // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -105,7 +105,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose, isFullscreen]);
 
-  // 重置状态（当 attachment 改变时）
+  // Reset state (when attachment changes)
   useEffect(() => {
     setPreviewLoading(true);
     setPreviewError(false);
@@ -113,27 +113,27 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
     setScale(1);
     setPosition({ x: 0, y: 0 });
     setIframeSrc(null);
-    // 清除之前的超时
+    // Clear previous timeout
     if (iframeTimeoutRef.current) {
       clearTimeout(iframeTimeoutRef.current);
       iframeTimeoutRef.current = null;
     }
   }, [attachment]);
 
-  // 延迟设置 iframe src - 修复 PDF 预览
+  // Delayed iframe src setup - fix PDF preview
   useEffect(() => {
     if (attachment && (isPDF || isOfficeDoc)) {
       const timer = setTimeout(() => {
         // Use proxy URL for CORS bypass
         let src = getFileUrl(attachment);
 
-        // 为 PDF 添加 inline 参数，强制内联显示
+        // Add inline parameter for PDF, force inline display
         if (isPDF) {
           const separator = src.includes('?') ? '&' : '?';
           src = `${src}${separator}response-content-disposition=inline`;
         }
 
-        // Office 文档预览 - 需要原始文件URL
+        // Office document preview - needs original file URL
         if (isOfficeDoc) {
           src = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(getFileUrl(attachment))}`;
         }
@@ -145,7 +145,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
     }
   }, [attachment, isPDF, isOfficeDoc]);
 
-  // 文本文件内容加载
+  // Text file content loading
   useEffect(() => {
     if (attachment && isText) {
       setLoadingText(true);
@@ -162,7 +162,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
     }
   }, [attachment, isText]);
 
-  // 工具函数
+  // Utility functions
   const formatFileSize = (sizeStr: string) => {
     const bytes = Number(sizeStr);
     const mb = bytes / 1024 / 1024;
@@ -232,7 +232,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
   };
 
   const handleIframeLoad = () => {
-    // 清除超时定时器
+    // Clear timeout timer
     if (iframeTimeoutRef.current) {
       clearTimeout(iframeTimeoutRef.current);
       iframeTimeoutRef.current = null;
@@ -242,7 +242,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
   };
 
   const handleIframeError = () => {
-    // 清除超时定时器
+    // Clear timeout timer
     if (iframeTimeoutRef.current) {
       clearTimeout(iframeTimeoutRef.current);
       iframeTimeoutRef.current = null;
@@ -251,10 +251,10 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
     setPreviewError(true);
   };
 
-  // 设置 iframe 超时检测
+  // Set iframe timeout detection
   useEffect(() => {
     if ((isPDF || isOfficeDoc) && iframeSrc && !previewError) {
-      // 设置 10 秒超时
+      // Set 10 second timeout
       iframeTimeoutRef.current = setTimeout(() => {
         setPreviewLoading(false);
         setPreviewError(true);
@@ -281,7 +281,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
     setPreviewError(true);
   };
 
-  // 渲染
+  // Render
   return (
     <div
       className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 ${isFullscreen ? 'p-0' : 'p-4'}`}
@@ -291,7 +291,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
         className={`relative bg-[#2A2A2D] rounded-lg w-full ${isFullscreen ? 'h-full' : 'max-w-4xl max-h-[90vh]'} overflow-hidden flex flex-col`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 模态窗口头部 */}
+        {/* Modal header */}
         <div className="flex items-center justify-between p-4 border-b border-[#3A3A3D]">
           <div className="flex-1 min-w-0">
             <h3 className="text-white font-medium truncate">
@@ -302,7 +302,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
             </p>
           </div>
           <div className="flex items-center gap-2 ml-4">
-            {/* 图片专用工具栏 */}
+            {/* Image-specific toolbar */}
             {isImage && (
               <>
                 <button
@@ -354,7 +354,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
           </div>
         </div>
 
-        {/* 文件URL错误提示 */}
+        {/* File URL error message */}
         {fileUrlError && (
           <div className="p-4 bg-red-500/20 border-b border-red-500/30">
             <div className="flex items-center gap-2 text-red-400">
@@ -364,7 +364,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
           </div>
         )}
 
-        {/* 预览内容区域 */}
+        {/* Preview content area */}
         <div
           className="flex-1 overflow-hidden bg-[#1A1A1D] relative"
           onMouseMove={handleMouseMove}
@@ -373,7 +373,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
           onWheel={handleWheel}
         >
           {isImage ? (
-            // 图片预览
+            // Image preview
             <div className="w-full h-full flex items-center justify-center overflow-hidden relative">
               {previewLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1D] z-10">
@@ -418,7 +418,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
               )}
             </div>
           ) : isPDF ? (
-            // PDF 预览 - 添加超时检测
+            // PDF preview - add timeout detection
             <div className="w-full h-full relative">
               {previewLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1D] z-10">
@@ -453,7 +453,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
               />
             </div>
           ) : isVideo ? (
-            // 视频预览
+            // Video preview
             <div className="w-full h-full flex items-center justify-center bg-black">
               <video
                 src={getFileUrl(attachment)}
@@ -466,7 +466,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
               </video>
             </div>
           ) : isText ? (
-            // 文本预览 - 修复滚动问题
+            // Text preview - fix scroll issue
             <div className="w-full h-full overflow-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
               {(loadingText || previewLoading) ? (
                 <div className="w-full h-full flex items-center justify-center">
@@ -497,7 +497,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
               )}
             </div>
           ) : isOfficeDoc ? (
-            // Office 文档预览 - 添加超时检测
+            // Office document preview - add timeout detection
             <div className="w-full h-full relative">
               {previewLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1D] z-10">
@@ -532,7 +532,7 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
               />
             </div>
           ) : (
-            // 不支持预览的文件
+            // Unsupported preview files
             <div className="w-full h-full flex flex-col items-center justify-center text-white/60">
               <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="mb-4">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" strokeWidth="2"/>

@@ -111,7 +111,7 @@ export default function DirectMessagePage() {
   }
 
   const handleStartChat = (memberId: string) => {
-    console.log('🟡 [DEBUG] 点击私聊成员:', memberId);
+    console.log('🟡 [DEBUG] Click private chat member:', memberId);
     router.push(`/dm/${memberId}`);
   };
 

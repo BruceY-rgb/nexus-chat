@@ -20,8 +20,8 @@ const SLACK_TOKEN = process.env.SLACK_USER_TOKEN;
 const OUTPUT_FILE = path.join(__dirname, 'slack-data.json');
 
 if (!SLACK_TOKEN) {
-  console.error('❌ 错误: 请设置 SLACK_USER_TOKEN 环境变量');
-  console.log('   示例: SLACK_USER_TOKEN=xoxe-xxx npx tsx scripts/slack-scraper.ts');
+  console.error('Error: Please set SLACK_USER_TOKEN environment variable');
+  console.log('   Example: SLACK_USER_TOKEN=xoxe-xxx npx tsx scripts/slack-scraper.ts');
   process.exit(1);
 }
 
@@ -165,7 +165,7 @@ async function slackApiCall<T>(method: string, params: Record<string, string | n
 
 // 获取用户列表
 async function fetchUsers(): Promise<SlackUser[]> {
-  console.log('📥 正在获取用户列表...');
+  console.log('Fetching user list...');
   const users: SlackUser[] = [];
   let cursor: string | undefined;
 
@@ -182,16 +182,16 @@ async function fetchUsers(): Promise<SlackUser[]> {
     users.push(...validUsers);
     cursor = response.response_metadata?.next_cursor;
 
-    console.log(`   已获取 ${users.length} 个用户...`);
+    console.log(`   Fetched ${users.length} users...`);
   } while (cursor);
 
-  console.log(`✅ 共获取 ${users.length} 个有效用户`);
+  console.log(`Total: ${users.length} valid users fetched`);
   return users;
 }
 
 // 获取频道列表
 async function fetchChannels(): Promise<SlackChannel[]> {
-  console.log('📥 正在获取频道列表...');
+  console.log('Fetching channel list...');
   const channels: SlackChannel[] = [];
   let cursor: string | undefined;
 
@@ -208,10 +208,10 @@ async function fetchChannels(): Promise<SlackChannel[]> {
     channels.push(...response.channels);
     cursor = response.response_metadata?.next_cursor;
 
-    console.log(`   已获取 ${channels.length} 个频道...`);
+    console.log(`   Fetched ${channels.length} channels...`);
   } while (cursor);
 
-  console.log(`✅ 共获取 ${channels.length} 个频道`);
+  console.log(`Total: ${channels.length} channels fetched`);
   return channels;
 }
 
@@ -258,9 +258,9 @@ async function fetchChannelHistory(channelId: string, channelName: string): Prom
         latestTimestamp = parseFloat(lastMsg.ts) - 1;
       }
 
-      console.log(`   [${channelName}] 已获取 ${messages.length} 条消息...`);
+      console.log(`   [${channelName}] Fetched ${messages.length} messages...`);
     } catch (error) {
-      console.error(`   [${channelName}] 获取消息失败:`, error);
+      console.error(`   [${channelName}] Failed to fetch messages:`, error);
       hasMore = false;
     }
   }
@@ -275,9 +275,9 @@ async function sleep(ms: number): Promise<void> {
 
 // 主函数
 async function main() {
-  console.log('🚀 Slack数据抓取工具');
+  console.log('Slack Data Scraper');
   console.log('='.repeat(50));
-  console.log(`📅 开始时间: ${new Date().toISOString()}`);
+  console.log(`Start time: ${new Date().toISOString()}`);
   console.log('');
 
   try {
@@ -289,12 +289,12 @@ async function main() {
 
     // 3. 获取每个频道的消息
     console.log('');
-    console.log('📥 正在获取频道消息...');
+    console.log('Fetching channel messages...');
     const messages: Record<string, SlackMessage[]> = {};
 
     for (let i = 0; i < channels.length; i++) {
       const channel = channels[i];
-      console.log(`[${i + 1}/${channels.length}] 处理频道 #${channel.name}...`);
+      console.log(`[${i + 1}/${channels.length}] Processing channel #${channel.name}...`);
 
       try {
         const channelMessages = await fetchChannelHistory(channel.id, channel.name);
@@ -305,7 +305,7 @@ async function main() {
           await sleep(200);
         }
       } catch (error) {
-        console.error(`   获取 #${channel.name} 消息失败:`, error);
+        console.error(`   Failed to fetch #${channel.name} messages:`, error);
         messages[channel.id] = [];
       }
     }
@@ -330,18 +330,18 @@ async function main() {
 
     console.log('');
     console.log('='.repeat(50));
-    console.log('✅ 数据抓取完成!');
+    console.log('Data scraping completed!');
     console.log('');
-    console.log('📊 统计信息:');
-    console.log(`   - 用户: ${users.length}`);
-    console.log(`   - 频道: ${channels.length}`);
-    console.log(`   - 消息: ${totalMessages}`);
+    console.log('Statistics:');
+    console.log(`   - Users: ${users.length}`);
+    console.log(`   - Channels: ${channels.length}`);
+    console.log(`   - Messages: ${totalMessages}`);
     console.log('');
-    console.log(`💾 数据已保存到: ${OUTPUT_FILE}`);
-    console.log(`📅 完成时间: ${new Date().toISOString()}`);
+    console.log(`Data saved to: ${OUTPUT_FILE}`);
+    console.log(`End time: ${new Date().toISOString()}`);
 
   } catch (error) {
-    console.error('❌ 抓取失败:', error);
+    console.error('Scraping failed:', error);
     process.exit(1);
   }
 }

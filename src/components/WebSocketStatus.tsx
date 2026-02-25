@@ -39,7 +39,7 @@ export default function WebSocketStatus({
     }
   }, [socket]);
 
-  // 紧凑模式 - 只显示连接状态指示器
+  // Compact mode - only show connection status indicator
   if (compact) {
     const getStatusColor = () => {
       switch (connectionStatus) {
@@ -75,7 +75,7 @@ export default function WebSocketStatus({
     );
   }
 
-  // 详细模式
+  // Detailed mode
   const getStatusInfo = () => {
     switch (connectionStatus) {
       case 'connected':

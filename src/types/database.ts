@@ -1,8 +1,8 @@
 // =====================================================
-// TypeScript 类型定义 for Slack-like Chat Tool
+// TypeScript type definitions for Slack-like Chat Tool
 // =====================================================
 
-// 用户相关类型
+// User related types
 export type UserStatus = 'active' | 'inactive' | 'suspended';
 export type UserRole = 'owner' | 'admin' | 'member';
 
@@ -14,7 +14,7 @@ export type ChannelRole = 'owner' | 'admin' | 'member';
 export type MessageType = 'text' | 'image' | 'file' | 'system';
 export type NotificationType = 'mention' | 'dm' | 'channel_invite' | 'system';
 
-// 分页响应类型
+// Paginated response type
 export interface PaginatedResponse<T> {
   data: T[];
   pagination: {
@@ -40,13 +40,13 @@ export interface ChannelListResponse {
   total: number;
 }
 
-// DM 对话列表响应类型
+// DM conversation list response type
 export interface DMConversationListResponse {
   conversations: any[];
   total: number;
 }
 
-// 用户列表响应类型
+// User list response type
 export interface UserListResponse {
   users: any[];
   total: number;
@@ -66,7 +66,7 @@ export interface MessageEventPayload {
   dmConversationId?: string;
 }
 
-// 打字事件负载
+// Typing event payload
 export interface TypingEventPayload {
   userId: string;
   channelId?: string;
@@ -74,7 +74,7 @@ export interface TypingEventPayload {
   isTyping: boolean;
 }
 
-// 阅读状态事件负载
+// Read status event payload
 export interface ReadEventPayload {
   userId: string;
   messageIds: string[];
@@ -89,14 +89,14 @@ export interface PresenceEventPayload {
   lastSeenAt?: Date;
 }
 
-// 文件上传响应
+// File upload response
 export interface FileUploadResponse {
   attachment: any;
   url: string;
   thumbnailUrl?: string;
 }
 
-// S3 配置
+// S3 configuration
 export interface S3Config {
   bucket: string;
   region: string;
@@ -130,7 +130,7 @@ export interface SearchResponse {
   took: number;
 }
 
-// 用户统计
+// User statistics
 export interface UserStats {
   userId: string;
   messageCount: number;
@@ -148,7 +148,7 @@ export interface ChannelStats {
   lastMessageAt?: Date;
 }
 
-// 团队统计
+// Team statistics
 export interface TeamStats {
   totalUsers: number;
   onlineUsers: number;
@@ -212,10 +212,10 @@ export interface ValidationError {
   code: string;
 }
 
-// 实时连接状态
+// Real-time connection status
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'error';
 
-// 实时事件类型
+// Real-time event types
 export type RealtimeEventType =
   | 'message.created'
   | 'message.updated'
@@ -230,7 +230,7 @@ export type RealtimeEventType =
   | 'channel.updated'
   | 'notification.created';
 
-// 实时事件
+// Real-time event
 export interface RealtimeEvent<T = any> {
   type: RealtimeEventType;
   payload: T;
@@ -238,7 +238,7 @@ export interface RealtimeEvent<T = any> {
   userId?: string;
 }
 
-// 应用配置
+// Application configuration
 export interface AppConfig {
   database: {
     url: string;
@@ -263,23 +263,23 @@ export interface AppConfig {
   };
 }
 
-// 通用 ID 类型
+// Common ID type
 export type ID = string;
 
-// 通用时间戳类型
+// Common timestamp type
 export type Timestamp = Date | string;
 
-// 通用可选字段
+// Common optional fields
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
-// 通用必填字段
+// Common required fields
 export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
-// 通用部分更新类型
+// Common partial update type
 export type PartialUpdate<T> = Partial<T> & { id: string };
 
 // Common create type (excluding auto-generated fields)
 export type CreateInput<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
 
-// 通用更新类型（排除不可更新字段）
+// Common update type (excluding non-updatable fields)
 export type UpdateInput<T> = Partial<T>;

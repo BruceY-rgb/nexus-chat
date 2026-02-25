@@ -138,7 +138,7 @@ async function importAttachment(
 
     return 1;
   } catch (error) {
-    console.error(`   ⚠ 导入附件失败: ${slackFile.name}`, error);
+    console.error(`   Warning: Failed to import attachment: ${slackFile.name}`, error);
     return 0;
   }
 }
@@ -232,41 +232,41 @@ function slackTimestampToDate(ts: string): Date {
 
 // 重置模式：清空现有数据
 async function resetData() {
-  console.log("⚠️  正在清空现有数据（重置模式）...");
+  console.log("Warning: Clearing existing data (reset mode)...");
 
   try {
     // 按依赖顺序删除数据（先删除有外键依赖的表）
     await prisma.attachment.deleteMany();
-    console.log("   ✓ 已清空附件");
+    console.log("   - Attachments cleared");
 
     await prisma.message.deleteMany();
-    console.log("   ✓ 已清空消息");
+    console.log("   - Messages cleared");
 
     await prisma.channelMember.deleteMany();
-    console.log("   ✓ 已清空频道成员");
+    console.log("   - Channel members cleared");
 
     await prisma.channel.deleteMany();
-    console.log("   ✓ 已清空频道");
+    console.log("   - Channels cleared");
 
     await prisma.teamMember.deleteMany();
-    console.log("   ✓ 已清空团队成员");
+    console.log("   - Team members cleared");
 
     // 私信相关（依赖 user，需要先删除）
     await prisma.dMConversationMember.deleteMany();
-    console.log("   ✓ 已清空私信成员");
+    console.log("   - DM conversation members cleared");
 
     await prisma.dMConversation.deleteMany();
-    console.log("   ✓ 已清空私信会话");
+    console.log("   - DM conversations cleared");
 
     await prisma.notificationSettings.deleteMany();
-    console.log("   ✓ 已清空通知设置");
+    console.log("   - Notification settings cleared");
 
     await prisma.user.deleteMany();
-    console.log("   ✓ 已清空用户");
+    console.log("   - Users cleared");
 
-    console.log("   ✅ 数据清空完成！\n");
+    console.log("   - Data cleared successfully!\n");
   } catch (error) {
-    console.error("   ❌ 清空数据失败:", error);
+    console.error("   Error: Failed to clear data:", error);
     throw error;
   }
 }
@@ -278,7 +278,7 @@ function generateId(): string {
 
 // 导入用户（重置模式）
 async function importUsers(slackData: SlackData): Promise<UserMapping[]> {
-  console.log("👥 导入用户（重置模式）...");
+  console.log("Users: Importing users (reset mode)...");
 
   const userMappings: UserMapping[] = [];
   let newUserCount = 0;
@@ -335,15 +335,15 @@ async function importUsers(slackData: SlackData): Promise<UserMapping[]> {
 
       newUserCount++;
       console.log(
-        `   ✓ 新用户: ${slackUser.profile.display_name || slackUser.name}`,
+        `   - New user: ${slackUser.profile.display_name || slackUser.name}`,
       );
     } catch (error: any) {
-      console.error(`   ✗ 导入用户失败: ${slackUser.name}`, error.message);
+      console.error(`   X Failed to import user: ${slackUser.name}`, error.message);
     }
   }
 
-  console.log(`   - 新增用户: ${newUserCount}`);
-  console.log(`   - 现有用户: ${existUserCount}`);
+  console.log(`   - New users: ${newUserCount}`);
+  console.log(`   - Existing users: ${existUserCount}`);
   return userMappings;
 }
 
@@ -353,13 +353,13 @@ async function importChannels(
   userMappings: UserMapping[],
 ): Promise<ChannelMapping[]> {
   console.log("");
-  console.log("📢 导入频道（重置模式）...");
+  console.log("Channels: Importing channels (reset mode)...");
 
   const channelMappings: ChannelMapping[] = [];
   const ownerId = userMappings[0]?.localUserId;
 
   if (!ownerId) {
-    throw new Error("没有可用的用户来创建频道");
+    throw new Error("No available users to create channel");
   }
 
   let newChannelCount = 0;
@@ -416,14 +416,14 @@ async function importChannels(
       }
 
       newChannelCount++;
-      console.log(`   ✓ 新频道: #${slackChannel.name}`);
+      console.log(`   - New channel: #${slackChannel.name}`);
     } catch (error: any) {
-      console.error(`   ✗ 导入频道失败: #${slackChannel.name}`, error.message);
+      console.error(`   X Failed to import channel: #${slackChannel.name}`, error.message);
     }
   }
 
-  console.log(`   - 新增频道: ${newChannelCount}`);
-  console.log(`   - 现有频道: ${existChannelCount}`);
+  console.log(`   - New channels: ${newChannelCount}`);
+  console.log(`   - Existing channels: ${existChannelCount}`);
   return channelMappings;
 }
 
@@ -434,7 +434,7 @@ async function importMessages(
   channelMappings: ChannelMapping[],
 ) {
   console.log("");
-  console.log("💬 导入消息（重置模式）...");
+  console.log("Messages: Importing messages (reset mode)...");
 
   // 创建映射查找表
   const userIdMap = new Map(
@@ -553,7 +553,7 @@ async function importMessages(
           }
           if (attachmentCount > 0) {
             console.log(
-              `   ✓ 消息 ${message.id} 导入了 ${attachmentCount} 个附件`,
+              `   - Message ${message.id} imported ${attachmentCount} attachment(s)`,
             );
           }
         }
@@ -564,7 +564,7 @@ async function importMessages(
         totalImported++;
 
         if (totalImported % 100 === 0) {
-          console.log(`   已导入 ${totalImported} 条消息...`);
+          console.log(`   Imported ${totalImported} messages...`);
         }
       } catch (error: any) {
         if (error.code !== "P2002") {
@@ -574,10 +574,10 @@ async function importMessages(
     }
   }
 
-  console.log(`   ✓ 第一轮导入完成，共 ${totalImported} 条消息`);
+  console.log(`   - First round import complete, ${totalImported} messages`);
 
   // 第二轮：处理线程关系
-  console.log("   正在处理线程关系...");
+  console.log("   Processing thread relationships...");
   let threadCount = 0;
 
   for (const slackChannel of slackData.channels) {
@@ -633,30 +633,30 @@ async function importMessages(
     }
   }
 
-  console.log(`   ✓ 处理了 ${threadCount} 个线程回复`);
+  console.log(`   - Processed ${threadCount} thread replies`);
 
-  console.log(`   ✓ 新增消息: ${totalImported}`);
-  console.log(`   ✓ 新增附件: ${totalAttachmentsImported}`);
-  console.log(`   ⏭ 跳过重复消息: ${duplicateSkipped}`);
-  console.log(`   ⏭ 跳过其他: ${totalSkipped}`);
+  console.log(`   - New messages: ${totalImported}`);
+  console.log(`   - New attachments: ${totalAttachmentsImported}`);
+  console.log(`   - Skipped duplicates: ${duplicateSkipped}`);
+  console.log(`   - Skipped others: ${totalSkipped}`);
 }
 
 // 主函数
 async function main() {
-  console.log("📥 Slack数据导入工具（重置模式）");
+  console.log("Slack Data Import Tool (Reset Mode)");
   console.log("=".repeat(50));
 
   // 1. 检查输入文件
   if (!fs.existsSync(INPUT_FILE)) {
-    console.error(`❌ 错误: 找不到数据文件 ${INPUT_FILE}`);
-    console.log("   请先运行: npx tsx scripts/slack-scraper.ts");
+    console.error(`Error: Data file not found ${INPUT_FILE}`);
+    console.log("   Please run first: npx tsx scripts/slack-scraper.ts");
     process.exit(1);
   }
 
   // 1.1 检查 Slack Token
   if (!SLACK_TOKEN) {
-    console.error(`❌ 错误: 请设置 SLACK_USER_TOKEN 环境变量`);
-    console.log("   用于下载 Slack 文件，需要 Slack User Token");
+    console.error(`Error: Please set SLACK_USER_TOKEN environment variable`);
+    console.log("   To download Slack files, you need a Slack User Token");
     process.exit(1);
   }
 
@@ -664,28 +664,28 @@ async function main() {
   await resetData();
 
   // 3. 读取数据
-  console.log(`📂 读取数据文件: ${INPUT_FILE}`);
+  console.log(`Reading data file: ${INPUT_FILE}`);
   const fileContent = fs.readFileSync(INPUT_FILE, "utf-8");
   const slackData: SlackData = JSON.parse(fileContent);
 
   console.log("");
-  console.log("📊 数据概览:");
-  console.log(`   - 用户: ${slackData.metadata.totalUsers}`);
-  console.log(`   - 频道: ${slackData.metadata.totalChannels}`);
-  console.log(`   - 消息: ${slackData.metadata.totalMessages}`);
+  console.log("Data Overview:");
+  console.log(`   - Users: ${slackData.metadata.totalUsers}`);
+  console.log(`   - Channels: ${slackData.metadata.totalChannels}`);
+  console.log(`   - Messages: ${slackData.metadata.totalMessages}`);
   console.log("");
 
   // 3. 导入用户（重置模式）
   const userMappings = await importUsers(slackData);
 
   if (userMappings.length === 0) {
-    console.log("❌ 没有可用的用户，请先确保用户导入成功");
+    console.log("Error: No available users, please ensure user import succeeds first");
     process.exit(1);
   }
 
   // 4. 创建团队成员关系（重置模式）
   console.log("");
-  console.log("👨‍👩‍👧‍👦 创建团队成员关系（重置模式）...");
+  console.log("Creating team member relationships (reset mode)...");
   const users = await prisma.user.findMany();
   let newTeamMemberCount = 0;
 
@@ -704,7 +704,7 @@ async function main() {
       newTeamMemberCount++;
     }
   }
-  console.log(`   - 新增团队成员: ${newTeamMemberCount}`);
+  console.log(`   - New team members: ${newTeamMemberCount}`);
 
   // 5. 导入频道（重置模式）
   const channelMappings = await importChannels(slackData, userMappings);
@@ -714,7 +714,7 @@ async function main() {
 
   // 7. 创建通知设置（重置模式）
   console.log("");
-  console.log("🔔 创建通知设置（重置模式）...");
+  console.log("Creating notification settings (reset mode)...");
   let newNotificationSettingsCount = 0;
 
   for (const user of users) {
@@ -731,26 +731,26 @@ async function main() {
       newNotificationSettingsCount++;
     }
   }
-  console.log(`   - 新增通知设置: ${newNotificationSettingsCount}`);
+  console.log(`   - New notification settings: ${newNotificationSettingsCount}`);
 
   // 8. 统计
   console.log("");
   console.log("=".repeat(50));
-  console.log("✅ 重置导入完成!");
+  console.log("Reset import completed!");
   console.log("");
-  console.log("📊 当前数据库统计:");
-  console.log(`   - 用户: ${await prisma.user.count()}`);
-  console.log(`   - 频道: ${await prisma.channel.count()}`);
-  console.log(`   - 消息: ${await prisma.message.count()}`);
+  console.log("Current database stats:");
+  console.log(`   - Users: ${await prisma.user.count()}`);
+  console.log(`   - Channels: ${await prisma.channel.count()}`);
+  console.log(`   - Messages: ${await prisma.message.count()}`);
   console.log("");
-  console.log("🔑 Slack导入用户测试账户:");
-  console.log(`   密码统一为: ${DEFAULT_PASSWORD}`);
-  console.log(`   邮箱格式: {username}@slack-import.local`);
+  console.log("Slack import test accounts:");
+  console.log(`   Password: ${DEFAULT_PASSWORD}`);
+  console.log(`   Email format: {username}@slack-import.local`);
 
   await prisma.$disconnect();
 }
 
 main().catch((e) => {
-  console.error("❌ 导入失败:", e);
+  console.error("Error: Import failed:", e);
   process.exit(1);
 });

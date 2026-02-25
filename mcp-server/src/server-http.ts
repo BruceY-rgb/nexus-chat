@@ -1,6 +1,6 @@
 /**
- * MCP HTTP 服务器
- * 提供 RESTful 接口供 Claude Desktop / Cursor 连接
+ * MCP HTTP Server
+ * Provides RESTful interface for Claude Desktop / Cursor connection
  */
 
 import express, { Request, Response } from "express";
@@ -12,38 +12,38 @@ import type { ToolResult } from "./types.js";
 
 const app = express();
 
-// 中间件
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// 全局请求日志中间件（用于调试请求是否到达）
+// Global request log middleware (for debugging if requests arrived)
 app.use((req: Request, _res: Response, next) => {
   console.log("");
-  console.log("========== 收到请求 ==========");
-  console.log(`📌 Method: ${req.method}`);
-  console.log(`🔗 URL: ${req.url}`);
-  console.log(`📋 Headers:`, JSON.stringify(req.headers, null, 2));
-  console.log("================================");
+  console.log("========== Request Received ==========");
+  console.log(`Method: ${req.method}`);
+  console.log(`URL: ${req.url}`);
+  console.log(`Headers:`, JSON.stringify(req.headers, null, 2));
+  console.log("====================================");
   console.log("");
   next();
 });
 
-// 端口配置
+// Port configuration
 const PORT = process.env.PORT || 3002;
 const HOST = process.env.HOST || "0.0.0.0";
 
-// 外部访问 URL（用于日志显示）
+// External access URL (for logging display)
 const INTERNAL_API_URL =
   process.env.INTERNAL_API_URL || `http://${HOST}:${PORT}`;
 
-// 路由
+// Routes
 
-// 健康检查
+// Health check
 app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// 登录接口
+// Login endpoint
 app.post("/login", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -68,13 +68,13 @@ app.post("/login", async (req: Request, res: Response) => {
   }
 });
 
-// MCP 消息处理
+// MCP message handling
 app.post("/mcp/messages", async (req: Request, res: Response) => {
   try {
     const message = req.body;
     const id = message?.id;
 
-    // 验证 JSON-RPC 版本
+    // Verify JSON-RPC version
     if (message?.jsonrpc !== "2.0") {
       return res.json({
         jsonrpc: "2.0",
@@ -86,7 +86,7 @@ app.post("/mcp/messages", async (req: Request, res: Response) => {
     const method = message?.method;
     const params = message?.params || {};
 
-    // 从 Authorization header 获取 token
+    // Get token from Authorization header
     const authHeader = req.headers.authorization;
     let userToken: string | null = null;
 
@@ -94,12 +94,12 @@ app.post("/mcp/messages", async (req: Request, res: Response) => {
       userToken = authHeader.substring(7);
     }
 
-    // 如果没有 token，检查 params 中的 userToken
+    // If no token, check userToken in params
     if (!userToken) {
       userToken = params?.arguments?.userToken as string;
     }
 
-    // 对于不需要认证的工具，放行
+    // Tools that don't require authentication
     const noAuthTools = [
       "register",
       "login",
@@ -115,7 +115,7 @@ app.post("/mcp/messages", async (req: Request, res: Response) => {
       return res.json({ jsonrpc: "2.0", id, result });
     }
 
-    // 验证 token
+    // Verify token
     if (!userToken) {
       return res.json({
         jsonrpc: "2.0",
@@ -133,7 +133,7 @@ app.post("/mcp/messages", async (req: Request, res: Response) => {
       });
     }
 
-    // 处理 MCP 方法
+    // Handle MCP methods
     let result: unknown;
 
     switch (method) {
@@ -144,7 +144,7 @@ app.post("/mcp/messages", async (req: Request, res: Response) => {
             description: tool.description,
             inputSchema: {
               type: "object",
-              properties: {}, // 简化处理
+              properties: {}, // Simplified handling
             },
           })),
         };
@@ -195,13 +195,13 @@ app.post("/mcp/messages", async (req: Request, res: Response) => {
   }
 });
 
-// 处理工具调用
+// Handle tool calls
 async function handleToolCall(
   toolName: string,
   args: Record<string, unknown>,
   userToken: string | null,
 ): Promise<ToolResult> {
-  // 认证工具不需要验证 token
+  // Auth tools don't need token validation
   const noAuthToolNames = [
     "register",
     "login",
@@ -239,7 +239,7 @@ async function handleToolCall(
     }
   }
 
-  // 其他工具需要验证 token
+  // Other tools need token validation
   if (!userToken) {
     return {
       content: [
@@ -282,7 +282,7 @@ async function handleToolCall(
   }
 }
 
-// 处理资源读取
+// Handle resource read
 async function handleResourceRead(
   uri: string,
   userToken: string,
@@ -292,7 +292,7 @@ async function handleResourceRead(
   const url = new URL(uri);
   const tokenParam = url.searchParams.get("userToken");
 
-  // 优先使用 header 中的 token
+  // Prefer token from header
   const actualToken = userToken || tokenParam;
 
   if (!actualToken) {
@@ -357,17 +357,17 @@ async function handleResourceRead(
   }
 }
 
-// SSE 端点（可选，用于未来扩展）
+// SSE endpoint (optional, for future expansion)
 app.get("/mcp/sse", (_req: Request, res: Response) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  // 发送连接消息
+  // Send connection message
   res.write(`data: ${JSON.stringify({ type: "connected" })}\n\n`);
 
-  // 保持连接
+  // Keep connection alive
   const keepAlive = setInterval(() => {
     res.write(`: keepalive\n\n`);
   }, 30000);
@@ -378,7 +378,7 @@ app.get("/mcp/sse", (_req: Request, res: Response) => {
   });
 });
 
-// 启动服务器
+// Start server
 export function startHttpServer(): Promise<void> {
   return new Promise((resolve) => {
     const port = typeof PORT === "string" ? parseInt(PORT, 10) : PORT;
@@ -389,14 +389,14 @@ export function startHttpServer(): Promise<void> {
 
       console.log("");
       console.log("========================================");
-      console.log("🚀 MCP Server 启动成功");
+      console.log("MCP Server started successfully");
       console.log("========================================");
-      console.log(`🌐 模式: ${MCP_MODE.toUpperCase()}`);
-      console.log(`📍 端口: ${port}`);
-      console.log(`🔗 健康检查: ${baseUrl}/health`);
-      console.log(`🔐 登录接口: POST ${baseUrl}/login`);
-      console.log(`📬 MCP消息: POST ${baseUrl}/mcp/messages`);
-      console.log(`⏰ 启动时间: ${startTime}`);
+      console.log(`Mode: ${MCP_MODE.toUpperCase()}`);
+      console.log(`Port: ${port}`);
+      console.log(`Health check: ${baseUrl}/health`);
+      console.log(`Login endpoint: POST ${baseUrl}/login`);
+      console.log(`MCP messages: POST ${baseUrl}/mcp/messages`);
+      console.log(`Start time: ${startTime}`);
       console.log("========================================");
       console.log("");
 
