@@ -68,16 +68,14 @@ fix_common_issues() {
     fi
     echo -e "${GREEN}[OK] Docker is running${NC}"
 
-    # Check 2: Required containers running
-    APP_RUNNING=$(docker ps --filter "name=slack_app" --format "{{.Names}}" 2>/dev/null)
+    # Check 2: Required containers running (use detected CONTAINER_NAME)
+    APP_RUNNING=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -E "^${CONTAINER_NAME}$" || echo "")
     if [ -z "$APP_RUNNING" ]; then
-        echo -e "${YELLOW}[WARN] App container not found, attempting to start...${NC}"
-        docker-compose -f docker-compose.dev.yml up -d app db 2>/dev/null || \
-        docker compose -f docker-compose.dev.yml up -d app db 2>/dev/null || \
-        (echo -e "${RED}ERROR: Cannot start containers automatically" && exit 1)
-        echo "Waiting for containers to start..."
-        sleep 10
+        echo -e "${YELLOW}[WARN] App container '${CONTAINER_NAME}' is not running${NC}"
+        echo "Please start your container and try again"
+        exit 1
     fi
+    echo -e "${GREEN}[OK] App container is running${NC}"
 
     # Check 3: Port 3002 mapped
     PORT_MAPPED=$(docker port $CONTAINER_NAME 2>/dev/null | grep "3002" || echo "")
