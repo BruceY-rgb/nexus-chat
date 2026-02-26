@@ -62,9 +62,8 @@ services:
         echo "Applying init.sql (triggers and indexes)..."
         PGPASSWORD=$DB_PASSWORD psql -h db -U $DB_USER -d $DB_NAME -f /init.sql || true
         echo "Applying Slack data init.sql..."
-        PGPASSWORD=$DB_PASSWORD psql -h db -U $DB_USER -d $DB_NAME -f /slack-init.sql --set ON_ERROR_STOP=on || true
+        PGPASSWORD=$DB_PASSWORD psql -h db -U $DB_USER -d $DB_NAME -v ON_ERROR_STOP=on -f /slack-init.sql
         echo "Init SQL applied!"
-        exit 0
 
   # Next.js development application
   app:
