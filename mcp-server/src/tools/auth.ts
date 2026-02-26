@@ -25,15 +25,15 @@ const loginSchema = z.object({
 });
 
 const logoutSchema = z.object({
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getMeSchema = z.object({
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getProfileSchema = z.object({
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const updateProfileSchema = z.object({
@@ -41,7 +41,7 @@ const updateProfileSchema = z.object({
   realName: z.string().optional(),
   avatarUrl: z.string().optional(),
   timezone: z.string().optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const sendVerificationSchema = z.object({

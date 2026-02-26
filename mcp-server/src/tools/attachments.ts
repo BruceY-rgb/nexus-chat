@@ -9,19 +9,19 @@ import type { ToolDefinition, ToolResult } from '../types.js';
 const getAttachmentsSchema = z.object({
   conversationId: z.string(),
   conversationType: z.enum(['channel', 'dm']),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const deleteAttachmentSchema = z.object({
   attachmentId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const createAttachmentUploadUrlSchema = z.object({
   fileName: z.string().describe('Original file name with extension, e.g. "photo.jpg"'),
   mimeType: z.string().describe('MIME type, e.g. "image/jpeg"'),
   fileSize: z.number().optional().describe('File size in bytes (for validation)'),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 export const attachmentTools: ToolDefinition[] = [

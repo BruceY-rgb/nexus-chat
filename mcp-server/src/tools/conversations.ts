@@ -9,23 +9,23 @@ import type { ToolDefinition, ExecutionContext, ToolResult } from "../types.js";
 // Input schemas
 const createDMSchema = z.object({
   userId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getDMSchema = z.object({
   userId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const listActiveDMsSchema = z.object({
   search: z.string().optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getReadPositionSchema = z.object({
   channelId: z.string().optional(),
   dmConversationId: z.string().optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 export const conversationTools: ToolDefinition[] = [

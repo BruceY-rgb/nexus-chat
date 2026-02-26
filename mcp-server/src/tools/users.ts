@@ -17,30 +17,30 @@ const listUsersSchema = z.object({
   page: z.number().int().positive().optional(),
   limit: z.number().int().positive().max(100).optional(),
   activeOnly: z.boolean().optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const searchUsersSchema = z.object({
   query: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getUnreadCountsSchema = z.object({
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getStarredUsersSchema = z.object({
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getUserSchema = z.object({
   userId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const toggleStarredUserSchema = z.object({
   starredUserId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 export const userTools: ToolDefinition[] = [

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "slack-like": {
+      "type": "sse",
+      "url": "http://localhost:3002/mcp/sse"
+    }
+  }
+}
