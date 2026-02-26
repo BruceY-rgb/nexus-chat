@@ -69,6 +69,11 @@ export class APIExecutor {
           (data.error as string) || (data.message as string) || "Unknown error",
         );
       }
+      // Some APIs return { success: true } without a data field (e.g. mark_read, toggle)
+      // In that case data.data is undefined, return a valid object to avoid JSON.stringify(undefined)
+      if (data.data === undefined || data.data === null) {
+        return { success: true, message: data.message || "ok" } as T;
+      }
       return data.data as T;
     }
 
