@@ -1,20 +1,22 @@
 /**
  * MCP HTTP Server
  * Provides RESTful interface for Claude Desktop / Cursor connection
+ * Supports both legacy POST-based JSON-RPC and standard SSE transport
  */
 
 import express, { Request, Response } from "express";
 import cors from "cors";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { login as authLogin, verifyToken } from "./auth.js";
 import { tools, toolRegistry } from "./tools/index.js";
 import { resources, resourceHandlers } from "./resources/index.js";
+import { createMcpServer } from "./mcp-server-factory.js";
 import type { ToolResult } from "./types.js";
 
 const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json());
 
 // Global request log middleware (for debugging if requests arrived)
 app.use((req: Request, _res: Response, next) => {
@@ -26,6 +28,15 @@ app.use((req: Request, _res: Response, next) => {
   console.log("====================================");
   console.log("");
   next();
+});
+
+// Parse JSON body for all routes EXCEPT /mcp/sse/messages
+// (SSEServerTransport reads the raw body stream itself via raw-body)
+app.use((req: Request, res: Response, next) => {
+  if (req.path === "/mcp/sse/messages") {
+    return next();
+  }
+  express.json()(req, res, next);
 });
 
 // Port configuration
@@ -357,25 +368,52 @@ async function handleResourceRead(
   }
 }
 
-// SSE endpoint (optional, for future expansion)
-app.get("/mcp/sse", (_req: Request, res: Response) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.flushHeaders();
+// ============================================================
+// Standard MCP SSE Transport
+// GET /mcp/sse  - establishes SSE connection
+// POST /mcp/sse/messages - receives client JSON-RPC messages
+// ============================================================
 
-  // Send connection message
-  res.write(`data: ${JSON.stringify({ type: "connected" })}\n\n`);
+// Active SSE sessions: sessionId -> transport
+const sseTransports = new Map<string, SSEServerTransport>();
 
-  // Keep connection alive
-  const keepAlive = setInterval(() => {
-    res.write(`: keepalive\n\n`);
-  }, 30000);
+app.get("/mcp/sse", async (req: Request, res: Response) => {
+  console.log("SSE connection request received");
 
-  _req.on("close", () => {
-    clearInterval(keepAlive);
-    res.end();
+  const transport = new SSEServerTransport("/mcp/sse/messages", res);
+  const sessionId = transport.sessionId;
+  sseTransports.set(sessionId, transport);
+
+  console.log(`SSE session created: ${sessionId}`);
+
+  // Create a new MCP server instance for this connection
+  const mcpServer = createMcpServer();
+
+  // Clean up on disconnect
+  req.on("close", () => {
+    console.log(`SSE session closed: ${sessionId}`);
+    sseTransports.delete(sessionId);
+    mcpServer.close().catch(console.error);
   });
+
+  // Connect server to transport (this starts the SSE stream)
+  await mcpServer.connect(transport);
+});
+
+app.post("/mcp/sse/messages", async (req: Request, res: Response) => {
+  const sessionId = req.query.sessionId as string;
+  if (!sessionId) {
+    res.status(400).json({ error: "Missing sessionId query parameter" });
+    return;
+  }
+
+  const transport = sseTransports.get(sessionId);
+  if (!transport) {
+    res.status(404).json({ error: "Session not found. It may have expired." });
+    return;
+  }
+
+  await transport.handlePostMessage(req, res);
 });
 
 // Start server
@@ -396,6 +434,7 @@ export function startHttpServer(): Promise<void> {
       console.log(`Health check: ${baseUrl}/health`);
       console.log(`Login endpoint: POST ${baseUrl}/login`);
       console.log(`MCP messages: POST ${baseUrl}/mcp/messages`);
+      console.log(`MCP SSE endpoint: GET ${baseUrl}/mcp/sse`);
       console.log(`Start time: ${startTime}`);
       console.log("========================================");
       console.log("");

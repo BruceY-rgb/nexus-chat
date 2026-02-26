@@ -18,68 +18,68 @@ const listChannelsSchema = z.object({
   search: z.string().optional(),
   page: z.number().int().positive().optional(),
   limit: z.number().int().positive().max(100).optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getChannelSchema = z.object({
   channelId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const createChannelSchema = z.object({
   name: z.string().min(1).max(80),
   description: z.string().optional(),
   isPrivate: z.boolean().optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const updateChannelSchema = z.object({
   channelId: z.string(),
   name: z.string().min(1).max(80).optional(),
   description: z.string().optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const deleteChannelSchema = z.object({
   channelId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const joinChannelSchema = z.object({
   channelId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const leaveChannelSchema = z.object({
   channelId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const listChannelMembersSchema = z.object({
   channelId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const inviteChannelMemberSchema = z.object({
   channelId: z.string(),
   userId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const joinAllChannelMembersSchema = z.object({
   channelId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const removeChannelMemberSchema = z.object({
   channelId: z.string(),
   userId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getChannelPermissionsSchema = z.object({
   channelId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 export const channelTools: ToolDefinition[] = [

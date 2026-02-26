@@ -8,18 +8,18 @@ import type { ToolDefinition, ExecutionContext, ToolResult } from "../types.js";
 
 // Input schemas
 const getThreadCountSchema = z.object({
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getUnreadThreadsSchema = z.object({
   limit: z.number().int().positive().optional(),
   offset: z.number().int().nonnegative().optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const markThreadReadSchema = z.object({
   threadId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 export const threadTools: ToolDefinition[] = [

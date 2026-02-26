@@ -18,7 +18,7 @@ const listMessagesSchema = z.object({
   dmConversationId: z.string().optional(),
   limit: z.number().int().positive().max(100).optional(),
   offset: z.number().int().nonnegative().optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const sendMessageSchema = z.object({
@@ -36,47 +36,47 @@ const sendMessageSchema = z.object({
       createdAt: z.string(),
     })
     .optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getMessageSchema = z.object({
   messageId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const updateMessageSchema = z.object({
   messageId: z.string(),
   content: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const deleteMessageSchema = z.object({
   messageId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const replyToMessageSchema = z.object({
   messageId: z.string(),
   content: z.string().optional(),
   attachments: z.array(z.any()).optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getThreadRepliesSchema = z.object({
   messageId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const addReactionSchema = z.object({
   messageId: z.string(),
   emoji: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const removeReactionSchema = z.object({
   messageId: z.string(),
   emoji: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const searchMessagesSchema = z.object({
@@ -86,36 +86,36 @@ const searchMessagesSchema = z.object({
   userId: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getReactionsSchema = z.object({
   messageId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const contextSearchMessagesSchema = z.object({
   query: z.string(),
   channelId: z.string().optional(),
   dmConversationId: z.string().optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const markMessagesReadSchema = z.object({
   channelId: z.string().optional(),
   dmConversationId: z.string().optional(),
   lastReadMessageId: z.string().optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const markAllMessagesReadSchema = z.object({
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const clearMessagesSchema = z.object({
   channelId: z.string().optional(),
   dmConversationId: z.string().optional(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 export const messageTools: ToolDefinition[] = [

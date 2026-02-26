@@ -10,24 +10,24 @@ const notificationLevelEnum = z.enum(['all', 'mentions', 'nothing']);
 
 const getChannelNotifPrefsSchema = z.object({
   channelId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const updateChannelNotifPrefsSchema = z.object({
   channelId: z.string(),
   notificationLevel: notificationLevelEnum,
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const getDmNotifPrefsSchema = z.object({
   conversationId: z.string(),
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 const updateDmNotifPrefsSchema = z.object({
   conversationId: z.string(),
   notificationLevel: notificationLevelEnum,
-  userToken: z.string(),
+  userToken: z.string().optional(),
 });
 
 export const notificationTools: ToolDefinition[] = [
