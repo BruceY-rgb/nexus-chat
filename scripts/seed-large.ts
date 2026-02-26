@@ -158,7 +158,7 @@ const ENGLISH_NAMES = [
   'Avery Harris', 'Sofia Johnson', 'Ella Smith', 'Madison Davis', 'Scarlett Wilson',
   'Victoria Brown', 'Aria Garcia', 'Grace Martinez', 'Chloe Lopez', 'Penelope Anderson',
   'Riley Thompson', 'Zoey Taylor', 'Nora Moore', 'Lily Jackson', 'Eleanor White',
-  'Hannah Harris', 'Lillian Johnson', 'Addisonubrey Davis', Smith', 'A 'Stella Wilson',
+  'Hannah Harris', 'Lillian Johnson', 'Addisonubrey Davis', 'Smith', 'A Stella Wilson',
 ];
 
 const WORK_MESSAGES = [
