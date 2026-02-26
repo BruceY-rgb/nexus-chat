@@ -94,7 +94,7 @@ fix_common_issues
 echo -e "${CYAN}Checking MCP server connectivity...${NC}"
 
 # Wait for MCP to be ready (with retry)
-MAX_RETRIES=5
+MAX_RETRIES=10
 RETRY_COUNT=0
 MCP_READY=false
 
@@ -107,28 +107,21 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
         break
     fi
 
-    # Check for esbuild error
-    if echo "$MCP_CHECK" | grep -qi "esbuild"; then
-        echo -e "${YELLOW}[AUTO-FIX] Detected esbuild version mismatch, attempting fix...${NC}"
-        docker exec $CONTAINER_NAME sh -c "cd /app/mcp-server && npm install esbuild@0.27.3 2>&1" > /dev/null
-        docker restart $CONTAINER_NAME
-        echo "Waiting for MCP server to restart..."
-        sleep 15
-    fi
-
     RETRY_COUNT=$((RETRY_COUNT+1))
     echo "  Retry $RETRY_COUNT/$MAX_RETRIES..."
-    sleep 3
+    sleep 2
 done
 
 if [ "$MCP_READY" = "false" ]; then
-    echo -e "${RED}ERROR: Cannot connect to MCP server on port 3002${NC}"
+    echo -e "${RED}ERROR: Cannot connect to MCP server${NC}"
     echo ""
-    echo "Please ensure Docker containers are running:"
-    echo -e "  ${YELLOW}docker ps${NC}  - Check running containers"
+    echo "Please check:"
+    echo "  1. MCP server is running and accessible"
+    echo "  2. The URL is correct: ${MCP_URL}"
+    echo "  3. Network/firewall allows connection"
     echo ""
-    echo "Port check:"
-    lsof -i :3002 2>/dev/null || echo "  Port 3002 is not listening"
+    echo "To set custom URL:"
+    echo "  MCP_URL=http://YOUR_SERVER:PORT/mcp/messages bash test-api-features.sh"
     exit 1
 fi
 
