@@ -58,7 +58,8 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchChannels = async () => {
       try {
-        const response = await fetch('/api/channels?type=joined&limit=100', {
+        // Fetch all channels (not just joined) for browsing
+        const response = await fetch('/api/channels?type=all&limit=100', {
           credentials: 'include'
         });
 
