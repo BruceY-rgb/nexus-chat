@@ -270,3 +270,21 @@ model NotificationSettings {
 
   @@map("notification_settings")
 }
+
+/// Append-only audit log written by the Prisma middleware for every
+/// INSERT / UPDATE / DELETE / UPSERT that touches a tracked model.
+/// Never read or written through Prisma's model API — only via $executeRaw / $queryRaw.
+model DbWriteAudit {
+  auditId   BigInt  @id @default(autoincrement()) @map("audit_id")
+  tsMs      BigInt  @map("ts_ms")
+  tableName String  @map("table_name")
+  op        String
+  pkJson    Json    @map("pk_json")
+  setJson   Json    @default("{}") @map("set_json")
+  unsetCols Json    @default("[]") @map("unset_cols")
+  requestId String? @map("request_id")
+  txnId     String? @map("txn_id")
+  actor     String?
+
+  @@map("db_write_audit")
+}
