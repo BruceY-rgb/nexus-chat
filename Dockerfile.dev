@@ -33,7 +33,7 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # 暴露端口
-EXPOSE 3000 24678
+EXPOSE 3000
 
 # 环境变量
 ENV PORT=3000

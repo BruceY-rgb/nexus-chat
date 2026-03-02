@@ -108,7 +108,7 @@ services:
     ports:
       - "3000:3000"
       - "3002:3002"   # MCP Server
-      - "24678:24678" # Next.js HMR port
+      # - "24678:24678" # Next.js HMR port
     depends_on:
       db:
         condition: service_healthy
