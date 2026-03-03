@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { Server as SocketIOServer } from 'socket.io';
-
-const prisma = new PrismaClient();
 
 // GET /api/messages/[id]/reactions - Get all reactions for a message
 export async function GET(
