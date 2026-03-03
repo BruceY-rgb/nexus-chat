@@ -1,12 +1,123 @@
 #!/usr/bin/env python3
 """
 生成缺失的 SQL 数据并追加到 slack-init.sql
+
+支持两种模式:
+1. 默认模式: 直接使用 Slack URL (需要登录 Slack 才能访问)
+2. 下载模式: 下载 Slack 图片并上传到 OSS (需要配置 OSS 和 Slack Token)
 """
 
 import json
 import re
 import uuid
+import os
+import sys
 from datetime import datetime
+from typing import Dict, List, Optional, Tuple
+
+# 检查是否需要下载图片
+DOWNLOAD_IMAGES = os.environ.get('DOWNLOAD_SLACK_IMAGES', 'false').lower() == 'true'
+SLACK_TOKEN = os.environ.get('SLACK_BOT_TOKEN', '')
+OSS_ACCESS_KEY_ID = os.environ.get('OSS_ACCESS_KEY_ID', '')
+OSS_ACCESS_KEY_SECRET = os.environ.get('OSS_ACCESS_KEY_SECRET', '')
+OSS_BUCKET = os.environ.get('OSS_BUCKET', '')
+OSS_ENDPOINT = os.environ.get('OSS_ENDPOINT', '')
+OSS_REGION = os.environ.get('OSS_REGION', 'oss-cn-hangzhou')
+OSS_CUSTOM_DOMAIN = os.environ.get('OSS_CUSTOM_DOMAIN', '')
+
+# 图片缓存
+image_cache: Dict[str, Tuple[str, str, str]] = {}  # slack_url -> (oss_url, s3_key, s3_bucket)
+
+
+def download_and_upload_to_oss(slack_url: str, file_name: str, mime_type: str) -> Optional[Tuple[str, str, str]]:
+    """
+    下载 Slack 图片并上传到 OSS
+    返回: (oss_url, s3_key, s3_bucket)
+    """
+    if slack_url in image_cache:
+        return image_cache[slack_url]
+
+    try:
+        import requests
+        import oss2
+    except ImportError as e:
+        print(f"缺少依赖库: {e}")
+        print("请运行: pip install requests oss2")
+        return None
+
+    # 下载文件
+    headers = {}
+    if SLACK_TOKEN:
+        headers['Authorization'] = f'Bearer {SLACK_TOKEN}'
+
+    try:
+        response = requests.get(slack_url, headers=headers, timeout=60)
+        if response.status_code != 200:
+            print(f"  下载失败 {slack_url}: HTTP {response.status_code}")
+            return None
+        content = response.content
+    except Exception as e:
+        print(f"  下载错误 {slack_url}: {e}")
+        return None
+
+    # 确定文件扩展名
+    ext = get_extension(mime_type, file_name, slack_url)
+
+    # 生成唯一 key
+    timestamp = int(datetime.now().timestamp())
+    random_str = uuid.uuid4().hex[:8]
+    s3_key = f"slack-migration/{timestamp}-{random_str}.{ext}"
+
+    # 上传到 OSS
+    try:
+        auth = oss2.Auth(OSS_ACCESS_KEY_ID, OSS_ACCESS_KEY_SECRET)
+        bucket = oss2.Bucket(auth, OSS_ENDPOINT, OSS_BUCKET)
+        bucket.put_object(s3_key, content)
+
+        # 生成 URL
+        if OSS_CUSTOM_DOMAIN:
+            oss_url = f"https://{OSS_CUSTOM_DOMAIN}/{s3_key}"
+        else:
+            oss_url = f"https://{OSS_BUCKET}.{OSS_REGION}.aliyuncs.com/{s3_key}"
+
+        result = (oss_url, s3_key, OSS_BUCKET)
+        image_cache[slack_url] = result
+        print(f"  上传成功: {oss_url[:60]}...")
+        return result
+
+    except Exception as e:
+        print(f"  OSS 上传错误: {e}")
+        return None
+
+
+def get_extension(mime_type: str, file_name: str, url: str) -> str:
+    """获取文件扩展名"""
+    # 从 mime type 映射
+    mime_map = {
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+        'video/mp4': 'mp4',
+        'video/quicktime': 'mov',
+        'application/pdf': 'pdf',
+    }
+
+    ext = mime_map.get(mime_type.lower())
+    if ext:
+        return ext
+
+    # 从文件名提取
+    match = re.search(r'\.([a-zA-Z0-9]+)(?:\?|$)', file_name)
+    if match:
+        return match.group(1).lower()
+
+    # 从 URL 提取
+    match = re.search(r'\.([a-zA-Z0-9]+)(?:\?|$)', url)
+    if match:
+        return match.group(1).lower()
+
+    return 'bin'
 
 # 加载 JSON 数据
 print("加载 JSON 数据...")
@@ -173,14 +284,27 @@ for channel_id, messages in json_data['messages'].items():
             for f in msg['files']:
                 file_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f.get('id', '')))
                 file_name = f.get('name', 'unknown').replace("'", "''")
-                file_path = f.get('url_private', '').replace("'", "''")
+                slack_url = f.get('url_private', '')
                 file_size = f.get('size', 0)
                 mime_type = f.get('mimetype', 'application/octet-stream')
                 file_type = f.get('filetype', 'other')
 
-                # 生成 s3_key
+                # 确定 file_path
+                file_path = slack_url.replace("'", "''")
                 s3_key = f"attachments/{file_uuid}/{file_name}"
                 s3_bucket = 'q-and-a-chatbot'
+
+                # 如果配置了下载图片，则下载并上传到 OSS
+                if DOWNLOAD_IMAGES and slack_url and 'files.slack.com' in slack_url:
+                    print(f"处理 Slack 文件: {file_name}")
+                    result = download_and_upload_to_oss(slack_url, file_name, mime_type)
+                    if result:
+                        file_path = result[0].replace("'", "''")
+                        s3_key = result[1]
+                        s3_bucket = result[2]
+                    else:
+                        # 下载失败，保留原始 Slack URL
+                        print(f"  保留原始 Slack URL")
 
                 files_to_add.append({
                     'id': file_uuid,

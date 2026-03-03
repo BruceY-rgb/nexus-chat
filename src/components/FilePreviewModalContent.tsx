@@ -53,13 +53,15 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
   const isOfficeDoc = /\.(docx|doc|xlsx|xls|pptx|ppt)$/i.test(attachment.fileName);
   const isVideo = attachment.mimeType.startsWith('video/');
 
-  // Check file URL accessibility
+  // Check file URL accessibility (disabled due to CORS issues with OSS)
   useEffect(() => {
+    // Skip URL check for external URLs (OSS, etc.)
+    // The img tag will handle errors with onError handler
+    /*
     const checkFileUrl = async () => {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
-        // Use proxy URL to bypass CORS
         const proxyUrl = getFileUrl(attachment);
 
         const response = await fetch(proxyUrl, {
@@ -78,6 +80,9 @@ export default function FilePreviewModalContent({ attachment, onClose }: FilePre
     };
 
     checkFileUrl();
+    */
+    // 直接设置为 false，跳过 CORS 检查
+    setFileUrlError(false);
   }, [attachment]);
 
   // Handle keyboard events
